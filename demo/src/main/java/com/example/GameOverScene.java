@@ -12,6 +12,8 @@ import java.util.*;
 
 public class GameOverScene {
 
+    private static final int MAX_SCORES = 10; // 상위 10개만 표시
+
     public static Scene create(Stage stage, List<ScoreEntry> scores, ScoreEntry currentPlayer) {
         VBox root = new VBox(20);
         root.setAlignment(Pos.TOP_CENTER);
@@ -24,11 +26,13 @@ public class GameOverScene {
         scoreBoardLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
 
         ListView<HBox> scoreListView = new ListView<>();
-        scoreListView.setPrefHeight(400);
+        // 각 항목의 높이(16px 폰트 + 상하 패딩 10px) * 최대 항목 수(10개) + 여유 공간(20px)
+        scoreListView.setPrefHeight((26 * MAX_SCORES) + 20);
+        scoreListView.setMaxHeight((26 * MAX_SCORES) + 20);
 
         scores.sort(Comparator.comparingInt(ScoreEntry::getScore).reversed());
 
-        for (int i = 0; i < scores.size(); i++) {
+        for (int i = 0; i < Math.min(scores.size(), MAX_SCORES); i++) {
             ScoreEntry entry = scores.get(i);
             String text = String.format("%2d. %s - %d점", i + 1, entry.getName(), entry.getScore());
 
@@ -47,7 +51,9 @@ public class GameOverScene {
         }
 
         root.getChildren().addAll(gameOverText, scoreBoardLabel, scoreListView);
-        return new Scene(root, 400, 600);
+        // 전체 Scene 크기 조정
+        // 게임오버 텍스트(36px) + 스코어보드 라벨(24px) + 리스트뷰 높이 + 패딩(상하 80px) + 요소간 간격(40px)
+        return new Scene(root, 400, 500);
     }
 
     public static class ScoreEntry {
@@ -72,4 +78,5 @@ public class GameOverScene {
         }
     }
 }
+
 

@@ -22,7 +22,17 @@ public class App extends Application {
     public void start(Stage stage) {
         List<GameOverScene.ScoreEntry> scores = new java.util.ArrayList<>(List.of(
             new GameOverScene.ScoreEntry("Alice", 1200),
+            new GameOverScene.ScoreEntry("Alice", 900),
+            new GameOverScene.ScoreEntry("Alice", 100),
+            new GameOverScene.ScoreEntry("Alice", 120),
+            new GameOverScene.ScoreEntry("Alice", 10),
+            new GameOverScene.ScoreEntry("Alice", 120),
+            new GameOverScene.ScoreEntry("Alice", 1),
+            new GameOverScene.ScoreEntry("Alice", 120),
+            new GameOverScene.ScoreEntry("Alice", 120),
+            new GameOverScene.ScoreEntry("Alice", 120),
             new GameOverScene.ScoreEntry("Bob", 950),
+            new GameOverScene.ScoreEntry("Bob", 850),
             new GameOverScene.ScoreEntry("You", 1000),
             new GameOverScene.ScoreEntry("Charlie", 850)
         ));
