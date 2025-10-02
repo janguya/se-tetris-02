@@ -118,6 +118,7 @@ public class SettingsDialog {
         customColorGrid.setVgap(8);
         customColorGrid.setAlignment(Pos.CENTER_LEFT);
         
+        // 블록별 컬러 피커 생성
         colorPickers = new HashMap<>();
         String[] blockNames = {"I Block", "O Block", "J Block", "L Block", "S Block", "T Block", "Z Block"};
         String[] blockTypes = {"block-i", "block-o", "block-j", "block-l", "block-s", "block-t", "block-z"};
@@ -140,6 +141,7 @@ public class SettingsDialog {
         return section;
     }
     
+    // 버튼 박스 생성
     private HBox createButtonBox() {
         HBox buttonBox = new HBox(10);
         buttonBox.setAlignment(Pos.CENTER);
@@ -160,12 +162,14 @@ public class SettingsDialog {
         return buttonBox;
     }
     
+    // 커스텀 색상 섹션 표시 여부 업데이트
     private void updateCustomColorVisibility() {
         boolean isCustom = colorSchemeCombo.getValue() == ColorScheme.CUSTOM;
         customColorGrid.setVisible(isCustom);
         customColorGrid.setManaged(isCustom);
     }
     
+    // 기본값으로 리셋
     private void resetToDefault() {
         colorSchemeCombo.setValue(ColorScheme.NORMAL);
         Map<String, Color> defaultColors = ColorScheme.NORMAL.getColorMap();
@@ -178,6 +182,7 @@ public class SettingsDialog {
         updateCustomColorVisibility();
     }
     
+    // 설정 적용
     private void applySettings() {
         ColorScheme selectedScheme = colorSchemeCombo.getValue();
         settings.setCurrentColorScheme(selectedScheme);

@@ -67,6 +67,7 @@ public class Board {
         root.setFocusTraversable(true);
         root.setOnKeyPressed(event -> {
             if (isPaused) return;
+            if (gameLogic.isGameOver()) return;
             
             KeyCode code = event.getCode();
             switch (code) {
@@ -105,6 +106,7 @@ public class Board {
             @Override
             public void handle(long now) {
                 if (isPaused) return;
+                if (gameLogic.isGameOver()) return;
                 
                 // 일정 시간마다 블록 자동 하강
                 if (now - lastUpdate >= getAdjustedDropInterval()) {
@@ -170,7 +172,6 @@ public class Board {
     // 게임 오버 처리
     private void gameOver() {
         gameLoop.stop();
-        isPaused = true;
         // 화면에 점수 표시
         gc.setFill(Color.color(0, 0, 0, 0.7));
         gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
@@ -204,6 +205,9 @@ public class Board {
         // 일시정지 오버레이
         if (isPaused) {
             drawPauseOverlay();
+        }
+        if (!isPaused && !gameLogic.isGameOver() && (gameLoop != null)) {
+            gameLoop.start();
         }
     }
     

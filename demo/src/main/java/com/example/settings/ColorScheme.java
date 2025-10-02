@@ -7,12 +7,12 @@ import javafx.scene.paint.Color;
 
 public enum ColorScheme {
     NORMAL("Normal"),
-    PROTANOPIA("Red-Blind (Protanopia)"),
-    DEUTERANOPIA("Green-Blind (Deuteranopia)"),
-    TRITANOPIA("Blue-Blind (Tritanopia)"),
-    HIGH_CONTRAST("High Contrast"),
-    CUSTOM("Custom");
-    
+    PROTANOPIA("Red-Blind (Protanopia)"), // 적색맹 친화적
+    DEUTERANOPIA("Green-Blind (Deuteranopia)"), // 녹색맹 친화적
+    TRITANOPIA("Blue-Blind (Tritanopia)"), // 청색맹 친화적
+    HIGH_CONTRAST("High Contrast"), // 고대비
+    CUSTOM("Custom"); // 사용자 정의
+
     private final String displayName;
     
     ColorScheme(String displayName) {

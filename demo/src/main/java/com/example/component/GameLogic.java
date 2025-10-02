@@ -247,33 +247,25 @@ public class GameLogic {
     }
 
     // 게임 종료 확인
+    // 오류 발생 중. 수정 필요
     public boolean isGameOver() {
-        // 1. 현재 블록이 스폰 위치에 놓일 수 없는 경우
-        if (!canMove(x, y, currentBlock)) {
-            return true;
-        }
+        // // 현재 블록이 스폰 위치에 놓일 수 없는 경우
+        // if (!canMove(x, y, currentBlock)) {
+        //     return true;
+        // }
 
-        // 2. 보드 상단(첫 번째 줄)에 블록이 쌓인 경우 확인
-        for (int col = 0; col < WIDTH; col++) {
-            if (board[0][col] == 1) {
-                return true;
-            }
-        }
-
-        // 3. 보드 상단 2줄에 블록이 너무 많이 쌓인 경우 (게임 오버 위험)
-        int topRowBlocks = 0;
-        for (int row = 0; row < 2; row++) {
-            for (int col = 0; col < WIDTH; col++) {
-                if (board[row][col] == 1) {
-                    topRowBlocks++;
-                }
-            }
-        }
-
-        // 상단 2줄에 너무 많은 블록이 있으면 게임 오버
-        if (topRowBlocks > WIDTH) { // 2줄 중 1줄 이상이 채워진 경우
-            return true;
-        }
+        // // 2. 현재 블록이 기본 스폰 위치(3, 0)나 그 위쪽에서 놓을 수 없는 경우
+        // if (!canMove(x, y, currentBlock)) {
+        //     // 추가 확인: 보드 상단에 블록이 쌓여있는지 확인
+        //     for (int row = 0; row < 3; row++) {
+        //         for (int col = 0; col < WIDTH; col++) {
+        //             if (board[row][col] == 1) {
+        //                 return true; // 상단에 블록이 있으면 게임 오버
+        //             }
+        //         }
+        //     }
+        //     return true;
+        // }
 
         return false;
     }
