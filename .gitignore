@@ -1,2 +1,3 @@
-.vscode/
-**/target/
+.vscode/monitoring.json
+target/
+build/
