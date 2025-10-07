@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Main",
+      "request": "launch",
+      "mainClass": "com.example/com.example.Main",
+      "projectName": "demo"
+    },
+    {
+      "name": "Run with Gradle",
+      "type": "java",
+      "request": "launch",
+      "mainClass": "",
+      "preLaunchTask": "gradle run"
+    }
+  ]
+}
