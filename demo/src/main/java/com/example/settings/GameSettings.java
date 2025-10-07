@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.prefs.Preferences;
 
+import com.example.theme.ColorScheme;
+
 public class GameSettings {
     private static GameSettings instance;
     private Preferences prefs;

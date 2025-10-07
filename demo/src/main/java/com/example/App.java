@@ -5,9 +5,10 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import com.example.GameOverScene;
 
 import java.util.List;
+
+import com.example.gameover.GameOverScene;
 
 import java.io.IOException;
 

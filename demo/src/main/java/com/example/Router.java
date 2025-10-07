@@ -1,7 +1,10 @@
 package com.example;
 
-import com.example.component.Board;
-import com.example.ui.SettingsDialog;
+import com.example.game.component.Board;
+import com.example.gameover.GameOverScene;
+import com.example.settings.SettingsDialog;
+import com.example.startmenu.StartMenuView;
+
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
