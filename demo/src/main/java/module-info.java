@@ -1,4 +1,5 @@
 module com.example {
+    requires java.prefs;
     requires javafx.controls;
     requires javafx.fxml;
 

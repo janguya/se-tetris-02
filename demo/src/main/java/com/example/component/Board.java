@@ -2,6 +2,7 @@ package com.example.component;
 
 import java.util.Map;
 
+import com.example.Router;
 import com.example.settings.GameSettings;
 import com.example.ui.SettingsDialog;
 
@@ -155,12 +156,11 @@ public class Board {
     // 설정 다이얼로그 표시
     private void showSettings() {
         isPaused = true;
+        // get current stage and size from root's scene
+        Stage stage = (Stage) root.getScene().getWindow();
         
-        SettingsDialog settingsDialog = new SettingsDialog(
-            (Stage) root.getScene().getWindow(),
-            this::onSettingsChanged
-        );
-        settingsDialog.show();
+        Router router = new Router(stage);
+        router.showSettings(this::onSettingsChanged);
     }
     
     // 설정 변경 후 콜백
