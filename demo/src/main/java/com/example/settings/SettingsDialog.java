@@ -17,21 +17,20 @@ import java.util.Map;
 import com.example.theme.ColorScheme;
 
 public class SettingsDialog {
-    private Stage dialog; // 다이얼로그 스테이지
-    private GameSettings settings; // 게임 설정 인스턴스
-    private ComboBox<ColorScheme> colorSchemeCombo; // 색상 스킴 콤보박스
-    private GridPane customColorGrid; // 커스텀 색상 그리드
-    private Map<String, ColorPicker> colorPickers; // 블록별 컬러 피커 맵
-    private Runnable onSettingsChanged; // 설정 변경 콜백
+    private Stage dialog;
+    private GameSettings settings;
+    private ComboBox<ColorScheme> colorSchemeCombo;
+    private ComboBox<WindowSize> windowSizeCombo; // 창 크기 콤보박스 추가
+    private GridPane customColorGrid;
+    private Map<String, ColorPicker> colorPickers;
+    private Runnable onSettingsChanged;
     
-    // 생성자
     public SettingsDialog(Stage parentStage, Runnable onSettingsChanged) {
         this.settings = GameSettings.getInstance();
         this.onSettingsChanged = onSettingsChanged;
         createDialog(parentStage);
     }
     
-    // 다이얼로그 생성
     private void createDialog(Stage parentStage) {
         dialog = new Stage();
         dialog.initModality(Modality.WINDOW_MODAL);
@@ -39,27 +38,62 @@ public class SettingsDialog {
         dialog.setTitle("Game Settings");
         dialog.setResizable(false);
         
-        // 메인 레이아웃
         VBox root = new VBox(20);
         root.setPadding(new Insets(20));
         root.getStyleClass().add("settings-dialog");
         
-        // 색상 스킴 섹션
+        // 창 크기 섹션 추가
+        VBox windowSizeSection = createWindowSizeSection();
+        
         VBox schemeSection = createColorSchemeSection();
-        
-        // 커스텀 색상 섹션
         VBox customSection = createCustomColorsSection();
-        
-        // 버튼 박스
         HBox buttonBox = createButtonBox();
         
-        // 레이아웃에 섹션 추가
-        root.getChildren().addAll(schemeSection, customSection, buttonBox);
+        root.getChildren().addAll(windowSizeSection, schemeSection, customSection, buttonBox);
         
-        // 씬 설정
-        Scene scene = new Scene(root, 400, 500);
+        Scene scene = new Scene(root, 400, 600);
         scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         dialog.setScene(scene);
+    }
+    
+    // 창 크기 섹션 생성
+    private VBox createWindowSizeSection() {
+        VBox section = new VBox(10);
+        
+        Label title = new Label("Window Size:");
+        title.getStyleClass().add("settings-section-title");
+        
+        windowSizeCombo = new ComboBox<>();
+        windowSizeCombo.getItems().addAll(WindowSize.values());
+        windowSizeCombo.setValue(settings.getCurrentWindowSize());
+        windowSizeCombo.getStyleClass().add("settings-combo");
+        
+        windowSizeCombo.setCellFactory(listView -> new ListCell<WindowSize>() {
+            @Override
+            protected void updateItem(WindowSize item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getDisplayName() + " (" + item.getWidth() + "x" + item.getHeight() + ")");
+                }
+            }
+        });
+        
+        windowSizeCombo.setButtonCell(new ListCell<WindowSize>() {
+            @Override
+            protected void updateItem(WindowSize item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getDisplayName() + " (" + item.getWidth() + "x" + item.getHeight() + ")");
+                }
+            }
+        });
+        
+        section.getChildren().addAll(title, windowSizeCombo);
+        return section;
     }
     
     // 색상 스킴 섹션 생성
@@ -171,6 +205,7 @@ public class SettingsDialog {
     
     // 기본값으로 리셋
     private void resetToDefault() {
+        windowSizeCombo.setValue(WindowSize.MEDIUM);
         colorSchemeCombo.setValue(ColorScheme.NORMAL);
         Map<String, Color> defaultColors = ColorScheme.NORMAL.getColorMap();
         for (Map.Entry<String, ColorPicker> entry : colorPickers.entrySet()) {
@@ -184,6 +219,12 @@ public class SettingsDialog {
     
     // 설정 적용
     private void applySettings() {
+        // 창 크기 설정 적용
+        WindowSize selectedSize = windowSizeCombo.getValue();
+        if (selectedSize != null) {
+            settings.setCurrentWindowSize(selectedSize);
+        }
+        
         ColorScheme selectedScheme = colorSchemeCombo.getValue();
         settings.setCurrentColorScheme(selectedScheme);
         

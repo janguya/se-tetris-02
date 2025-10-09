@@ -7,11 +7,34 @@ import java.util.prefs.Preferences;
 
 import com.example.theme.ColorScheme;
 
+// 화면 크기 열거형 추가
+enum WindowSize {
+    SMALL("작은 화면", 400, 520),
+    MEDIUM("중간 화면", 480, 640),
+    LARGE("큰 화면", 560, 720),
+    EXTRA_LARGE("매우 큰 화면", 640, 800);
+    
+    private final String displayName;
+    private final int width;
+    private final int height;
+    
+    WindowSize(String displayName, int width, int height) {
+        this.displayName = displayName;
+        this.width = width;
+        this.height = height;
+    }
+    
+    public String getDisplayName() { return displayName; }
+    public int getWidth() { return width; }
+    public int getHeight() { return height; }
+}
+
 public class GameSettings {
     private static GameSettings instance;
     private Preferences prefs;
     private ColorScheme currentColorScheme;
     private Map<String, Color> customColors;
+    private WindowSize currentWindowSize;
     
     private GameSettings() {
         prefs = Preferences.userNodeForPackage(GameSettings.class);
@@ -35,6 +58,14 @@ public class GameSettings {
             currentColorScheme = ColorScheme.NORMAL;
         }
         
+        // 창 크기 설정 불러오기
+        String windowSizeName = prefs.get("windowSize", WindowSize.MEDIUM.name());
+        try {
+            currentWindowSize = WindowSize.valueOf(windowSizeName);
+        } catch (IllegalArgumentException e) {
+            currentWindowSize = WindowSize.MEDIUM;
+        }
+        
         loadCustomColors();
     }
     
@@ -56,6 +87,7 @@ public class GameSettings {
     // 설정 저장
     public void saveSettings() {
         prefs.put("colorScheme", currentColorScheme.name());
+        prefs.put("windowSize", currentWindowSize.name());
         
         if (currentColorScheme == ColorScheme.CUSTOM) {
             for (Map.Entry<String, Color> entry : customColors.entrySet()) {
@@ -98,5 +130,23 @@ public class GameSettings {
     // 특정 블록 타입의 커스텀 색상 반환
     public Color getCustomColor(String blockType) {
         return customColors.getOrDefault(blockType, Color.WHITE);
+    }
+    
+    // 창 크기 관련 메소드 추가
+    public WindowSize getCurrentWindowSize() {
+        return currentWindowSize;
+    }
+    
+    public void setCurrentWindowSize(WindowSize windowSize) {
+        this.currentWindowSize = windowSize;
+        saveSettings();
+    }
+    
+    public int getWindowWidth() {
+        return currentWindowSize.getWidth();
+    }
+    
+    public int getWindowHeight() {
+        return currentWindowSize.getHeight();
     }
 }
