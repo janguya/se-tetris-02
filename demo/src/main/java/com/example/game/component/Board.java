@@ -5,6 +5,7 @@ import java.util.Map;
 import com.example.Router;
 import com.example.settings.GameSettings;
 import com.example.settings.SettingsDialog;
+import com.example.game.blocks.Block;
 
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
@@ -251,7 +252,7 @@ public class Board {
     // 현재 떨어지는 블록 그리기
     private void drawCurrentBlock(Map<String, Color> colorMap) {
         // 현재 블록 정보 가져오기
-        var currentBlock = gameLogic.getCurrentBlock();
+        Block currentBlock = gameLogic.getCurrentBlock();
         if (currentBlock == null) return;
         
         // 블록 색상 결정

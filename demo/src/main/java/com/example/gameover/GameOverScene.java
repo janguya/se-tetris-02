@@ -71,7 +71,8 @@ public class GameOverScene {
 
         @Override
         public boolean equals(Object obj) {
-            if (obj instanceof ScoreEntry other) {
+            if (obj instanceof ScoreEntry) {
+                ScoreEntry other = (ScoreEntry) obj;
                 return name.equals(other.name) && score == other.score;
             }
             return false;
