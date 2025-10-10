@@ -29,6 +29,7 @@ public class Board {
     private long lastUpdate = 0; // 블록 마지막 업데이트 시간
     private long dropInterval = 1_000_000_000L; // 1초
     private boolean isPaused = false; // 게임 일시정지 상태
+    private boolean isGameOver = false; // 게임 오버 상태
     
     public Board() {
         // 컴포넌츠 초기화
@@ -67,8 +68,7 @@ public class Board {
     private void setupKeyHandling() {
         root.setFocusTraversable(true);
         root.setOnKeyPressed(event -> {
-            if (isPaused) return;
-            if (gameLogic.isGameOver()) return;
+            if (isPaused || isGameOver) return;
             
             KeyCode code = event.getCode();
             switch (code) {
@@ -106,8 +106,7 @@ public class Board {
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                if (isPaused) return;
-                if (gameLogic.isGameOver()) return;
+                if (isPaused || isGameOver) return;
                 
                 // 일정 시간마다 블록 자동 하강
                 if (now - lastUpdate >= getAdjustedDropInterval()) {
@@ -119,6 +118,7 @@ public class Board {
                 }
             }
         };
+        lastUpdate = System.nanoTime();
         gameLoop.start();
     }
     
@@ -129,18 +129,32 @@ public class Board {
         if(moved) {
             // 블록이 성공적으로 아래로 이동했을 때 점수 증가
             scorePanel.addScore(1);
-            return;
         }
         else {
+
             // 라인 제거 및 점수 계산
             int linesCleared = gameLogic.clearLines();
             if (linesCleared > 0) {
                 scorePanel.calculateLineScore(linesCleared);
             }
             
+             // 블록이 맨 위에 닿았는지 확인
+            if (gameLogic.isBlockAtTop()) {
+
+                if (!isGameOver) {
+                    isGameOver = true;
+                    gameOver();
+                }
+                return;
+            }
+
             // 게임 오버 체크
-            if (gameLogic.isGameOver()) {
-                gameOver();
+            boolean spawned = gameLogic.spawnNextPiece();
+            if (!spawned) {
+                if(!isGameOver) {
+                    isGameOver = true;
+                    gameOver();
+                }
             }
         }
     }
@@ -176,13 +190,12 @@ public class Board {
     
     // 게임 오버 처리
     private void gameOver() {
-        gameLoop.stop();
-        // 화면에 점수 표시
-        gc.setFill(Color.color(0, 0, 0, 0.7));
-        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        gc.setFill(Color.WHITE);
-        gc.fillText("GAME OVER", canvas.getWidth() / 2 - 40, canvas.getHeight() / 2);
-        gc.fillText("Final Score: " + scorePanel.getScore(), canvas.getWidth() / 2 - 50, canvas.getHeight() / 2 + 30);
+        if (gameLoop != null) gameLoop.stop();
+
+        // 현재 Stage 구해와서 GameOverScene 호출
+        Stage stage = (Stage) root.getScene().getWindow();
+        com.example.gameover.GameOverScene.show(stage, scorePanel.getScore());
+
     }
     
     // 보드 그리기
@@ -202,18 +215,18 @@ public class Board {
         scorePanel.updateNextBlock(gameLogic.getNextBlock());
 
 
-        // 게임 종료 체크
-        if (gameLogic.isGameOver()) {
+        // 게임 종료 체크 (게임 오버는 씬 전환으로 처리하니, 주석처리 할게요)
+        /*if (gameLogic.isGameOver()) {
             drawGameOverOverlay();
-        }
+        }*/
 
         // 일시정지 오버레이
         if (isPaused) {
             drawPauseOverlay();
         }
-        if (!isPaused && !gameLogic.isGameOver() && (gameLoop != null)) {
+        /*if (!isPaused && !gameLogic.isGameOver() && (gameLoop != null)) {
             gameLoop.start();
-        }
+        }*/
     }
     
     // 그리드 그리기
@@ -295,7 +308,7 @@ public class Board {
         gc.fillRect(x + CELL_SIZE - 5, y + 2, 3, CELL_SIZE - 4);
     }
     
-    // 게임 종료: 오버레이 그리기
+    /*게임 종료: 오버레이 그리기 (씬 전환으로 대체)
     private void drawGameOverOverlay() {
         // 반투명 오버레이
         gc.setFill(Color.color(0, 0, 0, 0.7));
@@ -305,7 +318,7 @@ public class Board {
         gc.setFill(Color.WHITE);
         gc.fillText("GAME OVER", canvas.getWidth() / 2 - 40, canvas.getHeight() / 2);
         gc.fillText("Final Score: " + scorePanel.getScore(), canvas.getWidth() / 2 - 50, canvas.getHeight() / 2 + 30);
-    }
+    }*/
 
     // 일시정지 오버레이 그리기
     private void drawPauseOverlay() {
@@ -328,6 +341,7 @@ public class Board {
         gameLogic.resetGame();
         scorePanel.resetScore();
         isPaused = false;
+        isGameOver = false;
         if (gameLoop != null) {
             gameLoop.stop();
         }
