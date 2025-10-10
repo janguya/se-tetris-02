@@ -4,7 +4,7 @@ import java.util.Map;
 
 import com.example.Router;
 import com.example.settings.GameSettings;
-import com.example.settings.SettingsDialog;
+import com.example.game.component.MenuOverlay.MenuCallback;
 
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
@@ -12,29 +12,33 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 public class Board {
     public static final int CELL_SIZE = 25;
     
-    private BorderPane root; // 메인 레이아웃
-    private Canvas canvas; // 게임 보드용 캔버스
-    private GraphicsContext gc; // 그래픽 컨텍스트
-    private GameLogic gameLogic; // 게임 로직 인스턴스
-    private ScorePanel scorePanel; // 점수판 컴포넌트
-    private GameSettings gameSettings; // 게임 설정 인스턴스
+    private StackPane mainContainer; // 메인 컨테이너 (오버레이 포함)
+    private BorderPane root; // 게임 보드 레이아웃
+    private Canvas canvas;
+    private GraphicsContext gc;
+    private GameLogic gameLogic;
+    private ScorePanel scorePanel;
+    private GameSettings gameSettings;
+    private MenuOverlay menuOverlay; // 메뉴 오버레이 추가
     
-    private AnimationTimer gameLoop; // 게임 루프 타이머
-    private long lastUpdate = 0; // 블록 마지막 업데이트 시간
-    private long dropInterval = 1_000_000_000L; // 1초
-    private boolean isPaused = false; // 게임 일시정지 상태
+    private AnimationTimer gameLoop;
+    private long lastUpdate = 0;
+    private final long baseDropInterval = 1_000_000_000L; // 1초 (기본 속도)
+    private boolean isPaused = false;
     
     public Board() {
         // 컴포넌츠 초기화
         gameSettings = GameSettings.getInstance();
         gameLogic = new GameLogic();
         scorePanel = new ScorePanel();
+        menuOverlay = new MenuOverlay(); // 오버레이 초기화
         
         // UI 초기화
         initializeUI();
@@ -48,7 +52,10 @@ public class Board {
     
     // UI 초기화
     private void initializeUI() {
-        // 메인 레이아웃 설정
+        // 메인 컨테이너 생성 (오버레이를 위한 StackPane)
+        mainContainer = new StackPane();
+        
+        // 게임 보드 레이아웃
         root = new BorderPane();
         root.getStyleClass().add("game-root");
         
@@ -61,14 +68,19 @@ public class Board {
         root.setCenter(canvas);
         root.setRight(scorePanel.getPanel());
         root.setPadding(new Insets(20));
+        
+        // 메인 컨테이너에 게임 보드와 오버레이 추가
+        mainContainer.getChildren().addAll(root, menuOverlay.getOverlay());
     }
     
-    // 키 입력 처리 설정
     private void setupKeyHandling() {
-        root.setFocusTraversable(true);
-        root.setOnKeyPressed(event -> {
-            if (isPaused) return;
-            if (gameLogic.isGameOver()) return;
+        mainContainer.setFocusTraversable(true);
+        mainContainer.setOnKeyPressed(event -> {
+            // 메뉴가 열려있으면 게임 입력 무시
+            if (menuOverlay.isVisible()) return;
+            
+            if (isPaused && event.getCode() != KeyCode.ESCAPE) return;
+            if (gameLogic.isGameOver() && event.getCode() != KeyCode.ESCAPE) return;
             
             KeyCode code = event.getCode();
             switch (code) {
@@ -89,39 +101,196 @@ public class Board {
                     gameLogic.rotateBlock();
                     break;
                 case ESCAPE:
-                // 설정 다이얼로그 표시
-                    showSettings();
+                    handleEscapeKey();
                     break;
                 case SPACE:
-                // 일시정지 토글
-                    togglePause();
+                    if (!isPaused && !gameLogic.isGameOver()) {
+                        hardDrop();
+                    }
                     break;
             }
-            drawBoard();
+            
+            if (!menuOverlay.isVisible()) {
+                drawBoard();
+            }
         });
     }
     
-    // 게임 루프 시작
+    // ESC 키 처리
+    private void handleEscapeKey() {
+        if (gameLogic.isGameOver()) {
+            showGameOverMenu();
+        } else if (isPaused || menuOverlay.isVisible()) {
+            resumeGame();
+        } else {
+            pauseGame();
+        }
+    }
+    
+    // 게임 일시정지 및 메뉴 표시
+    private void pauseGame() {
+        isPaused = true;
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        
+        menuOverlay.showPauseMenu(new MenuCallback() {
+            @Override
+            public void onResume() {
+                resumeGame();
+            }
+            
+            @Override
+            public void onRestart() {
+                restartGame();
+            }
+            
+            @Override
+            public void onSettings() {
+                showSettingsMenu();
+            }
+            
+            @Override
+            public void onMainMenu() {
+                goToMainMenu();
+            }
+            
+            @Override
+            public void onExit() {
+                exitGame();
+            }
+        });
+    }
+    
+    // 게임 재개
+    private void resumeGame() {
+        isPaused = false;
+        menuOverlay.hide();
+        if (!gameLogic.isGameOver()) {
+            startGameLoop();
+        }
+        mainContainer.requestFocus();
+    }
+    
+    // 게임 오버 메뉴 표시
+    private void showGameOverMenu() {
+        menuOverlay.showGameOverMenu(new MenuCallback() {
+            @Override
+            public void onResume() {
+                // 게임 오버에서는 재개 불가
+            }
+            
+            @Override
+            public void onRestart() {
+                restartGame();
+            }
+            
+            @Override
+            public void onSettings() {
+                showSettingsMenu();
+            }
+            
+            @Override
+            public void onMainMenu() {
+                goToMainMenu();
+            }
+            
+            @Override
+            public void onExit() {
+                exitGame();
+            }
+        }, scorePanel.getScore());
+    }
+    
+    // 설정 메뉴 표시
+    private void showSettingsMenu() {
+        menuOverlay.showSettingsMenu(new MenuCallback() {
+            @Override
+            public void onResume() {
+                if (gameLogic.isGameOver()) {
+                    showGameOverMenu();
+                } else {
+                    resumeGame();
+                }
+            }
+            
+            @Override
+            public void onRestart() {
+                restartGame();
+            }
+            
+            @Override
+            public void onSettings() {
+                // 이미 설정 메뉴에 있음
+            }
+            
+            @Override
+            public void onMainMenu() {
+                goToMainMenu();
+            }
+            
+            @Override
+            public void onExit() {
+                exitGame();
+            }
+        });
+    }
+    
+    // 메인 메뉴로 이동
+    private void goToMainMenu() {
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        
+        Stage stage = (Stage) mainContainer.getScene().getWindow();
+        Router router = new Router(stage);
+        router.showStartMenu();
+    }
+    
+    // 게임 종료
+    private void exitGame() {
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        
+        Stage stage = (Stage) mainContainer.getScene().getWindow();
+        stage.close();
+    }
+    
     private void startGameLoop() {
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        
         gameLoop = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                if (isPaused) return;
-                if (gameLogic.isGameOver()) return;
+                if (isPaused || menuOverlay.isVisible()) return;
                 
-                // 일정 시간마다 블록 자동 하강
-                if (now - lastUpdate >= getAdjustedDropInterval()) {
-                    // 블록 자동 하강 처리
+                // 동적으로 계산된 드롭 간격 사용
+                long currentDropInterval = gameLogic.getDropInterval(baseDropInterval);
+                
+                if (now - lastUpdate >= currentDropInterval) {
                     handleMoveDown();
                     // 보드 다시 그리기
                     drawBoard();
                     lastUpdate = now;
+                    
+                    // 속도 정보 업데이트
+                    updateSpeedDisplay();
                 }
             }
         };
         gameLoop.start();
     }
-    
+
+    // 속도 표시 업데이트
+    private void updateSpeedDisplay() {
+        double speedMultiplier = gameLogic.getSpeedMultiplier();
+        int speedLevel = gameLogic.getSpeedLevel();
+        scorePanel.updateSpeed(speedMultiplier, speedLevel);
+    }
+
     // 블록 아래로 이동 처리
     private void handleMoveDown() {
         boolean moved = gameLogic.moveDown();
@@ -131,6 +300,8 @@ public class Board {
             int linesCleared = gameLogic.clearLines();
             if (linesCleared > 0) {
                 scorePanel.calculateLineScore(linesCleared);
+                // 속도가 변경되었을 수 있으므로 업데이트
+                updateSpeedDisplay();
             }
             
             // 게임 오버 체크
@@ -140,44 +311,14 @@ public class Board {
         }
     }
     
-    // 레벨에 따른 떨어지는 속도 조정
-    private long getAdjustedDropInterval() {
-        // 레벨이 올라갈수록 떨어지는 속도 빨라짐
-        int level = scorePanel.getLevel();
-        // 최소 속도 제한
-        return Math.max(100_000_000L, dropInterval - (level - 1) * 100_000_000L);
-    }
-    
-    // 일시정지 토글
-    private void togglePause() {
-        isPaused = !isPaused;
-    }
-    
-    // 설정 다이얼로그 표시
-    private void showSettings() {
-        isPaused = true;
-        // get current stage and size from root's scene
-        Stage stage = (Stage) root.getScene().getWindow();
-
-        Router router = new Router(stage);
-        router.showSettings(this::onSettingsChanged);
-    }
-    
-    // 설정 변경 후 콜백
-    private void onSettingsChanged() {
-        isPaused = false;
-        drawBoard();
-    }
-    
-    // 게임 오버 처리
     private void gameOver() {
-        gameLoop.stop();
-        // 화면에 점수 표시
-        gc.setFill(Color.color(0, 0, 0, 0.7));
-        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        gc.setFill(Color.WHITE);
-        gc.fillText("GAME OVER", canvas.getWidth() / 2 - 40, canvas.getHeight() / 2);
-        gc.fillText("Final Score: " + scorePanel.getScore(), canvas.getWidth() / 2 - 50, canvas.getHeight() / 2 + 30);
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        isPaused = true;
+        
+        // 자동으로 게임 오버 메뉴 표시
+        showGameOverMenu();
     }
     
     // 보드 그리기
@@ -188,27 +329,11 @@ public class Board {
         gc.setFill(Color.web("#1a1a2e"));
         gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
         
-        // 그리드 및 블록 그리기
         drawGrid();
         drawPlacedBlocks(currentColors);
         drawCurrentBlock(currentColors);
 
-        // 스코어 패널의 다음 블록 업데이트
         scorePanel.updateNextBlock(gameLogic.getNextBlock());
-
-
-        // 게임 종료 체크
-        if (gameLogic.isGameOver()) {
-            drawGameOverOverlay();
-        }
-
-        // 일시정지 오버레이
-        if (isPaused) {
-            drawPauseOverlay();
-        }
-        if (!isPaused && !gameLogic.isGameOver() && (gameLoop != null)) {
-            gameLoop.start();
-        }
     }
     
     // 그리드 그리기
@@ -290,43 +415,37 @@ public class Board {
         gc.fillRect(x + CELL_SIZE - 5, y + 2, 3, CELL_SIZE - 4);
     }
     
-    // 게임 종료: 오버레이 그리기
-    private void drawGameOverOverlay() {
-        // 반투명 오버레이
-        gc.setFill(Color.color(0, 0, 0, 0.7));
-        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        
-        // 게임 종료 텍스트
-        gc.setFill(Color.WHITE);
-        gc.fillText("GAME OVER", canvas.getWidth() / 2 - 40, canvas.getHeight() / 2);
-        gc.fillText("Final Score: " + scorePanel.getScore(), canvas.getWidth() / 2 - 50, canvas.getHeight() / 2 + 30);
-    }
-
-    // 일시정지 오버레이 그리기
-    private void drawPauseOverlay() {
-        // 반투명 오버레이
-        gc.setFill(Color.color(0, 0, 0, 0.7));
-        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
-        
-        // 일시정지 텍스트
-        gc.setFill(Color.WHITE);
-        gc.fillText("PAUSED", canvas.getWidth() / 2 - 30, canvas.getHeight() / 2);
-    }
-    
-    // 메인 레이아웃 반환
-    public BorderPane getRoot() {
-        return root;
+    // 메인 컨테이너 반환 (오버레이 포함)
+    public StackPane getRoot() {
+        return mainContainer;
     }
     
     // 게임 재시작
     public void restartGame() {
-        gameLogic.resetGame();
-        scorePanel.resetScore();
-        isPaused = false;
         if (gameLoop != null) {
             gameLoop.stop();
         }
+        
+        gameLogic.resetGame();
+        scorePanel.resetScore();
+        isPaused = false;
+        menuOverlay.hide();
+        
         startGameLoop();
         drawBoard();
+        mainContainer.requestFocus();
+    }
+
+    // 하드 드롭 (블록을 즉시 바닥까지 떨어뜨리기)
+    private void hardDrop() {
+        while (gameLogic.moveDown()) {
+            // 더 이상 내려갈 수 없을 때까지 반복
+        }
+        
+        int linesCleared = gameLogic.clearLines();
+        if (linesCleared > 0) {
+            scorePanel.calculateLineScore(linesCleared);
+            updateSpeedDisplay();
+        }
     }
 }

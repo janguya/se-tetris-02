@@ -28,6 +28,8 @@ public class ScorePanel {
     private int level = 1; // 현재 레벨
     private int linesCleared = 0; // 삭제된 라인 수
 
+    private Text speedText; // 속도 표시 추가
+
     public ScorePanel() {
         initializePanel();
     }
@@ -49,7 +51,7 @@ public class ScorePanel {
         // 타이틀
         Text titleText = new Text("TETRIS");
         titleText.getStyleClass().add("title-text");
-        
+
         // 다음 블록 부분
         Text nextBlockTitle = new Text("Next Block:");
         nextBlockTitle.getStyleClass().add("next-block-title");
@@ -74,21 +76,26 @@ public class ScorePanel {
         linesText = new Text("Lines: 0");
         linesText.getStyleClass().add("lines-text");
 
+        // 속도 부분 (새로 추가)
+        speedText = new Text("Speed: x1.0");
+        speedText.getStyleClass().add("speed-text");
+
         // 컨트롤 설명 부분
         Text controlsTitle = new Text("Controls:");
         controlsTitle.getStyleClass().add("controls-title");
         
-        Text controls = new Text("↑ Rotate\n← → Move\n↓ Drop\nESC Settings");
+        Text controls = new Text("↑ Rotate\n← → Move\n↓ Drop\nSPACE Pause\nESC Settings");
         controls.getStyleClass().add("controls-text");
         
         // 패널에 모든 요소 추가
         panel.getChildren().addAll(
             titleText, 
-            nextBlockTitle,
-            nextBlockCanvas, 
+            nextBlockTitle, 
+            nextBlockCanvas,
             scoreText, 
             levelText, 
-            linesText, 
+            linesText,
+            speedText, // 속도 표시 추가
             controlsTitle, 
             controls
         );
@@ -241,5 +248,10 @@ public class ScorePanel {
         // 레벨에 따른 점수 배율 적용
         addScore(baseScore * level);
         addLines(linesCount);
+    }
+
+    // 속도 업데이트 메서드 추가
+    public void updateSpeed(double speedMultiplier, int speedLevel) {
+        speedText.setText("Speed: x" + String.format("%.1f", 1.0 / speedMultiplier));
     }
 }
