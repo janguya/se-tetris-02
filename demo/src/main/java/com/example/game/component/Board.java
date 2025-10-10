@@ -3,9 +3,8 @@ package com.example.game.component;
 import java.util.Map;
 
 import com.example.Router;
-import com.example.settings.GameSettings;
-import com.example.settings.SettingsDialog;
 import com.example.game.blocks.Block;
+import com.example.settings.GameSettings;
 
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
@@ -126,8 +125,13 @@ public class Board {
     // 블록 아래로 이동 처리
     private void handleMoveDown() {
         boolean moved = gameLogic.moveDown();
-        
-        if (!moved) {
+
+        if(moved) {
+            // 블록이 성공적으로 아래로 이동했을 때 점수 증가
+            scorePanel.addScore(1);
+            return;
+        }
+        else {
             // 라인 제거 및 점수 계산
             int linesCleared = gameLogic.clearLines();
             if (linesCleared > 0) {
