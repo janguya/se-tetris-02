@@ -128,6 +128,27 @@
     -fx-background-color: derive(-fx-background-color, 20%);
 }
 
+.settings-key-button {
+    -fx-background-color: #16213e;
+    -fx-text-fill: white;
+    -fx-border-color: #3bb78f;
+    -fx-border-radius: 3;
+    -fx-padding: 5 10;
+    -fx-font-family: "Courier New";
+    -fx-font-size: 11px;
+    -fx-min-width: 80px;
+    -fx-pref-width: 100px;
+}
+
+.settings-key-button:hover {
+    -fx-background-color: derive(-fx-background-color, 15%);
+}
+
+.settings-key-button:focused {
+    -fx-border-color: #0abab5;
+    -fx-border-width: 2;
+}
+
 .next-block-canvas {
     -fx-background-color: #0f1419;
     -fx-border-color: #16213e;

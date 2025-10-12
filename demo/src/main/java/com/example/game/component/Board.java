@@ -72,31 +72,26 @@ public class Board {
             if (gameLogic.isGameOver()) return;
             
             KeyCode code = event.getCode();
-            switch (code) {
-                case LEFT:
+            
+            // 커스텀 키 바인딩 사용
+            if (code == gameSettings.getKeyBinding("MOVE_LEFT")) {
                 // 왼쪽 이동
-                    gameLogic.moveLeft();
-                    break;
-                case RIGHT:
+                gameLogic.moveLeft();
+            } else if (code == gameSettings.getKeyBinding("MOVE_RIGHT")) {
                 // 오른쪽 이동
-                    gameLogic.moveRight();
-                    break;
-                case DOWN:
+                gameLogic.moveRight();
+            } else if (code == gameSettings.getKeyBinding("MOVE_DOWN")) {
                 // 아래로 이동
-                    handleMoveDown();
-                    break;
-                case UP:
+                handleMoveDown();
+            } else if (code == gameSettings.getKeyBinding("ROTATE")) {
                 // 회전
-                    gameLogic.rotateBlock();
-                    break;
-                case ESCAPE:
+                gameLogic.rotateBlock();
+            } else if (code == gameSettings.getKeyBinding("SETTINGS")) {
                 // 설정 다이얼로그 표시
-                    showSettings();
-                    break;
-                case SPACE:
+                showSettings();
+            } else if (code == gameSettings.getKeyBinding("PAUSE")) {
                 // 일시정지 토글
-                    togglePause();
-                    break;
+                togglePause();
             }
             drawBoard();
         });
