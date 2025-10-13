@@ -73,6 +73,14 @@ public class SettingsDialog {
         windowSizeCombo.setValue(settings.getCurrentWindowSize());
         windowSizeCombo.getStyleClass().add("settings-combo");
         
+        // 창 크기 변경 시 즉시 적용 (실시간 미리보기)
+        windowSizeCombo.setOnAction(e -> {
+            WindowSize selectedSize = windowSizeCombo.getValue();
+            if (selectedSize != null) {
+                settings.setCurrentWindowSize(selectedSize);
+            }
+        });
+        
         windowSizeCombo.setCellFactory(listView -> new ListCell<WindowSize>() {
             @Override
             protected void updateItem(WindowSize item, boolean empty) {
@@ -266,12 +274,6 @@ public class SettingsDialog {
     
     // 설정 적용
     private void applySettings() {
-        // 창 크기 설정 적용
-        WindowSize selectedSize = windowSizeCombo.getValue();
-        if (selectedSize != null) {
-            settings.setCurrentWindowSize(selectedSize);
-        }
-        
         ColorScheme selectedScheme = colorSchemeCombo.getValue();
         settings.setCurrentColorScheme(selectedScheme);
         

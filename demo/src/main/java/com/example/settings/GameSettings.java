@@ -4,6 +4,8 @@ import javafx.scene.paint.Color;
 import javafx.scene.input.KeyCode;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.prefs.Preferences;
 
 import com.example.theme.ColorScheme;
@@ -37,9 +39,11 @@ public class GameSettings {
     private Map<String, Color> customColors;
     private WindowSize currentWindowSize;
     private Map<String, KeyCode> keyBindings;
+    private List<Runnable> windowSizeChangeListeners;
     
     private GameSettings() {
         prefs = Preferences.userNodeForPackage(GameSettings.class);
+        windowSizeChangeListeners = new ArrayList<>();
         loadSettings();
     }
     
@@ -163,6 +167,8 @@ public class GameSettings {
     public void setCurrentWindowSize(WindowSize windowSize) {
         this.currentWindowSize = windowSize;
         saveSettings();
+        // 모든 리스너들에게 창 크기 변경 알림
+        notifyWindowSizeChangeListeners();
     }
     
     public int getWindowWidth() {
@@ -195,5 +201,26 @@ public class GameSettings {
         keyBindings.put("PAUSE", KeyCode.SPACE);
         keyBindings.put("SETTINGS", KeyCode.ESCAPE);
         saveSettings();
+    }
+    
+    // 창 크기 변경 리스너 관리
+    public void addWindowSizeChangeListener(Runnable listener) {
+        if (!windowSizeChangeListeners.contains(listener)) {
+            windowSizeChangeListeners.add(listener);
+        }
+    }
+    
+    public void removeWindowSizeChangeListener(Runnable listener) {
+        windowSizeChangeListeners.remove(listener);
+    }
+    
+    private void notifyWindowSizeChangeListeners() {
+        for (Runnable listener : windowSizeChangeListeners) {
+            try {
+                listener.run();
+            } catch (Exception e) {
+                System.err.println("Error in window size change listener: " + e.getMessage());
+            }
+        }
     }
 }
