@@ -4,6 +4,7 @@ import java.util.Map;
 
 import com.example.Router;
 import com.example.settings.GameSettings;
+import com.example.game.blocks.Block;
 import com.example.game.component.MenuOverlay.MenuCallback;
 
 import javafx.animation.AnimationTimer;
@@ -17,7 +18,10 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 public class Board {
-    public static final int CELL_SIZE = 25;
+    // 동적 셀 크기 (화면 크기에 따라 조정됨)
+    private int cellSize;
+    private int boardWidth;
+    private int boardHeight;
     
     private StackPane mainContainer; // 메인 컨테이너 (오버레이 포함)
     private BorderPane root; // 게임 보드 레이아웃
@@ -40,6 +44,9 @@ public class Board {
         scorePanel = new ScorePanel();
         menuOverlay = new MenuOverlay(); // 오버레이 초기화
         
+        // 동적 크기 계산
+        calculateDynamicSizes();
+        
         // UI 초기화
         initializeUI();
         // 키 입력 처리 설정
@@ -48,6 +55,44 @@ public class Board {
         startGameLoop();
         // 초기 보드 그리기
         drawBoard();
+        
+        // 화면 크기 변경 리스너 등록
+        gameSettings.addWindowSizeChangeListener(this::onWindowSizeChanged);
+    }
+    
+    // 동적 크기 계산
+    private void calculateDynamicSizes() {
+        int windowWidth = gameSettings.getWindowWidth();
+        int windowHeight = gameSettings.getWindowHeight();
+        
+        // 점수판과 패딩을 고려한 게임 보드 영역 계산
+        int availableWidth = windowWidth - 200; // 점수판 및 패딩 고려
+        int availableHeight = windowHeight - 80; // 상하 패딩 고려
+        
+        // 가로/세로 비율에 맞춰 셀 크기 계산 (더 제한적인 쪽에 맞춤)
+        int cellByWidth = availableWidth / GameLogic.WIDTH;
+        int cellByHeight = availableHeight / GameLogic.HEIGHT;
+        
+        // 최소 15, 최대 40의 셀 크기 제한
+        cellSize = Math.max(15, Math.min(40, Math.min(cellByWidth, cellByHeight)));
+        
+        boardWidth = GameLogic.WIDTH * cellSize;
+        boardHeight = GameLogic.HEIGHT * cellSize;
+    }
+    
+    // 화면 크기 변경 콜백
+    private void onWindowSizeChanged() {
+        calculateDynamicSizes();
+        updateCanvasSize();
+        drawBoard();
+    }
+    
+    // 캔버스 크기 업데이트
+    private void updateCanvasSize() {
+        if (canvas != null) {
+            canvas.setWidth(boardWidth);
+            canvas.setHeight(boardHeight);
+        }
     }
     
     // UI 초기화
@@ -61,7 +106,7 @@ public class Board {
         
         // 점수판 설정
         scorePanel.getPanel().getStyleClass().add("side-panel");
-        canvas = new Canvas(GameLogic.WIDTH * CELL_SIZE, GameLogic.HEIGHT * CELL_SIZE);
+        canvas = new Canvas(boardWidth, boardHeight);
         gc = canvas.getGraphicsContext2D();
 
         // 레이아웃 설정
@@ -83,31 +128,26 @@ public class Board {
             if (gameLogic.isGameOver() && event.getCode() != KeyCode.ESCAPE) return;
             
             KeyCode code = event.getCode();
-            switch (code) {
-                case LEFT:
+            
+            // 커스텀 키 바인딩 사용
+            if (code == gameSettings.getKeyBinding("MOVE_LEFT")) {
                 // 왼쪽 이동
-                    gameLogic.moveLeft();
-                    break;
-                case RIGHT:
+                gameLogic.moveLeft();
+            } else if (code == gameSettings.getKeyBinding("MOVE_RIGHT")) {
                 // 오른쪽 이동
-                    gameLogic.moveRight();
-                    break;
-                case DOWN:
+                gameLogic.moveRight();
+            } else if (code == gameSettings.getKeyBinding("MOVE_DOWN")) {
                 // 아래로 이동
-                    handleMoveDown();
-                    break;
-                case UP:
+                handleMoveDown();
+            } else if (code == gameSettings.getKeyBinding("ROTATE")) {
                 // 회전
-                    gameLogic.rotateBlock();
-                    break;
-                case ESCAPE:
-                    handleEscapeKey();
-                    break;
-                case SPACE:
-                    if (!isPaused && !gameLogic.isGameOver()) {
-                        hardDrop();
-                    }
-                    break;
+                gameLogic.rotateBlock();
+            } else if (code == gameSettings.getKeyBinding("SETTINGS")) {
+                // 설정 다이얼로그 표시
+                showSettings();
+            } else if (code == gameSettings.getKeyBinding("PAUSE")) {
+                // 일시정지 토글
+                togglePause();
             }
             
             if (!menuOverlay.isVisible()) {
@@ -343,12 +383,12 @@ public class Board {
         
         // 세로 선
         for (int i = 0; i <= GameLogic.WIDTH; i++) {
-            gc.strokeLine(i * CELL_SIZE, 0, i * CELL_SIZE, GameLogic.HEIGHT * CELL_SIZE);
+            gc.strokeLine(i * cellSize, 0, i * cellSize, GameLogic.HEIGHT * cellSize);
         }
 
         // 가로 선
         for (int i = 0; i <= GameLogic.HEIGHT; i++) {
-            gc.strokeLine(0, i * CELL_SIZE, GameLogic.WIDTH * CELL_SIZE, i * CELL_SIZE);
+            gc.strokeLine(0, i * cellSize, GameLogic.WIDTH * cellSize, i * cellSize);
         }
     }
     
@@ -367,7 +407,7 @@ public class Board {
                     // cssClass에 해당하는 색상을 가져오고, 없으면 기본 색상 사용
                     Color blockColor = colorMap.getOrDefault(cssClass, colorMap.get("block-default"));
                     // 셀 그리기
-                    drawCell(col * CELL_SIZE, row * CELL_SIZE, blockColor);
+                    drawCell(col * cellSize, row * cellSize, blockColor);
                 }
             }
         }
@@ -376,7 +416,7 @@ public class Board {
     // 현재 떨어지는 블록 그리기
     private void drawCurrentBlock(Map<String, Color> colorMap) {
         // 현재 블록 정보 가져오기
-        var currentBlock = gameLogic.getCurrentBlock();
+        Block currentBlock = gameLogic.getCurrentBlock();
         if (currentBlock == null) return;
         
         // 블록 색상 결정
@@ -389,8 +429,8 @@ public class Board {
             for (int j = 0; j < currentBlock.height(); j++) {
                 if (currentBlock.getShape(i, j) == 1) {
                     // 셀 위치 계산
-                    int drawX = (currentX + i) * CELL_SIZE;
-                    int drawY = (currentY + j) * CELL_SIZE;
+                    int drawX = (currentX + i) * cellSize;
+                    int drawY = (currentY + j) * cellSize;
                     // 셀 그리기
                     drawCell(drawX, drawY, blockColor);
                 }
@@ -402,17 +442,17 @@ public class Board {
     private void drawCell(double x, double y, Color color) {
         // 메인 셀
         gc.setFill(color);
-        gc.fillRect(x + 1, y + 1, CELL_SIZE - 2, CELL_SIZE - 2);
+        gc.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
         
         // 하이라이트 효과
         gc.setFill(color.brighter());
-        gc.fillRect(x + 2, y + 2, CELL_SIZE - 4, 3);
-        gc.fillRect(x + 2, y + 2, 3, CELL_SIZE - 4);
+        gc.fillRect(x + 2, y + 2, cellSize - 4, 3);
+        gc.fillRect(x + 2, y + 2, 3, cellSize - 4);
 
         // 그림자 효과
         gc.setFill(color.darker());
-        gc.fillRect(x + 2, y + CELL_SIZE - 5, CELL_SIZE - 4, 3);
-        gc.fillRect(x + CELL_SIZE - 5, y + 2, 3, CELL_SIZE - 4);
+        gc.fillRect(x + 2, y + cellSize - 5, cellSize - 4, 3);
+        gc.fillRect(x + cellSize - 5, y + 2, 3, cellSize - 4);
     }
     
     // 메인 컨테이너 반환 (오버레이 포함)
@@ -447,5 +487,14 @@ public class Board {
             scorePanel.calculateLineScore(linesCleared);
             updateSpeedDisplay();
         }
+    }
+    
+    // 리소스 정리 (게임이 종료될 때 호출)
+    public void cleanup() {
+        if (gameLoop != null) {
+            gameLoop.stop();
+        }
+        gameSettings.removeWindowSizeChangeListener(this::onWindowSizeChanged);
+        scorePanel.cleanup();
     }
 }
