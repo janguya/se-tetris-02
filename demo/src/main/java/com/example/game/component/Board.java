@@ -144,10 +144,14 @@ public class Board {
                 gameLogic.rotateBlock();
             } else if (code == gameSettings.getKeyBinding("SETTINGS")) {
                 // 설정 다이얼로그 표시
-                showSettings();
+                handleEscapeKey();
             } else if (code == gameSettings.getKeyBinding("PAUSE")) {
                 // 일시정지 토글
-                togglePause();
+                if (isPaused || menuOverlay.isVisible()) {
+                    resumeGame();
+                } else {
+                    pauseGame();
+                }
             }
             
             if (!menuOverlay.isVisible()) {
