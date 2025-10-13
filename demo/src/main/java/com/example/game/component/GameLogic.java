@@ -22,8 +22,9 @@ public class GameLogic {
     private Block currentBlock; // 현재 블록
     private Block nextBlock; // 다음 블록
     private int x = 3; // 현재 블록 X좌표
-    private int y = 0; // 현재 블록 Y좌표
+    private int y = -1; // 현재 블록 Y좌표
     private Random random; // 랜덤 블록 생성용
+    private boolean gameOver = false; // 게임 오버 상태
 
     // 속도 관련 변수들 추가
     private int totalBlocksSpawned = 0;      // 생성된 총 블록 수
@@ -48,6 +49,10 @@ public class GameLogic {
         blockTypes = new String[HEIGHT][WIDTH]; // 모두 null로 초기화
         currentBlock = getRandomBlock(); // 첫 블록 생성
         nextBlock = getRandomBlock(); // 다음 블록 생성
+        x=3;
+        y=-1;
+        gameOver = false;
+        placeCurrent(); // 현재 블록 보드에 놓기
         
         // 통계 초기화
         totalBlocksSpawned = 1; // 첫 블록 카운트
@@ -89,7 +94,7 @@ public class GameLogic {
             return true;
         } else { // 이동 불가하면 제자리
             placeCurrent();
-            spawnNewBlock(); // 새 블록 생성
+            //spawnNewBlock(); // 새 블록 생성
             return false;
         }
     }
@@ -126,24 +131,31 @@ public class GameLogic {
     }
 
     // 새 블록 생성
-    private void spawnNewBlock() {
-        currentBlock = nextBlock;
-        nextBlock = getRandomBlock();
-        // 새 블록 시작 위치 설정
-        x = 3;
-        y = 0;
+    public boolean spawnNextPiece() {
+    // 1) 다음 블록을 현재로 승격
+    currentBlock = nextBlock;
+    nextBlock = getRandomBlock();
 
-        // 블록 생성 수 증가
+    // 2) 스폰 좌표 설정 (현재 x=3, y=0을 기본으로 사용하셨으므로 유지)
+    x = 3;
+    y = -1;
+
+    // 3) 스폰 가능? (경계/충돌 검사)
+    if (!canMove(x, y, currentBlock)) {
+        
+        // 스폰 불가 → 게임오버 플래그
+        gameOver = true;
+        return false;
+    }
+    // 블록 생성 수 증가
         totalBlocksSpawned++;
         
         // 속도 레벨 업데이트
         updateSpeedLevel();
-
-        if (!canMove(x, y, currentBlock)) {
-            // 게임 오버 상태 설정을 위해 y를 0으로 되돌림
-            y = 0;
-        }
-    }
+    // 4) 스폰 성공 → 보드에 반영(지우개/그리기 방식 유지)
+    placeCurrent();
+    return true;
+}
 
     // 블록이 특정 위치로 이동 가능한지 확인
     // newX, newY: 블록의 새 좌표
@@ -277,6 +289,27 @@ public class GameLogic {
         return linesCleared;
     }
 
+    public boolean isBlockAtTop() {
+    if (currentBlock == null) {
+        return false;
+    }
+    
+    boolean atTop = false;
+    for (int i = 0; i < currentBlock.width(); i++) {
+        for (int j = 0; j < currentBlock.height(); j++) {
+            if (currentBlock.getShape(i, j) == 1) {
+                int boardY = y + j;
+                if (boardY == 0) {
+                    atTop = true;
+        
+                }
+            }
+        }
+    }
+    return atTop;
+}
+
+    // 게임 종료 확인
     // 속도 레벨 업데이트
     private void updateSpeedLevel() {
         int oldSpeedLevel = speedLevel;
@@ -311,25 +344,7 @@ public class GameLogic {
     }
 
     public boolean isGameOver() {
-        // // 현재 블록이 스폰 위치에 놓일 수 없는 경우
-        // if (!canMove(x, y, currentBlock)) {
-        //     return true;
-        // }
-
-        // // 2. 현재 블록이 기본 스폰 위치(3, 0)나 그 위쪽에서 놓을 수 없는 경우
-        // if (!canMove(x, y, currentBlock)) {
-        //     // 추가 확인: 보드 상단에 블록이 쌓여있는지 확인
-        //     for (int row = 0; row < 3; row++) {
-        //         for (int col = 0; col < WIDTH; col++) {
-        //             if (board[row][col] == 1) {
-        //                 return true; // 상단에 블록이 있으면 게임 오버
-        //             }
-        //         }
-        //     }
-        //     return true;
-        // }
-
-        return false;
+    return gameOver;
     }
 
     // Getters

@@ -32,10 +32,11 @@ public class Board {
     private GameSettings gameSettings;
     private MenuOverlay menuOverlay; // 메뉴 오버레이 추가
     
-    private AnimationTimer gameLoop;
-    private long lastUpdate = 0;
-    private final long baseDropInterval = 1_000_000_000L; // 1초 (기본 속도)
-    private boolean isPaused = false;
+    private AnimationTimer gameLoop; // 게임 루프 타이머
+    private long lastUpdate = 0; // 블록 마지막 업데이트 시간
+    private long dropInterval = 1_000_000_000L; // 1초
+    private boolean isPaused = false; // 게임 일시정지 상태
+    private boolean isGameOver = false; // 게임 오버 상태
     
     public Board() {
         // 컴포넌츠 초기화
@@ -325,6 +326,7 @@ public class Board {
                 }
             }
         };
+        lastUpdate = System.nanoTime();
         gameLoop.start();
     }
 
@@ -338,8 +340,13 @@ public class Board {
     // 블록 아래로 이동 처리
     private void handleMoveDown() {
         boolean moved = gameLogic.moveDown();
-        
-        if (!moved) {
+
+        if(moved) {
+            // 블록이 성공적으로 아래로 이동했을 때 점수 증가
+            scorePanel.addScore(1);
+        }
+        else {
+
             // 라인 제거 및 점수 계산
             int linesCleared = gameLogic.clearLines();
             if (linesCleared > 0) {
@@ -348,21 +355,34 @@ public class Board {
                 updateSpeedDisplay();
             }
             
+             // 블록이 맨 위에 닿았는지 확인
+            if (gameLogic.isBlockAtTop()) {
+
+                if (!isGameOver) {
+                    isGameOver = true;
+                    gameOver();
+                }
+                return;
+            }
+
             // 게임 오버 체크
-            if (gameLogic.isGameOver()) {
-                gameOver();
+            boolean spawned = gameLogic.spawnNextPiece();
+            if (!spawned) {
+                if(!isGameOver) {
+                    isGameOver = true;
+                    gameOver();
+                }
             }
         }
     }
     
     private void gameOver() {
-        if (gameLoop != null) {
-            gameLoop.stop();
-        }
-        isPaused = true;
-        
-        // 자동으로 게임 오버 메뉴 표시
-        showGameOverMenu();
+        if (gameLoop != null) gameLoop.stop();
+
+        // 현재 Stage 구해와서 GameOverScene 호출
+        Stage stage = (Stage) root.getScene().getWindow();
+        com.example.gameover.GameOverScene.show(stage, scorePanel.getScore());
+
     }
     
     // 보드 그리기
@@ -378,6 +398,11 @@ public class Board {
         drawCurrentBlock(currentColors);
 
         scorePanel.updateNextBlock(gameLogic.getNextBlock());
+
+        // 일시정지 오버레이
+        if (isPaused) {
+            drawPauseOverlay();
+        }
     }
     
     // 그리드 그리기
@@ -473,6 +498,7 @@ public class Board {
         gameLogic.resetGame();
         scorePanel.resetScore();
         isPaused = false;
+        isGameOver = false;
         menuOverlay.hide();
         
         startGameLoop();
