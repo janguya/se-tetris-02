@@ -22,7 +22,7 @@ public class GameLogic {
     private Block currentBlock; // 현재 블록
     private Block nextBlock; // 다음 블록
     private int x = 3; // 현재 블록 X좌표
-    private int y = 0; // 현재 블록 Y좌표
+    private int y = -1; // 현재 블록 Y좌표
     private Random random; // 랜덤 블록 생성용
     private boolean gameOver = false; // 게임 오버 상태
 
@@ -39,7 +39,7 @@ public class GameLogic {
         currentBlock = getRandomBlock(); // 첫 블록 생성
         nextBlock = getRandomBlock(); // 다음 블록 생성
         x=3;
-        y=0;
+        y=-1;
         gameOver = false;
         placeCurrent(); // 현재 블록 보드에 놓기
     }
@@ -122,10 +122,11 @@ public class GameLogic {
 
     // 2) 스폰 좌표 설정 (현재 x=3, y=0을 기본으로 사용하셨으므로 유지)
     x = 3;
-    y = 0;
+    y = -1;
 
     // 3) 스폰 가능? (경계/충돌 검사)
     if (!canMove(x, y, currentBlock)) {
+        
         // 스폰 불가 → 게임오버 플래그
         gameOver = true;
         return false;
@@ -259,23 +260,24 @@ public class GameLogic {
     }
 
     public boolean isBlockAtTop() {
-        if (currentBlock == null) {
-            return false;
-        }
-
-        for (int i = 0; i < currentBlock.width(); i++) {
-            for (int j = 0; j < currentBlock.height(); j++) {
-                if (currentBlock.getShape(i, j) == 1) {
-                    int boardY = y + j;
-                    // y=0 라인에 블록이 있으면 true
-                    if (boardY == 0) {
-                        return true;
-                    }
+    if (currentBlock == null) {
+        return false;
+    }
+    
+    boolean atTop = false;
+    for (int i = 0; i < currentBlock.width(); i++) {
+        for (int j = 0; j < currentBlock.height(); j++) {
+            if (currentBlock.getShape(i, j) == 1) {
+                int boardY = y + j;
+                if (boardY == 0) {
+                    atTop = true;
+                    System.out.println("⚠️ 블록이 y=0 라인에 도달! (x=" + (x+i) + ", y=" + boardY + ")");
                 }
             }
         }
-        return false;
     }
+    return atTop;
+}
 
     // 게임 종료 확인
     public boolean isGameOver() {

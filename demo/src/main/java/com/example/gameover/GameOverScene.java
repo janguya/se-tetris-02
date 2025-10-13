@@ -35,8 +35,14 @@ public class GameOverScene {
         ScoreEntry currentPlayer = null;
         if (qualifies) {
             String name = askName(stage, finalScore);
-            if(name == null || name.trim().isEmpty()) name = "Player";
+            if(name == null){
+                currentPlayer = null; // 취소 눌렀을 때
+            }else{
+                if(name.trim().isEmpty()) {
+                    name = "Player"; // 빈 이름 방지
+                }
             currentPlayer = addScore(name.trim(), finalScore); // 보드에 추가하고 참조 반환
+            }
         }
 
         //정렬 후 화면 생성
