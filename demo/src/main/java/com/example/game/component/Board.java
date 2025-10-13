@@ -3,9 +3,9 @@ package com.example.game.component;
 import java.util.Map;
 
 import com.example.Router;
-import com.example.settings.GameSettings;
 import com.example.game.blocks.Block;
 import com.example.game.component.MenuOverlay.MenuCallback;
+import com.example.settings.GameSettings;
 
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
@@ -37,6 +37,8 @@ public class Board {
     private long dropInterval = 1_000_000_000L; // 1초
     private boolean isPaused = false; // 게임 일시정지 상태
     private boolean isGameOver = false; // 게임 오버 상태
+
+    private final long baseDropInterval = 1_000_000_000L; // 1초 (기본 속도)
     
     public Board() {
         // 컴포넌츠 초기화
@@ -527,4 +529,40 @@ public class Board {
         gameSettings.removeWindowSizeChangeListener(this::onWindowSizeChanged);
         scorePanel.cleanup();
     }
+
+        // 일시정지 오버레이 그리기
+    private void drawPauseOverlay() {
+        // 반투명 배경
+        gc.setFill(Color.color(0, 0, 0, 0.7));
+        gc.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
+        
+        // "PAUSED" 텍스트
+        gc.setFill(Color.WHITE);
+        gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 24));
+        
+        String pauseText = "PAUSED";
+        javafx.scene.text.Text tempText = new javafx.scene.text.Text(pauseText);
+        tempText.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, 24));
+        double textWidth = tempText.getBoundsInLocal().getWidth();
+        double textHeight = tempText.getBoundsInLocal().getHeight();
+        
+        double x = (canvas.getWidth() - textWidth) / 2;
+        double y = (canvas.getHeight() + textHeight) / 2;
+        
+        gc.fillText(pauseText, x, y);
+        
+        // 안내 메시지
+        gc.setFont(javafx.scene.text.Font.font("Arial", 14));
+        String instructionText = "Press ESC to resume";
+        javafx.scene.text.Text tempInstruction = new javafx.scene.text.Text(instructionText);
+        tempInstruction.setFont(javafx.scene.text.Font.font("Arial", 14));
+        double instructionWidth = tempInstruction.getBoundsInLocal().getWidth();
+        
+        double instructionX = (canvas.getWidth() - instructionWidth) / 2;
+        double instructionY = y + 40;
+        
+        gc.setFill(Color.LIGHTGRAY);
+        gc.fillText(instructionText, instructionX, instructionY);
+    }
+
 }
