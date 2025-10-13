@@ -4,6 +4,8 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -17,21 +19,22 @@ import java.util.Map;
 import com.example.theme.ColorScheme;
 
 public class SettingsDialog {
-    private Stage dialog; // 다이얼로그 스테이지
-    private GameSettings settings; // 게임 설정 인스턴스
-    private ComboBox<ColorScheme> colorSchemeCombo; // 색상 스킴 콤보박스
-    private GridPane customColorGrid; // 커스텀 색상 그리드
-    private Map<String, ColorPicker> colorPickers; // 블록별 컬러 피커 맵
-    private Runnable onSettingsChanged; // 설정 변경 콜백
+    private Stage dialog;
+    private GameSettings settings;
+    private ComboBox<ColorScheme> colorSchemeCombo;
+    private ComboBox<WindowSize> windowSizeCombo; // 창 크기 콤보박스 추가
+    private GridPane customColorGrid;
+    private GridPane keyBindingGrid; // 키 바인딩 그리드 추가
+    private Map<String, ColorPicker> colorPickers;
+    private Map<String, Button> keyButtons; // 키 바인딩 버튼들
+    private Runnable onSettingsChanged;
     
-    // 생성자
     public SettingsDialog(Stage parentStage, Runnable onSettingsChanged) {
         this.settings = GameSettings.getInstance();
         this.onSettingsChanged = onSettingsChanged;
         createDialog(parentStage);
     }
     
-    // 다이얼로그 생성
     private void createDialog(Stage parentStage) {
         dialog = new Stage();
         dialog.initModality(Modality.WINDOW_MODAL);
@@ -39,27 +42,71 @@ public class SettingsDialog {
         dialog.setTitle("Game Settings");
         dialog.setResizable(false);
         
-        // 메인 레이아웃
         VBox root = new VBox(20);
         root.setPadding(new Insets(20));
         root.getStyleClass().add("settings-dialog");
         
-        // 색상 스킴 섹션
+        // 창 크기 섹션 추가
+        VBox windowSizeSection = createWindowSizeSection();
+        
         VBox schemeSection = createColorSchemeSection();
-        
-        // 커스텀 색상 섹션
         VBox customSection = createCustomColorsSection();
-        
-        // 버튼 박스
+        VBox keyBindingSection = createKeyBindingSection(); // 키 바인딩 섹션 추가
         HBox buttonBox = createButtonBox();
         
-        // 레이아웃에 섹션 추가
-        root.getChildren().addAll(schemeSection, customSection, buttonBox);
+        root.getChildren().addAll(windowSizeSection, schemeSection, customSection, keyBindingSection, buttonBox);
         
-        // 씬 설정
-        Scene scene = new Scene(root, 400, 500);
+        Scene scene = new Scene(root, 450, 750); // 다이얼로그 크기 증가
         scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         dialog.setScene(scene);
+    }
+    
+    // 창 크기 섹션 생성
+    private VBox createWindowSizeSection() {
+        VBox section = new VBox(10);
+        
+        Label title = new Label("Window Size:");
+        title.getStyleClass().add("settings-section-title");
+        
+        windowSizeCombo = new ComboBox<>();
+        windowSizeCombo.getItems().addAll(WindowSize.values());
+        windowSizeCombo.setValue(settings.getCurrentWindowSize());
+        windowSizeCombo.getStyleClass().add("settings-combo");
+        
+        // 창 크기 변경 시 즉시 적용 (실시간 미리보기)
+        windowSizeCombo.setOnAction(e -> {
+            WindowSize selectedSize = windowSizeCombo.getValue();
+            if (selectedSize != null) {
+                settings.setCurrentWindowSize(selectedSize);
+            }
+        });
+        
+        windowSizeCombo.setCellFactory(listView -> new ListCell<WindowSize>() {
+            @Override
+            protected void updateItem(WindowSize item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getDisplayName() + " (" + item.getWidth() + "x" + item.getHeight() + ")");
+                }
+            }
+        });
+        
+        windowSizeCombo.setButtonCell(new ListCell<WindowSize>() {
+            @Override
+            protected void updateItem(WindowSize item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getDisplayName() + " (" + item.getWidth() + "x" + item.getHeight() + ")");
+                }
+            }
+        });
+        
+        section.getChildren().addAll(title, windowSizeCombo);
+        return section;
     }
     
     // 색상 스킴 섹션 생성
@@ -141,6 +188,44 @@ public class SettingsDialog {
         return section;
     }
     
+    // 키 바인딩 섹션 생성
+    private VBox createKeyBindingSection() {
+        VBox section = new VBox(10);
+        
+        Label title = new Label("Key Bindings:");
+        title.getStyleClass().add("settings-section-title");
+        
+        keyBindingGrid = new GridPane();
+        keyBindingGrid.setHgap(10);
+        keyBindingGrid.setVgap(8);
+        keyBindingGrid.setAlignment(Pos.CENTER_LEFT);
+        
+        // 키 바인딩 버튼들 생성
+        keyButtons = new HashMap<>();
+        String[] actionNames = {"Move Left", "Move Right", "Move Down", "Rotate", "Pause", "Settings"};
+        String[] actionKeys = {"MOVE_LEFT", "MOVE_RIGHT", "MOVE_DOWN", "ROTATE", "PAUSE", "SETTINGS"};
+        
+        for (int i = 0; i < actionNames.length; i++) {
+            Label label = new Label(actionNames[i] + ":");
+            label.getStyleClass().add("settings-color-label");
+            
+            Button keyButton = new Button(settings.getKeyBinding(actionKeys[i]).toString());
+            keyButton.getStyleClass().add("settings-key-button");
+            keyButton.setPrefWidth(100);
+            
+            final String actionKey = actionKeys[i];
+            keyButton.setOnAction(e -> captureKey(keyButton, actionKey));
+            
+            keyButtons.put(actionKeys[i], keyButton);
+            
+            keyBindingGrid.add(label, 0, i);
+            keyBindingGrid.add(keyButton, 1, i);
+        }
+        
+        section.getChildren().addAll(title, keyBindingGrid);
+        return section;
+    }
+    
     // 버튼 박스 생성
     private HBox createButtonBox() {
         HBox buttonBox = new HBox(10);
@@ -171,6 +256,7 @@ public class SettingsDialog {
     
     // 기본값으로 리셋
     private void resetToDefault() {
+        windowSizeCombo.setValue(WindowSize.MEDIUM);
         colorSchemeCombo.setValue(ColorScheme.NORMAL);
         Map<String, Color> defaultColors = ColorScheme.NORMAL.getColorMap();
         for (Map.Entry<String, ColorPicker> entry : colorPickers.entrySet()) {
@@ -179,6 +265,10 @@ public class SettingsDialog {
                 entry.getValue().setValue(defaultColor);
             }
         }
+        
+        // 키 바인딩 기본값으로 리셋
+        settings.resetKeyBindingsToDefault();
+        updateKeyButtonLabels();
         updateCustomColorVisibility();
     }
     
@@ -202,5 +292,64 @@ public class SettingsDialog {
     
     public void show() {
         dialog.show();
+    }
+    
+    // 키 캡처 메서드
+    private void captureKey(Button button, String actionKey) {
+        button.setText("Press a key...");
+        button.setOnKeyPressed(event -> {
+            KeyCode keyCode = event.getCode();
+            // ESC는 설정 키로 예약되어 있어서 중복 방지
+            if (keyCode == KeyCode.ESCAPE && !actionKey.equals("SETTINGS")) {
+                button.setText(settings.getKeyBinding(actionKey).toString());
+                button.setOnKeyPressed(null);
+                return;
+            }
+            
+            // 중복 키 체크
+            if (isKeyAlreadyUsed(keyCode, actionKey)) {
+                button.setText(settings.getKeyBinding(actionKey).toString());
+                button.setOnKeyPressed(null);
+                showAlert("Key Already Used", "This key is already assigned to another action.");
+                return;
+            }
+            
+            button.setText(keyCode.toString());
+            settings.setKeyBinding(actionKey, keyCode);
+            button.setOnKeyPressed(null);
+            event.consume();
+        });
+        button.requestFocus();
+    }
+    
+    // 키 중복 체크
+    private boolean isKeyAlreadyUsed(KeyCode keyCode, String currentAction) {
+        Map<String, KeyCode> allBindings = settings.getAllKeyBindings();
+        for (Map.Entry<String, KeyCode> entry : allBindings.entrySet()) {
+            if (!entry.getKey().equals(currentAction) && entry.getValue() == keyCode) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    // 키 버튼 라벨 업데이트
+    private void updateKeyButtonLabels() {
+        Map<String, KeyCode> allBindings = settings.getAllKeyBindings();
+        for (Map.Entry<String, KeyCode> entry : allBindings.entrySet()) {
+            Button button = keyButtons.get(entry.getKey());
+            if (button != null) {
+                button.setText(entry.getValue().toString());
+            }
+        }
+    }
+    
+    // 알림 다이얼로그 표시
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }

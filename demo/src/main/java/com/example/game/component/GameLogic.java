@@ -22,10 +22,22 @@ public class GameLogic {
     private Block currentBlock; // 현재 블록
     private Block nextBlock; // 다음 블록
     private int x = 3; // 현재 블록 X좌표
-    private int y = 0; // 현재 블록 Y좌표
+    private int y = -1; // 현재 블록 Y좌표
     private Random random; // 랜덤 블록 생성용
+    private boolean gameOver = false; // 게임 오버 상태
 
-    // 생성자
+    // 속도 관련 변수들 추가
+    private int totalBlocksSpawned = 0;      // 생성된 총 블록 수
+    private int totalLinesCleared = 0;       // 삭제된 총 줄 수
+    private int currentLevel = 1;            // 현재 레벨
+    private int speedLevel = 1;              // 속도 레벨 (별도 관리)
+    
+    // 속도 증가 기준
+    private static final int BLOCKS_PER_SPEED_INCREASE = 10;  // 10개 블록마다 속도 증가
+    private static final int LINES_PER_SPEED_INCREASE = 5;    // 5줄마다 속도 증가
+    private static final double SPEED_MULTIPLIER = 0.9;      // 속도 증가율 (90% = 10% 빨라짐)
+    private static final double MIN_SPEED_MULTIPLIER = 0.1;  // 최대 속도 (원래의 10%)
+
     public GameLogic() {
         random = new Random();
         initializeGame();
@@ -37,9 +49,18 @@ public class GameLogic {
         blockTypes = new String[HEIGHT][WIDTH]; // 모두 null로 초기화
         currentBlock = getRandomBlock(); // 첫 블록 생성
         nextBlock = getRandomBlock(); // 다음 블록 생성
+        x=3;
+        y=-1;
+        gameOver = false;
+        placeCurrent(); // 현재 블록 보드에 놓기
+        
+        // 통계 초기화
+        totalBlocksSpawned = 1; // 첫 블록 카운트
+        totalLinesCleared = 0;
+        currentLevel = 1;
+        speedLevel = 1;
     }
 
-    // 랜덤 블록 생성
     public Block getRandomBlock() {
         int blockType = random.nextInt(7);
         switch (blockType) {
@@ -73,7 +94,7 @@ public class GameLogic {
             return true;
         } else { // 이동 불가하면 제자리
             placeCurrent();
-            spawnNewBlock(); // 새 블록 생성
+            //spawnNewBlock(); // 새 블록 생성
             return false;
         }
     }
@@ -110,19 +131,31 @@ public class GameLogic {
     }
 
     // 새 블록 생성
-    private void spawnNewBlock() {
-        currentBlock = nextBlock;
-        nextBlock = getRandomBlock();
-        // 새 블록 시작 위치 설정
-        x = 3;
-        y = 0;
+    public boolean spawnNextPiece() {
+    // 1) 다음 블록을 현재로 승격
+    currentBlock = nextBlock;
+    nextBlock = getRandomBlock();
 
-        // 새 블록이 시작 위치에 놓일 수 없으면 게임 오버
-        if (!canMove(x, y, currentBlock)) {
-            // 게임 오버 상태 설정을 위해 y를 0으로 되돌림
-            y = 0;
-        }
+    // 2) 스폰 좌표 설정 (현재 x=3, y=0을 기본으로 사용하셨으므로 유지)
+    x = 3;
+    y = -1;
+
+    // 3) 스폰 가능? (경계/충돌 검사)
+    if (!canMove(x, y, currentBlock)) {
+        
+        // 스폰 불가 → 게임오버 플래그
+        gameOver = true;
+        return false;
     }
+    // 블록 생성 수 증가
+        totalBlocksSpawned++;
+        
+        // 속도 레벨 업데이트
+        updateSpeedLevel();
+    // 4) 스폰 성공 → 보드에 반영(지우개/그리기 방식 유지)
+    placeCurrent();
+    return true;
+}
 
     // 블록이 특정 위치로 이동 가능한지 확인
     // newX, newY: 블록의 새 좌표
@@ -239,35 +272,79 @@ public class GameLogic {
                 }
 
                 linesCleared++;
-                row++; // 한 줄 내려가서 다시 검사
+                row++;
             }
+        }
+
+        // 줄 삭제 통계 업데이트
+        if (linesCleared > 0) {
+            totalLinesCleared += linesCleared;
+            updateSpeedLevel();
+            
+            // 디버깅 출력
+            System.out.println("Lines cleared: " + linesCleared + ", Total lines: " + totalLinesCleared);
+            System.out.println("Blocks spawned: " + totalBlocksSpawned + ", Speed level: " + speedLevel);
         }
 
         return linesCleared;
     }
 
-    // 게임 종료 확인
-    // 오류 발생 중. 수정 필요
-    public boolean isGameOver() {
-        // // 현재 블록이 스폰 위치에 놓일 수 없는 경우
-        // if (!canMove(x, y, currentBlock)) {
-        //     return true;
-        // }
-
-        // // 2. 현재 블록이 기본 스폰 위치(3, 0)나 그 위쪽에서 놓을 수 없는 경우
-        // if (!canMove(x, y, currentBlock)) {
-        //     // 추가 확인: 보드 상단에 블록이 쌓여있는지 확인
-        //     for (int row = 0; row < 3; row++) {
-        //         for (int col = 0; col < WIDTH; col++) {
-        //             if (board[row][col] == 1) {
-        //                 return true; // 상단에 블록이 있으면 게임 오버
-        //             }
-        //         }
-        //     }
-        //     return true;
-        // }
-
+    public boolean isBlockAtTop() {
+    if (currentBlock == null) {
         return false;
+    }
+    
+    boolean atTop = false;
+    for (int i = 0; i < currentBlock.width(); i++) {
+        for (int j = 0; j < currentBlock.height(); j++) {
+            if (currentBlock.getShape(i, j) == 1) {
+                int boardY = y + j;
+                if (boardY == 0) {
+                    atTop = true;
+        
+                }
+            }
+        }
+    }
+    return atTop;
+}
+
+    // 게임 종료 확인
+    // 속도 레벨 업데이트
+    private void updateSpeedLevel() {
+        int oldSpeedLevel = speedLevel;
+        
+        // 블록 수에 따른 속도 증가
+        int speedFromBlocks = totalBlocksSpawned / BLOCKS_PER_SPEED_INCREASE;
+        
+        // 줄 삭제 수에 따른 속도 증가
+        int speedFromLines = totalLinesCleared / LINES_PER_SPEED_INCREASE;
+        
+        // 둘 중 높은 값을 사용 (더 빠른 진행)
+        speedLevel = Math.max(speedFromBlocks, speedFromLines) + 1;
+        
+        // 레벨도 업데이트 (UI 표시용)
+        currentLevel = speedLevel;
+        
+        //디버깅용 출력
+        if (speedLevel != oldSpeedLevel) {
+            System.out.println("Speed level increased to: " + speedLevel + " (was: " + oldSpeedLevel + ")");
+        }
+    }
+
+    // 속도 계산 (배수 반환)
+    public double getSpeedMultiplier() {
+        double multiplier = Math.pow(SPEED_MULTIPLIER, speedLevel - 1);
+        return Math.max(multiplier, MIN_SPEED_MULTIPLIER);
+    }
+
+    // 드롭 간격 계산 (나노초)
+    public long getDropInterval(long baseInterval) {
+        return (long)(baseInterval * getSpeedMultiplier());
+    }
+
+    public boolean isGameOver() {
+    return gameOver;
     }
 
     // Getters
@@ -295,7 +372,34 @@ public class GameLogic {
         return y;
     }
 
+    // 새로 추가된 Getters
+    public int getTotalBlocksSpawned() {
+        return totalBlocksSpawned;
+    }
+
+    public int getTotalLinesCleared() {
+        return totalLinesCleared;
+    }
+
+    public int getCurrentLevel() {
+        return currentLevel;
+    }
+
+    public int getSpeedLevel() {
+        return speedLevel;
+    }
+
     public void resetGame() {
         initializeGame();
+    }
+
+    // 디버깅용 메서드
+    public void printSpeedInfo() {
+        System.out.println("=== Speed Info ===");
+        System.out.println("Blocks spawned: " + totalBlocksSpawned);
+        System.out.println("Lines cleared: " + totalLinesCleared);
+        System.out.println("Speed level: " + speedLevel);
+        System.out.println("Speed multiplier: " + String.format("%.2f", getSpeedMultiplier()));
+        System.out.println("==================");
     }
 }

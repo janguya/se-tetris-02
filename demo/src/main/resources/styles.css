@@ -128,10 +128,102 @@
     -fx-background-color: derive(-fx-background-color, 20%);
 }
 
+.settings-key-button {
+    -fx-background-color: #16213e;
+    -fx-text-fill: white;
+    -fx-border-color: #3bb78f;
+    -fx-border-radius: 3;
+    -fx-padding: 5 10;
+    -fx-font-family: "Courier New";
+    -fx-font-size: 11px;
+    -fx-min-width: 80px;
+    -fx-pref-width: 100px;
+}
+
+.settings-key-button:hover {
+    -fx-background-color: derive(-fx-background-color, 15%);
+}
+
+.settings-key-button:focused {
+    -fx-border-color: #0abab5;
+    -fx-border-width: 2;
+}
+
 .next-block-canvas {
     -fx-background-color: #0f1419;
     -fx-border-color: #16213e;
     -fx-border-width: 2;
     -fx-border-radius: 5;
     -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 5, 0, 0, 0);
+}
+
+.speed-text {
+    -fx-font-family: "Courier New";
+    -fx-font-size: 14px;
+    -fx-fill: #ff6b6b;
+    -fx-font-weight: bold;
+}
+
+/* 속도가 빨라질수록 색상 변경 (JavaScript에서는 불가능하지만 참고용) */
+.speed-text-normal {
+    -fx-fill: #00ff00; /* 녹색 - 느림 */
+}
+
+.speed-text-fast {
+    -fx-fill: #ffff00; /* 노랑 - 보통 */
+}
+
+.speed-text-very-fast {
+    -fx-fill: #ff6b6b; /* 빨강 - 빠름 */
+}
+
+.menu-overlay {
+    -fx-background-color: rgba(15, 21, 46, 0.95);
+    -fx-background-radius: 15;
+    -fx-border-color: #3bb78f;
+    -fx-border-width: 3;
+    -fx-border-radius: 15;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.8), 20, 0, 0, 0);
+    -fx-max-width: 300;
+    -fx-max-height: 400;
+}
+
+.menu-title {
+    -fx-font-family: "Arial Black";
+    -fx-font-size: 32px;
+    -fx-fill: #3bb78f;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+}
+
+.menu-score {
+    -fx-font-family: "Courier New";
+    -fx-font-size: 18px;
+    -fx-fill: #bbbbbb;
+    -fx-text-alignment: center;
+}
+
+.menu-button {
+    -fx-background-color: #16213e;
+    -fx-text-fill: white;
+    -fx-border-color: #3bb78f;
+    -fx-border-width: 2;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-font-family: "Arial";
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.menu-button:hover {
+    -fx-background-color: #3bb78f;
+    -fx-text-fill: white;
+    -fx-border-color: #0abab5;
+    -fx-effect: dropshadow(gaussian, rgba(59,183,143,0.5), 10, 0, 0, 0);
+}
+
+.menu-button:pressed {
+    -fx-background-color: #2a9d8f;
+    -fx-border-color: #264653;
 }
