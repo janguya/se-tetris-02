@@ -1,14 +1,15 @@
 package com.example.settings;
 
-import javafx.scene.paint.Color;
-import javafx.scene.input.KeyCode;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.prefs.Preferences;
 
 import com.example.theme.ColorScheme;
+
+import javafx.scene.input.KeyCode;
+import javafx.scene.paint.Color;
 
 // 화면 크기 열거형 추가
 enum WindowSize {
@@ -99,8 +100,8 @@ public class GameSettings {
         keyBindings.put("MOVE_RIGHT", KeyCode.valueOf(prefs.get("key_move_right", "RIGHT")));
         keyBindings.put("MOVE_DOWN", KeyCode.valueOf(prefs.get("key_move_down", "DOWN")));
         keyBindings.put("ROTATE", KeyCode.valueOf(prefs.get("key_rotate", "UP")));
-        keyBindings.put("PAUSE", KeyCode.valueOf(prefs.get("key_pause", "SPACE")));
-        keyBindings.put("SETTINGS", KeyCode.valueOf(prefs.get("key_settings", "ESCAPE")));
+        keyBindings.put("PAUSE", KeyCode.valueOf(prefs.get("key_pause", "ESCAPE")));
+        keyBindings.put("HARD_DROP", KeyCode.valueOf(prefs.get("key_hard_drop", "DOWN")));
     }
     
     // 설정 저장
@@ -124,7 +125,7 @@ public class GameSettings {
         prefs.put("key_move_down", keyBindings.get("MOVE_DOWN").name());
         prefs.put("key_rotate", keyBindings.get("ROTATE").name());
         prefs.put("key_pause", keyBindings.get("PAUSE").name());
-        prefs.put("key_settings", keyBindings.get("SETTINGS").name());
+        prefs.put("key_hard_drop", keyBindings.get("HARD_DROP").name());
     }
     
     // 현재 색상 테마 및 커스텀 색상 접근자
@@ -198,8 +199,7 @@ public class GameSettings {
         keyBindings.put("MOVE_RIGHT", KeyCode.RIGHT);
         keyBindings.put("MOVE_DOWN", KeyCode.DOWN);
         keyBindings.put("ROTATE", KeyCode.UP);
-        keyBindings.put("PAUSE", KeyCode.SPACE);
-        keyBindings.put("SETTINGS", KeyCode.ESCAPE);
+        keyBindings.put("HARD_DROP", KeyCode.SPACE);
         saveSettings();
     }
     

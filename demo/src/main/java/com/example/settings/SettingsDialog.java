@@ -1,22 +1,26 @@
 package com.example.settings;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import com.example.theme.ColorScheme;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ColorPicker;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import com.example.theme.ColorScheme;
 
 public class SettingsDialog {
     private Stage dialog;
@@ -202,9 +206,9 @@ public class SettingsDialog {
         
         // 키 바인딩 버튼들 생성
         keyButtons = new HashMap<>();
-        String[] actionNames = {"Move Left", "Move Right", "Move Down", "Rotate", "Pause", "Settings"};
-        String[] actionKeys = {"MOVE_LEFT", "MOVE_RIGHT", "MOVE_DOWN", "ROTATE", "PAUSE", "SETTINGS"};
-        
+        String[] actionNames = {"Move Left", "Move Right", "Move Down", "Rotate", "Pause", "Hard drop"};
+        String[] actionKeys = {"MOVE_LEFT", "MOVE_RIGHT", "MOVE_DOWN", "ROTATE", "PAUSE", "HARD_DROP"};
+
         for (int i = 0; i < actionNames.length; i++) {
             Label label = new Label(actionNames[i] + ":");
             label.getStyleClass().add("settings-color-label");
