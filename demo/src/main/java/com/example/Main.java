@@ -10,7 +10,7 @@ public class Main extends Application {
     public void start(Stage stage) {
         // Router를 설정 크기 없이 생성 (GameSettings 값을 바로 사용)
         Router router = new Router(stage);
-        router.showStartMenu();
+                router.showStartMenu();
     }
 
     public static void main(String[] args) {

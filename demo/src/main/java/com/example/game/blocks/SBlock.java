@@ -8,5 +8,6 @@ public class SBlock extends Block {
 			{1, 1, 0}
 		};
 		cssClass = "block-s";
+		itemPositions = new int[shape.length][shape[0].length];
 	}
 }

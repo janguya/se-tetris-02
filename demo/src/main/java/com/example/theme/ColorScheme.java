@@ -82,6 +82,10 @@ public enum ColorScheme {
         }
         
         colors.put("block-default", Color.web("#0f4c75"));
+
+        colors.put("item-weight", Color.web("#8B4513"));
+        colors.put("item-line-clear", Color.GOLD);
+
         return colors;
     }
     

@@ -7,5 +7,6 @@ public class ZBlock extends Block {
 			{0, 1, 1}
 		};
 		cssClass = "block-z";
+		itemPositions = new int[shape.length][shape[0].length];
 	}
 }

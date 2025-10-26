@@ -1,14 +1,15 @@
 package com.example.settings;
 
-import javafx.scene.paint.Color;
-import javafx.scene.input.KeyCode;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.prefs.Preferences;
 
 import com.example.theme.ColorScheme;
+
+import javafx.scene.input.KeyCode;
+import javafx.scene.paint.Color;
 
 // 화면 크기 열거형 추가
 enum WindowSize {

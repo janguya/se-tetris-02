@@ -8,5 +8,7 @@ public class LBlock extends Block {
 			{1, 0, 0}
 		};
 		cssClass = "block-l";
+
+		itemPositions = new int[shape.length][shape[0].length];
 	}
 }

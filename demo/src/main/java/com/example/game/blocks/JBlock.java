@@ -7,5 +7,7 @@ public class JBlock extends Block {
             {0, 0, 1}
         };
         cssClass = "block-j";
+
+        itemPositions = new int[shape.length][shape[0].length];
     }
 }

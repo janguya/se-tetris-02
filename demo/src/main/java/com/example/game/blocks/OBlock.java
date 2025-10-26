@@ -7,5 +7,7 @@ public class OBlock extends Block {
             {1, 1}
         };
         cssClass = "block-o"; // Remove the AWT Color import and usage
+
+        itemPositions = new int[shape.length][shape[0].length];
     }
 }

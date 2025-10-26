@@ -4,7 +4,9 @@ import java.util.Map;
 
 import com.example.Router;
 import com.example.game.blocks.Block;
+import com.example.game.blocks.WeightItemBlock;
 import com.example.game.component.MenuOverlay.MenuCallback;
+import com.example.game.items.BlockItem;
 import com.example.settings.GameSettings;
 
 import javafx.animation.AnimationTimer;
@@ -452,6 +454,11 @@ public class Board {
         
         // 블록 색상 결정
         Color blockColor = colorMap.get(currentBlock.getCssClass());
+
+        // 아이템 블록이면 특별한 색상 사용
+        if (currentBlock.isItemBlock()) {
+            blockColor = Color.web("#8B4513"); // 무게추는 갈색
+        }
         int currentX = gameLogic.getCurrentX();
         int currentY = gameLogic.getCurrentY();
         
@@ -463,7 +470,26 @@ public class Board {
                     int drawX = (currentX + i) * cellSize;
                     int drawY = (currentY + j) * cellSize;
                     // 셀 그리기
-                    drawCell(drawX, drawY, blockColor);
+                     if (currentBlock.hasItemAt(i, j)) {
+                        // 아이템이 있는 셀
+                        BlockItem item = currentBlock.getEmbeddedItem();
+                        char itemChar = item != null ? item.getDisplayChar() : ' ';
+                        drawItemCell(drawX, drawY, blockColor);
+                        if (item != null) {
+                            drawItemCharacter(drawX, drawY, itemChar);
+                        }
+                    }else if (currentBlock.isItemBlock()) {
+                        // 독립 아이템 블록 (예: 무게추)
+                        drawItemCell(drawX, drawY, blockColor);
+                    
+                        // 무게추 문자 표시
+                        if (currentBlock instanceof WeightItemBlock) {
+                            drawItemCharacter(drawX, drawY, 'W');
+                        }
+                    } else {
+                        // 일반 셀
+                        drawCell(drawX, drawY, blockColor);
+                    }
                 }
             }
         }
@@ -485,6 +511,74 @@ public class Board {
         gc.fillRect(x + 2, y + cellSize - 5, cellSize - 4, 3);
         gc.fillRect(x + cellSize - 5, y + 2, 3, cellSize - 4);
     }
+
+    private void drawItemCell(double x, double y, Color color) {
+    // 기본 셀
+    gc.setFill(color);
+    gc.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+    
+    // 밝은 테두리 (반짝임 효과)
+    gc.setStroke(Color.GOLD);
+    gc.setLineWidth(2);
+    gc.strokeRect(x + 2, y + 2, cellSize - 4, cellSize - 4);
+    
+    // 하이라이트
+    gc.setFill(Color.YELLOW.deriveColor(0, 1, 1, 0.3));
+    gc.fillOval(x + cellSize * 0.25, y + cellSize * 0.25, 
+                cellSize * 0.5, cellSize * 0.5);
+}
+
+private void drawItemCharacter(double x, double y, char itemChar) {
+    gc.setFill(Color.WHITE);
+    gc.setStroke(Color.BLACK);
+    gc.setLineWidth(1);
+    
+    // 폰트 크기는 cellSize에 비례
+    int fontSize = Math.max(12, cellSize - 8);
+    gc.setFont(javafx.scene.text.Font.font("Arial", 
+               javafx.scene.text.FontWeight.BOLD, fontSize));
+    
+    // 텍스트 크기 계산
+    String text = String.valueOf(itemChar);
+    javafx.scene.text.Text tempText = new javafx.scene.text.Text(text);
+    tempText.setFont(javafx.scene.text.Font.font("Arial", 
+                     javafx.scene.text.FontWeight.BOLD, fontSize));
+    double textWidth = tempText.getBoundsInLocal().getWidth();
+    double textHeight = tempText.getBoundsInLocal().getHeight();
+    
+    // 셀 중앙에 배치
+    double textX = x + (cellSize - textWidth) / 2;
+    double textY = y + (cellSize + textHeight) / 2 - 2;
+    
+    // 텍스트 테두리 (가독성)
+    gc.strokeText(text, textX, textY);
+    // 텍스트
+    gc.fillText(text, textX, textY);
+}
+
+private void drawItemBlockLabel(String itemName, int blockX, int blockY, Block block) {
+    gc.setFont(javafx.scene.text.Font.font("Arial", 
+               javafx.scene.text.FontWeight.BOLD, 10));
+    
+    // 텍스트 크기 계산
+    javafx.scene.text.Text tempText = new javafx.scene.text.Text(itemName);
+    tempText.setFont(javafx.scene.text.Font.font("Arial", 
+                     javafx.scene.text.FontWeight.BOLD, 10));
+    double textWidth = tempText.getBoundsInLocal().getWidth();
+    
+    // 블록 중앙 위에 배치
+    double labelX = (blockX * cellSize) + 
+                    (block.width() * cellSize - textWidth) / 2;
+    double labelY = (blockY * cellSize) - 5;
+    
+    // 배경 (가독성)
+    gc.setFill(Color.BLACK.deriveColor(0, 1, 1, 0.8));
+    gc.fillRect(labelX - 3, labelY - 10, textWidth + 6, 14);
+    
+    // 텍스트
+    gc.setFill(Color.YELLOW);
+    gc.fillText(itemName, labelX, labelY);
+}
     
     // 메인 컨테이너 반환 (오버레이 포함)
     public StackPane getRoot() {

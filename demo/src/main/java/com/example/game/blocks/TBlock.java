@@ -8,5 +8,6 @@ public class TBlock extends Block {
 			{1, 1, 1}
 		};
 		cssClass = "block-t";
+		itemPositions = new int[shape.length][shape[0].length];
 	}
 }
