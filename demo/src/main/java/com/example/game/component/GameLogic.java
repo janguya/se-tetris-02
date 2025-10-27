@@ -320,6 +320,7 @@ public class GameLogic {
         
         // 스폰 불가 → 게임오버 플래그
         gameOver = true;
+        placeCurrent();
         return false;
     }
     // 블록 생성 수 증가
@@ -526,7 +527,7 @@ public class GameLogic {
         for (int j = 0; j < currentBlock.height(); j++) {
             if (currentBlock.getShape(i, j) == 1) {
                 int boardY = y + j;
-                if (boardY == 0) {
+                if (boardY <= 0) {
                     atTop = true;
         
                 }
