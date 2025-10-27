@@ -58,8 +58,8 @@ public class ItemManager {
             return null;
         }
         
-        int itemType = random.nextInt(4); // 0: SingleBlock, 1: weightedBlock, 2: LItem, 3: SandBlock
-        itemType = 3; //test
+        int itemType = random.nextInt(5); // 0: SingleBlock, 1: weightedBlock, 2: LItem, 3: SandBlock, 4: BombBlock
+        itemType=4; //test
         Block itemBlock;
         switch (itemType) {
             case 0:
@@ -82,11 +82,17 @@ public class ItemManager {
                 itemBlock = new SandBlock(sandBase);
                 System.out.println(">>> Item Manager: Spawned SandBlock with base block: " + sandBase.getClass().getSimpleName());
                 break;
+            case 4:
+                // 랜덤 블록 생성하여 Bomb 아이템으로 래핑
+                Block bombBase = getRandomNormalBlock();
+                itemBlock = new BombBlock(bombBase);
+                System.out.println(">>> Item Manager: Spawned BombBlock with base block: " + bombBase.getClass().getSimpleName());
+                break;
             default:
-                // 기본값도 SandBlock
+                // 기본값도 BombBlock
                 Block defaultBase = getRandomNormalBlock();
-                itemBlock = new SandBlock(defaultBase);
-                System.out.println(">>> Item Manager: Spawned SandBlock (default) with base block: " + defaultBase.getClass().getSimpleName());
+                itemBlock = new BombBlock(defaultBase);
+                System.out.println(">>> Item Manager: Spawned BombBlock (default) with base block: " + defaultBase.getClass().getSimpleName());
                 break;
         }
         

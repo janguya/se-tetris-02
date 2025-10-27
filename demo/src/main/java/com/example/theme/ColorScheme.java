@@ -97,6 +97,7 @@ public enum ColorScheme {
         colors.put("item-weight", Color.web("#8b4513")); // Brown - 무게 블록
         colors.put("item-lmarker", Color.web("#ff00ff")); // Magenta - L 마커
         colors.put("item-sand", Color.web("#f4a460")); // Sandy Brown - 모래 블록
+        colors.put("item-bmarker", Color.web("#000000")); // Black - B 마커 (폭탄)
         
         return colors;
     }

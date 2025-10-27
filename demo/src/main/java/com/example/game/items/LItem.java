@@ -98,10 +98,30 @@ public class LItem extends Block {
     @Override
     public void rotate() {
         baseBlock.rotate();
+        
+        // 회전 전 마커의 실제 좌표와 높이 저장
+        int oldHeight = shape.length;
+        
         // 회전 후 shape 다시 복사
         copyShapeFromBase();
-        // 회전 후 L 마커 위치 다시 선택
-        selectRandomLPosition();
+        
+        // 회전 후 마커 위치 계산 (90도 시계방향 회전)
+        // 회전 공식: (row, col) -> (col, height-1-row)
+        int newRow = lCol;
+        int newCol = oldHeight - 1 - lRow;
+        
+        // 새로운 shape 범위 내에서 유효한 위치인지 확인
+        if (newRow >= 0 && newRow < shape.length && 
+            newCol >= 0 && newCol < shape[0].length &&
+            shape[newRow][newCol] == 1) {
+            lRow = newRow;
+            lCol = newCol;
+            System.out.println(">>> LItem: L marker rotated to (" + lRow + ", " + lCol + ")");
+        } else {
+            // 유효하지 않으면 가장 가까운 유효한 위치 찾기
+            selectRandomLPosition();
+            System.out.println(">>> LItem: L marker repositioned after rotation to (" + lRow + ", " + lCol + ")");
+        }
     }
     
     @Override

@@ -14,6 +14,7 @@ import com.example.game.items.ItemManager;
 import com.example.game.items.weightedBlock;
 import com.example.game.items.LItem;
 import com.example.game.items.SandBlock;
+import com.example.game.items.BombBlock;
 
 public class GameLogic {
 
@@ -140,6 +141,13 @@ public class GameLogic {
                 int lRow = lItem.getLMarkerAbsoluteRow(y);
                 System.out.println(">>> LItem landed! L marker at row " + lRow);
                 clearSingleLine(lRow);
+            }
+            
+            // BombBlock이면 B 마커 주변 3x3 폭파
+            if (currentBlock instanceof BombBlock) {
+                BombBlock bombBlock = (BombBlock) currentBlock;
+                bombBlock.explode(board, blockTypes, y, x);
+                System.out.println(">>> BombBlock exploded!");
             }
             
             // 아이템 블록 착지 디버깅

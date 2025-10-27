@@ -4,6 +4,7 @@ import java.util.Map;
 
 import com.example.game.blocks.Block;
 import com.example.game.items.LItem;
+import com.example.game.items.BombBlock;
 import com.example.settings.GameSettings;
 
 import javafx.geometry.Insets;
@@ -176,6 +177,10 @@ public class ScorePanel {
         // LItem인지 확인
         boolean isLItem = nextBlock instanceof LItem;
         LItem lItem = isLItem ? (LItem) nextBlock : null;
+        
+        // BombBlock인지 확인
+        boolean isBombBlock = nextBlock instanceof BombBlock;
+        BombBlock bombBlock = isBombBlock ? (BombBlock) nextBlock : null;
 
         // 다음 블록 그리기
         for (int i = 0; i < nextBlock.width(); i++) {
@@ -189,7 +194,14 @@ public class ScorePanel {
                         // L 마커 셀은 특별한 색상으로 그리고 "L" 텍스트 추가
                         Color lMarkerColor = colorMap.get("item-lmarker");
                         drawLMarkerNextBlockCell(drawX, drawY, lMarkerColor);
-                    } else {
+                    }
+                    // B 마커가 있는 셀인지 확인
+                    else if (isBombBlock && bombBlock.hasBMarker(j, i)) {
+                        // B 마커 셀은 검은색으로 그리고 "B" 텍스트 추가
+                        Color bMarkerColor = colorMap.get("item-bmarker");
+                        drawBMarkerNextBlockCell(drawX, drawY, bMarkerColor);
+                    }
+                    else {
                         // 일반 셀 그리기
                         drawNextBlockCell(drawX, drawY, blockColor);
                     }
@@ -256,6 +268,38 @@ public class ScorePanel {
         double textY = y + (cellSize + textHeight) / 2 - 1;
         
         nextBlockGc.fillText("L", textX, textY);
+    }
+    
+    // B 마커 다음 블록 셀 그리기
+    private void drawBMarkerNextBlockCell(double x, double y, Color color) {
+        // Main cell (B 마커 색상 - 검은색)
+        nextBlockGc.setFill(color);
+        nextBlockGc.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+        
+        // Highlight effect
+        nextBlockGc.setFill(color.brighter());
+        nextBlockGc.fillRect(x + 2, y + 2, cellSize - 4, 2);
+        nextBlockGc.fillRect(x + 2, y + 2, 2, cellSize - 4);
+        
+        // Shadow effect
+        nextBlockGc.setFill(color.darker());
+        nextBlockGc.fillRect(x + 2, y + cellSize - 4, cellSize - 4, 2);
+        nextBlockGc.fillRect(x + cellSize - 4, y + 2, 2, cellSize - 4);
+        
+        // "B" 텍스트 그리기 (흰색)
+        nextBlockGc.setFill(Color.WHITE);
+        nextBlockGc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.5));
+        
+        // 텍스트 중앙 정렬을 위한 계산
+        javafx.scene.text.Text tempText = new javafx.scene.text.Text("B");
+        tempText.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.5));
+        double textWidth = tempText.getBoundsInLocal().getWidth();
+        double textHeight = tempText.getBoundsInLocal().getHeight();
+        
+        double textX = x + (cellSize - textWidth) / 2;
+        double textY = y + (cellSize + textHeight) / 2 - 1;
+        
+        nextBlockGc.fillText("B", textX, textY);
     }
     
     // 업데이트된 색상 적용
