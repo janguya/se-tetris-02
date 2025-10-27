@@ -13,6 +13,7 @@ import com.example.game.blocks.ZBlock;
 import com.example.game.items.ItemManager;
 import com.example.game.items.weightedBlock;
 import com.example.game.items.LItem;
+import com.example.game.items.SandBlock;
 
 public class GameLogic {
 
@@ -115,8 +116,15 @@ public class GameLogic {
             placeCurrent(); // 이동 후 다시 놓기
             return true;
         } else { // 이동 불가하면 제자리
+            // SandBlock이면 중력 효과 적용 (고정하지 않고 떨어뜨림)
+            if (currentBlock instanceof SandBlock) {
+                System.out.println(">>> SandBlock landed! Applying gravity effect...");
+                SandBlock sandBlock = (SandBlock) currentBlock;
+                sandBlock.applyGravity(board, blockTypes, y, x);
+                // SandBlock은 고정하지 않음 - 바로 다음 블록으로
+            }
             // weightedBlock이면 바닥까지 떨어지면서 아래 블록들 삭제
-            if (currentBlock instanceof weightedBlock) {
+            else if (currentBlock instanceof weightedBlock) {
                 System.out.println(">>> WeightedBlock landed! Starting fall to bottom...");
                 // placeCurrent() 하지 않고 바로 fallToBottom 호출
                 int finalY = ((weightedBlock) currentBlock).fallToBottom(board, blockTypes, y, x);

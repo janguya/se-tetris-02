@@ -16,7 +16,7 @@ import com.example.game.blocks.ZBlock;
  * - 랜덤으로 아이템 종류 결정
  */
 public class ItemManager {
-    private static final int LINES_FOR_ITEM = 10; // 10줄마다 아이템 생성
+    private static final int LINES_FOR_ITEM = 1; // 10줄마다 아이템 생성
     private int lastItemSpawnLines = 0; // 마지막 아이템 생성 시점의 줄 수
     private Random random;
     private boolean itemModeEnabled; // 아이템 모드 활성화 여부
@@ -58,9 +58,8 @@ public class ItemManager {
             return null;
         }
         
-        int itemType = random.nextInt(3); // 0: SingleBlock, 1: weightedBlock, 2: LItem
-        itemType=2;
-
+        int itemType = random.nextInt(4); // 0: SingleBlock, 1: weightedBlock, 2: LItem, 3: SandBlock
+        itemType = 3; //test
         Block itemBlock;
         switch (itemType) {
             case 0:
@@ -77,11 +76,17 @@ public class ItemManager {
                 itemBlock = new LItem(baseBlock);
                 System.out.println(">>> Item Manager: Spawned LItem with base block: " + baseBlock.getClass().getSimpleName());
                 break;
+            case 3:
+                // 랜덤 블록 생성하여 Sand 아이템으로 래핑
+                Block sandBase = getRandomNormalBlock();
+                itemBlock = new SandBlock(sandBase);
+                System.out.println(">>> Item Manager: Spawned SandBlock with base block: " + sandBase.getClass().getSimpleName());
+                break;
             default:
-                // 기본값도 LItem
+                // 기본값도 SandBlock
                 Block defaultBase = getRandomNormalBlock();
-                itemBlock = new LItem(defaultBase);
-                System.out.println(">>> Item Manager: Spawned LItem (default) with base block: " + defaultBase.getClass().getSimpleName());
+                itemBlock = new SandBlock(defaultBase);
+                System.out.println(">>> Item Manager: Spawned SandBlock (default) with base block: " + defaultBase.getClass().getSimpleName());
                 break;
         }
         

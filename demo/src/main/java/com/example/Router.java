@@ -95,6 +95,9 @@ public class Router {
             case "GAME":
                 showGame();
                 break;
+            case "ITEM_MODE":
+                toggleItemMode();
+                break;
             case "SETTINGS":
                 showSettings();
                 break;
@@ -107,6 +110,13 @@ public class Router {
             default:
                 // unknown
         }
+    }
+    
+    private void toggleItemMode() {
+        GameSettings settings = GameSettings.getInstance();
+        settings.setItemModeEnabled(!settings.isItemModeEnabled());
+        // 메뉴 새로고침
+        showStartMenu();
     }
 
     public void showGame() {
@@ -186,8 +196,12 @@ public class Router {
     }
 
     public void showStartMenu() {
+        GameSettings settings = GameSettings.getInstance();
+        String itemModeLabel = settings.isItemModeEnabled() ? "아이템 모드: ON" : "아이템 모드: OFF";
+        
         StartMenuView startMenu = new StartMenuView()
             .addMenuItem("GAME", "게임 시작")
+            .addMenuItem("ITEM_MODE", itemModeLabel)
             .addMenuItem("SETTINGS", "설정")
             .addMenuItem("SCOREBOARD", "스코어보드")
             .addMenuItem("EXIT", "종료")

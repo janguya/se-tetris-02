@@ -46,7 +46,7 @@ public class Board implements GameInputCallback {
     public Board() {
         // 컴포넌츠 초기화
         gameSettings = GameSettings.getInstance();
-        gameLogic = new GameLogic(true); // 아이템 모드 활성화 (테스트용)
+        gameLogic = new GameLogic(gameSettings.isItemModeEnabled()); // GameSettings에서 아이템 모드 설정 가져오기
         scorePanel = new ScorePanel();
         menuOverlay = new MenuOverlay(); // 오버레이 초기화
         inputHandler = new GameInputHandler(this); // 입력 핸들러 초기화
