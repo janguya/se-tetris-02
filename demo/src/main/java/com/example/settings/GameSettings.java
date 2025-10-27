@@ -101,7 +101,7 @@ public class GameSettings {
         keyBindings.put("MOVE_DOWN", KeyCode.valueOf(prefs.get("key_move_down", "DOWN")));
         keyBindings.put("ROTATE", KeyCode.valueOf(prefs.get("key_rotate", "UP")));
         keyBindings.put("PAUSE", KeyCode.valueOf(prefs.get("key_pause", "ESCAPE")));
-        keyBindings.put("HARD_DROP", KeyCode.valueOf(prefs.get("key_hard_drop", "DOWN")));
+        keyBindings.put("HARD_DROP", KeyCode.valueOf(prefs.get("key_hard_drop", "SPACE")));
     }
     
     // 설정 저장
@@ -200,6 +200,7 @@ public class GameSettings {
         keyBindings.put("MOVE_DOWN", KeyCode.DOWN);
         keyBindings.put("ROTATE", KeyCode.UP);
         keyBindings.put("HARD_DROP", KeyCode.SPACE);
+        keyBindings.put("PAUSE", KeyCode.ESCAPE);
         saveSettings();
     }
     
