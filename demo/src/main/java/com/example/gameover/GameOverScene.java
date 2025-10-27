@@ -1,6 +1,5 @@
 package com.example.gameover;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -26,9 +25,21 @@ public class GameOverScene {
 
     private static final int MAX_SCORES = 10; // 상위 10개만 표시
 
-    private static final List<ScoreEntry> LEADERBOARD = new ArrayList<>();
+    private static List<ScoreEntry> LEADERBOARD = null;
+
+    // 리더보드 초기화 (파일에서 로드)
+    private static void initializeLeaderboard() {
+        if (LEADERBOARD == null) {
+            LEADERBOARD = ScoreManager.loadScores();
+            System.out.println("Leaderboard initialized with " + LEADERBOARD.size() + " entries");
+        }
+    }
 
     public static void show(Stage stage, int finalScore) {
+
+        // 리더보드 초기화
+        initializeLeaderboard();
+
         // top10 미만이거나 최하위보다 크면 등록
         boolean qualifies = qualifies(finalScore);
 
@@ -42,6 +53,9 @@ public class GameOverScene {
                     name = "Player"; // 빈 이름 방지
                 }
             currentPlayer = addScore(name.trim(), finalScore); // 보드에 추가하고 참조 반환
+            
+            // 파일에 저장
+            ScoreManager.saveScores(LEADERBOARD);
             }
         }
 

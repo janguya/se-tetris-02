@@ -29,6 +29,11 @@
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20231013</version>
+        </dependency>
 
         <!-- Test Dependencies -->
         <dependency>
@@ -55,6 +60,10 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>com.example.Main</mainClass>
+                    <options>
+                        <option>--add-reads</option>
+                        <option>com.example=ALL-UNNAMED</option>
+                    </options>
                 </configuration>
             </plugin>
             <plugin>
@@ -64,6 +73,10 @@
                 <configuration>
                     <source>8</source>
                     <target>8</target>
+                    <compilerArgs>
+                        <arg>--add-reads</arg>
+                        <arg>com.example=ALL-UNNAMED</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
 
@@ -71,6 +84,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.1.2</version>
+                <configuration>
+                    <argLine>--add-reads com.example=ALL-UNNAMED</argLine>
+                </configuration>
             </plugin>
 
             <!-- Maven Shade Plugin: Fat JAR 생성 -->

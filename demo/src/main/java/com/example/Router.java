@@ -1,16 +1,16 @@
 package com.example;
 
+import java.util.List;
+
 import com.example.game.component.Board;
 import com.example.gameover.GameOverScene;
+import com.example.gameover.ScoreManager;
 import com.example.settings.GameSettings;
 import com.example.settings.SettingsDialog;
 import com.example.startmenu.StartMenuView;
 
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class Router {
     private final Stage stage;
@@ -153,23 +153,21 @@ public class Router {
         settingsDialog.show();
     }
 
-    public void showScoreboard() {
-        List<GameOverScene.ScoreEntry> scores = new ArrayList<>();
-        // TODO : 실제 점수 불러오기 아래는 더미 데이터
-        scores.add(new GameOverScene.ScoreEntry("Alice", 1200));
-        scores.add(new GameOverScene.ScoreEntry("Bob", 950));
-        scores.add(new GameOverScene.ScoreEntry("Charlie", 850));
-        scores.add(new GameOverScene.ScoreEntry("You", 1000));
-        scores.add(new GameOverScene.ScoreEntry("Dave", 750));
-        scores.add(new GameOverScene.ScoreEntry("Eve", 600));
-        scores.add(new GameOverScene.ScoreEntry("Frank", 500));
-        scores.add(new GameOverScene.ScoreEntry("Grace", 400));
-        scores.add(new GameOverScene.ScoreEntry("Heidi", 300));
-        scores.add(new GameOverScene.ScoreEntry("Ivan", 200));
-        scores.add(new GameOverScene.ScoreEntry("Judy", 100));
-
-        GameOverScene.ScoreEntry current = new GameOverScene.ScoreEntry("You", 1000);
-        Scene scoreScene = GameOverScene.create(stage, scores, current, currentWidth(), currentHeight());
+        public void showScoreboard() {
+        System.out.println("\n=== Router.showScoreboard() ===");
+        
+        // ⭐ JSON 파일에서 실제 점수 불러오기 ⭐
+        List<GameOverScene.ScoreEntry> scores = ScoreManager.loadScores();
+        
+        System.out.println("Loaded " + scores.size() + " scores from file");
+        
+        // 점수가 없으면 안내 메시지용 더미 데이터 추가
+        if (scores.isEmpty()) {
+            System.out.println("No scores found, showing empty scoreboard");
+        }
+        
+        // 현재 플레이어는 null (스코어보드 보기만 하는 경우)
+        Scene scoreScene = GameOverScene.create(stage, scores, null, currentWidth(), currentHeight());
         stage.setScene(scoreScene);
         stage.setResizable(false);
         stage.sizeToScene();
