@@ -570,14 +570,38 @@ public class Board implements GameInputCallback {
 
     // 하드 드롭 (블록을 즉시 바닥까지 떨어뜨리기)
     private void hardDrop() {
+        if (!isGameActive()) {
+            return;
+        }
+
+        boolean dropped = false;
         while (gameLogic.moveDown()) {
-            // 더 이상 내려갈 수 없을 때까지 반복
+            dropped = true;
+            scorePanel.addScore(1);
+        }
+
+        if (!dropped) {
+            return;
         }
 
         int linesCleared = gameLogic.clearLines();
         if (linesCleared > 0) {
             scorePanel.calculateLineScore(linesCleared);
             updateSpeedDisplay();
+        }
+
+        if (gameLogic.isBlockAtTop()) {
+            if (!isGameOver) {
+                isGameOver = true;
+                gameOver();
+            }
+            return;
+        }
+
+        boolean spawned = gameLogic.spawnNextPiece();
+        if (!spawned && !isGameOver) {
+            isGameOver = true;
+            gameOver();
         }
     }
 
