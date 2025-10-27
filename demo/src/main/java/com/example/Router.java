@@ -196,7 +196,7 @@ public class Router {
 
         Scene scene = new Scene(startMenu.getRoot(), currentWidth(), currentHeight());
         try {
-            scene.getStylesheets().add(getClass().getResource("tetris-menu.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("/tetris-menu.css").toExternalForm());
         } catch (Exception e) {
             // ignore
         }

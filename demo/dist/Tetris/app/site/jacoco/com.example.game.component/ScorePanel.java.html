@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ScorePanel.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">tetris</a> &gt; <a href="index.source.html" class="el_package">com.example.game.component</a> &gt; <span class="el_source">ScorePanel.java</span></div><h1>ScorePanel.java</h1><pre class="source lang-java linenums">package com.example.game.component;
+
+import java.util.Map;
+
+import com.example.game.blocks.Block;
+import com.example.settings.GameSettings;
+
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+
+public class ScorePanel {
+    // 동적 크기 (화면 크기에 따라 조정됨)
+    private int nextBlockCanvasSize;
+    private int cellSize;
+    private int panelWidth;
+
+    private VBox panel; // 메인 패널
+    private Text scoreText; // 점수 텍스트
+    private Text levelText; // 레벨 텍스트
+    private Text linesText; // 라인 수 텍스트
+<span class="nc" id="L26">    private Canvas nextBlockCanvas = new Canvas(100, 100); // 다음 블록 미리보기 캔버스</span>
+    private GraphicsContext nextBlockGc; // 다음 블록 그래픽 컨텍스트
+
+<span class="nc" id="L29">    private int score = 0; // 현재 점수</span>
+<span class="nc" id="L30">    private int level = 1; // 현재 레벨</span>
+<span class="nc" id="L31">    private int linesCleared = 0; // 삭제된 라인 수</span>
+
+    private Text speedText; // 속도 표시 추가
+
+<span class="nc" id="L35">    public ScorePanel() {</span>
+<span class="nc" id="L36">        calculateDynamicSizes();</span>
+<span class="nc" id="L37">        initializePanel();</span>
+        
+        // 화면 크기 변경 리스너 등록
+<span class="nc" id="L40">        GameSettings.getInstance().addWindowSizeChangeListener(this::onWindowSizeChanged);</span>
+<span class="nc" id="L41">    }</span>
+    
+    // 동적 크기 계산
+    private void calculateDynamicSizes() {
+<span class="nc" id="L45">        GameSettings settings = GameSettings.getInstance();</span>
+<span class="nc" id="L46">        int windowWidth = settings.getWindowWidth();</span>
+<span class="nc" id="L47">        int windowHeight = settings.getWindowHeight();</span>
+        
+        // 창 크기에 비례하여 패널 크기 계산
+<span class="nc" id="L50">        panelWidth = Math.max(120, Math.min(200, windowWidth / 4));</span>
+<span class="nc" id="L51">        nextBlockCanvasSize = Math.max(60, Math.min(120, panelWidth - 40));</span>
+<span class="nc" id="L52">        cellSize = Math.max(10, Math.min(25, nextBlockCanvasSize / 6));</span>
+<span class="nc" id="L53">    }</span>
+    
+    // 화면 크기 변경 콜백
+    private void onWindowSizeChanged() {
+<span class="nc" id="L57">        calculateDynamicSizes();</span>
+<span class="nc" id="L58">        updatePanelSize();</span>
+<span class="nc" id="L59">        recreateCanvas();</span>
+<span class="nc" id="L60">    }</span>
+    
+    // 패널 크기 업데이트
+    private void updatePanelSize() {
+<span class="nc bnc" id="L64" title="All 2 branches missed.">        if (panel != null) {</span>
+<span class="nc" id="L65">            panel.setPrefWidth(panelWidth);</span>
+        }
+<span class="nc" id="L67">    }</span>
+    
+    // 캔버스 재생성
+    private void recreateCanvas() {
+<span class="nc bnc" id="L71" title="All 4 branches missed.">        if (nextBlockCanvas != null &amp;&amp; panel != null) {</span>
+            // 기존 캔버스를 패널에서 제거
+<span class="nc" id="L73">            panel.getChildren().remove(nextBlockCanvas);</span>
+            
+            // 새 캔버스 생성
+<span class="nc" id="L76">            nextBlockCanvas = new Canvas(nextBlockCanvasSize, nextBlockCanvasSize);</span>
+<span class="nc" id="L77">            nextBlockCanvas.getStyleClass().add(&quot;next-block-canvas&quot;);</span>
+<span class="nc" id="L78">            nextBlockGc = nextBlockCanvas.getGraphicsContext2D();</span>
+            
+            // 패널에서 &quot;Next Block:&quot; 텍스트 다음에 새 캔버스 추가
+<span class="nc" id="L81">            int insertIndex = 2; // &quot;TETRIS&quot;, &quot;Next Block:&quot; 다음</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            if (insertIndex &lt; panel.getChildren().size()) {</span>
+<span class="nc" id="L83">                panel.getChildren().add(insertIndex, nextBlockCanvas);</span>
+            }
+            
+<span class="nc" id="L86">            clearNextBlockCanvas();</span>
+        }
+<span class="nc" id="L88">    }</span>
+    
+    // 패널 초기화
+    private void initializePanel() {
+        // 메인 패널 설정
+<span class="nc" id="L93">        panel = new VBox(20);</span>
+<span class="nc" id="L94">        panel.getStyleClass().add(&quot;side-panel&quot;);</span>
+<span class="nc" id="L95">        panel.setPadding(new Insets(20));</span>
+<span class="nc" id="L96">        panel.setAlignment(Pos.TOP_CENTER);</span>
+<span class="nc" id="L97">        panel.setPrefWidth(panelWidth);</span>
+        
+<span class="nc" id="L99">        createPanelContent();</span>
+<span class="nc" id="L100">    }</span>
+    
+    // 패널 내용 생성
+    private void createPanelContent() {
+        // 타이틀
+<span class="nc" id="L105">        Text titleText = new Text(&quot;TETRIS&quot;);</span>
+<span class="nc" id="L106">        titleText.getStyleClass().add(&quot;title-text&quot;);</span>
+
+        // 다음 블록 부분
+<span class="nc" id="L109">        Text nextBlockTitle = new Text(&quot;Next Block:&quot;);</span>
+<span class="nc" id="L110">        nextBlockTitle.getStyleClass().add(&quot;next-block-title&quot;);</span>
+
+        // 다음 블록 캔버스 설정
+<span class="nc" id="L113">        nextBlockCanvas = new Canvas(nextBlockCanvasSize, nextBlockCanvasSize);</span>
+<span class="nc" id="L114">        nextBlockCanvas.getStyleClass().add(&quot;next-block-canvas&quot;);</span>
+<span class="nc" id="L115">        nextBlockGc = nextBlockCanvas.getGraphicsContext2D();</span>
+        
+        // 초기화
+<span class="nc" id="L118">        clearNextBlockCanvas();</span>
+
+        // 점수 부분
+<span class="nc" id="L121">        scoreText = new Text(&quot;Score: 0&quot;);</span>
+<span class="nc" id="L122">        scoreText.getStyleClass().add(&quot;score-text&quot;);</span>
+
+        // 레벨 부분
+<span class="nc" id="L125">        levelText = new Text(&quot;Level: 1&quot;);</span>
+<span class="nc" id="L126">        levelText.getStyleClass().add(&quot;level-text&quot;);</span>
+
+        // 라인 수 부분
+<span class="nc" id="L129">        linesText = new Text(&quot;Lines: 0&quot;);</span>
+<span class="nc" id="L130">        linesText.getStyleClass().add(&quot;lines-text&quot;);</span>
+
+        // 속도 부분 (새로 추가)
+<span class="nc" id="L133">        speedText = new Text(&quot;Speed: x1.0&quot;);</span>
+<span class="nc" id="L134">        speedText.getStyleClass().add(&quot;speed-text&quot;);</span>
+
+        // 컨트롤 설명 부분
+<span class="nc" id="L137">        Text controlsTitle = new Text(&quot;Controls:&quot;);</span>
+<span class="nc" id="L138">        controlsTitle.getStyleClass().add(&quot;controls-title&quot;);</span>
+        
+<span class="nc" id="L140">        Text controls = new Text(&quot;↑ Rotate\n← → Move\n↓ Drop\nSPACE Pause\nESC Settings&quot;);</span>
+<span class="nc" id="L141">        controls.getStyleClass().add(&quot;controls-text&quot;);</span>
+        
+        // 패널에 모든 요소 추가
+<span class="nc" id="L144">        panel.getChildren().addAll(</span>
+            titleText, 
+            nextBlockTitle, 
+            nextBlockCanvas,
+            scoreText, 
+            levelText, 
+            linesText,
+            speedText, // 속도 표시 추가
+            controlsTitle, 
+            controls
+        );
+<span class="nc" id="L155">    }</span>
+
+    // 다음 블록 업데이트
+    public void updateNextBlock(Block nextBlock) {
+<span class="nc bnc" id="L159" title="All 2 branches missed.">        if (nextBlock == null) {</span>
+<span class="nc" id="L160">            clearNextBlockCanvas();</span>
+<span class="nc" id="L161">            return;</span>
+        }
+        
+<span class="nc" id="L164">        clearNextBlockCanvas();</span>
+        
+        // 다음 블록 그리기
+<span class="nc" id="L167">        GameSettings gameSettings = GameSettings.getInstance();</span>
+<span class="nc" id="L168">        Map&lt;String, Color&gt; colorMap = gameSettings.getCurrentColors();</span>
+<span class="nc" id="L169">        Color blockColor = colorMap.get(nextBlock.getCssClass());</span>
+
+        // 중앙 위치 계산
+<span class="nc" id="L172">        double centerX = (nextBlockCanvasSize - nextBlock.width() * cellSize) / 2.0;</span>
+<span class="nc" id="L173">        double centerY = (nextBlockCanvasSize - nextBlock.height() * cellSize) / 2.0;</span>
+
+        // 다음 블록 그리기
+<span class="nc bnc" id="L176" title="All 2 branches missed.">        for (int i = 0; i &lt; nextBlock.width(); i++) {</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">            for (int j = 0; j &lt; nextBlock.height(); j++) {</span>
+<span class="nc bnc" id="L178" title="All 2 branches missed.">                if (nextBlock.getShape(i, j) == 1) {</span>
+<span class="nc" id="L179">                    double drawX = centerX + i * cellSize;</span>
+<span class="nc" id="L180">                    double drawY = centerY + j * cellSize;</span>
+<span class="nc" id="L181">                    drawNextBlockCell(drawX, drawY, blockColor);</span>
+                }
+            }
+        }
+<span class="nc" id="L185">    }</span>
+    
+    // 다음 블록 캔버스 초기화
+     private void clearNextBlockCanvas() {
+<span class="nc" id="L189">        nextBlockGc.setFill(Color.web(&quot;#0f1419&quot;));</span>
+<span class="nc" id="L190">        nextBlockGc.fillRect(0, 0, nextBlockCanvasSize, nextBlockCanvasSize);</span>
+        
+        // Add border
+<span class="nc" id="L193">        nextBlockGc.setStroke(Color.web(&quot;#16213e&quot;));</span>
+<span class="nc" id="L194">        nextBlockGc.setLineWidth(2);</span>
+<span class="nc" id="L195">        nextBlockGc.strokeRect(1, 1, nextBlockCanvasSize - 2, nextBlockCanvasSize - 2);</span>
+<span class="nc" id="L196">    }</span>
+
+    // 다음 블록 그리기
+    private void drawNextBlockCell(double x, double y, Color color) {
+        // Main cell
+<span class="nc" id="L201">        nextBlockGc.setFill(color);</span>
+<span class="nc" id="L202">        nextBlockGc.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);</span>
+        
+        // Highlight effect (smaller for next block)
+<span class="nc" id="L205">        nextBlockGc.setFill(color.brighter());</span>
+<span class="nc" id="L206">        nextBlockGc.fillRect(x + 2, y + 2, cellSize - 4, 2);</span>
+<span class="nc" id="L207">        nextBlockGc.fillRect(x + 2, y + 2, 2, cellSize - 4);</span>
+        
+        // Shadow effect (smaller for next block)
+<span class="nc" id="L210">        nextBlockGc.setFill(color.darker());</span>
+<span class="nc" id="L211">        nextBlockGc.fillRect(x + 2, y + cellSize - 4, cellSize - 4, 2);</span>
+<span class="nc" id="L212">        nextBlockGc.fillRect(x + cellSize - 4, y + 2, 2, cellSize - 4);</span>
+<span class="nc" id="L213">    }</span>
+    
+    // 업데이트된 색상 적용
+    public void updateColors(Block nextBlock) {
+<span class="nc" id="L217">        updateNextBlock(nextBlock);</span>
+<span class="nc" id="L218">    }</span>
+
+    // 점수, 레벨, 라인 수 업데이트 메서드
+    public void addScore(int points) {
+<span class="nc" id="L222">        score += points;</span>
+<span class="nc" id="L223">        updateScoreDisplay();</span>
+<span class="nc" id="L224">    }</span>
+    
+    public void addLines(int lines) {
+<span class="nc" id="L227">        linesCleared += lines;</span>
+<span class="nc" id="L228">        updateLevel();</span>
+<span class="nc" id="L229">        updateLinesDisplay();</span>
+<span class="nc" id="L230">    }</span>
+    
+    private void updateLevel() {
+<span class="nc" id="L233">        int newLevel = (linesCleared / 10) + 1;</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">        if (newLevel != level) {</span>
+<span class="nc" id="L235">            level = newLevel;</span>
+<span class="nc" id="L236">            updateLevelDisplay();</span>
+        }
+<span class="nc" id="L238">    }</span>
+    
+    private void updateScoreDisplay() {
+<span class="nc" id="L241">        scoreText.setText(&quot;Score: &quot; + score);</span>
+<span class="nc" id="L242">    }</span>
+    
+    private void updateLevelDisplay() {
+<span class="nc" id="L245">        levelText.setText(&quot;Level: &quot; + level);</span>
+<span class="nc" id="L246">    }</span>
+    
+    private void updateLinesDisplay() {
+<span class="nc" id="L249">        linesText.setText(&quot;Lines: &quot; + linesCleared);</span>
+<span class="nc" id="L250">    }</span>
+    
+    // 점수, 레벨, 라인 수 초기화
+    public void resetScore() {
+<span class="nc" id="L254">        score = 0;</span>
+<span class="nc" id="L255">        level = 1;</span>
+<span class="nc" id="L256">        linesCleared = 0;</span>
+<span class="nc" id="L257">        updateScoreDisplay();</span>
+<span class="nc" id="L258">        updateLevelDisplay();</span>
+<span class="nc" id="L259">        updateLinesDisplay();</span>
+<span class="nc" id="L260">    }</span>
+    
+    // Getters
+    public VBox getPanel() {
+<span class="nc" id="L264">        return panel;</span>
+    }
+    
+    public int getScore() {
+<span class="nc" id="L268">        return score;</span>
+    }
+    
+    public int getLevel() {
+<span class="nc" id="L272">        return level;</span>
+    }
+    
+    public int getLinesCleared() {
+<span class="nc" id="L276">        return linesCleared;</span>
+    }
+
+    public Canvas getNextBlockCanvas() {
+<span class="nc" id="L280">        return nextBlockCanvas;</span>
+    }
+
+    // 한 번에 지운 라인 수에 따른 점수 계산
+    public void calculateLineScore(int linesCount) {
+<span class="nc" id="L285">        int baseScore = 0;</span>
+<span class="nc bnc" id="L286" title="All 5 branches missed.">        switch (linesCount) {</span>
+            case 1:
+<span class="nc" id="L288">                baseScore = 100;</span>
+<span class="nc" id="L289">                break;</span>
+            case 2:
+<span class="nc" id="L291">                baseScore = 300;</span>
+<span class="nc" id="L292">                break;</span>
+            case 3:
+<span class="nc" id="L294">                baseScore = 500;</span>
+<span class="nc" id="L295">                break;</span>
+            case 4:
+<span class="nc" id="L297">                baseScore = 800;</span>
+                break;
+        }
+        
+        // 레벨에 따른 점수 배율 적용
+<span class="nc" id="L302">        addScore(baseScore * level);</span>
+<span class="nc" id="L303">        addLines(linesCount);</span>
+<span class="nc" id="L304">    }</span>
+    
+    // 리소스 정리
+    public void cleanup() {
+<span class="nc" id="L308">        GameSettings.getInstance().removeWindowSizeChangeListener(this::onWindowSizeChanged);</span>
+<span class="nc" id="L309">    }</span>
+    // 속도 업데이트 메서드 추가
+    public void updateSpeed(double speedMultiplier, int speedLevel) {
+<span class="nc" id="L312">        speedText.setText(&quot;Speed: x&quot; + String.format(&quot;%.1f&quot;, 1.0 / speedMultiplier));</span>
+<span class="nc" id="L313">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

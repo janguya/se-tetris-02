@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Router.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">tetris</a> &gt; <a href="index.source.html" class="el_package">com.example</a> &gt; <span class="el_source">Router.java</span></div><h1>Router.java</h1><pre class="source lang-java linenums">package com.example;
+
+import com.example.game.component.Board;
+import com.example.gameover.GameOverScene;
+import com.example.settings.GameSettings;
+import com.example.settings.SettingsDialog;
+import com.example.startmenu.StartMenuView;
+
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Router {
+    private final Stage stage;
+<span class="nc" id="L17">    private Integer overrideWidth = null;</span>
+<span class="nc" id="L18">    private Integer overrideHeight = null;</span>
+<span class="nc" id="L19">    private Double savedX = null; // 창 위치 저장</span>
+<span class="nc" id="L20">    private Double savedY = null;</span>
+
+<span class="nc" id="L22">    public Router(Stage stage) {</span>
+<span class="nc" id="L23">        this.stage = stage;</span>
+<span class="nc" id="L24">    }</span>
+
+<span class="nc" id="L26">    public Router(Stage stage, Integer width, Integer height) {</span>
+<span class="nc" id="L27">        this.stage = stage;</span>
+<span class="nc" id="L28">        this.overrideWidth = width;</span>
+<span class="nc" id="L29">        this.overrideHeight = height;</span>
+<span class="nc" id="L30">    }</span>
+
+    public void setSize(Integer width, Integer height) {
+<span class="nc" id="L33">        this.overrideWidth = width;</span>
+<span class="nc" id="L34">        this.overrideHeight = height;</span>
+<span class="nc" id="L35">        updateStageSize();</span>
+<span class="nc" id="L36">    }</span>
+
+    private int currentWidth() {
+<span class="nc bnc" id="L39" title="All 2 branches missed.">        if (overrideWidth != null) return overrideWidth;</span>
+<span class="nc" id="L40">        return GameSettings.getInstance().getWindowWidth();</span>
+    }
+
+    private int currentHeight() {
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        if (overrideHeight != null) return overrideHeight;</span>
+<span class="nc" id="L45">        return GameSettings.getInstance().getWindowHeight();</span>
+    }
+    
+    // 설정 변경 콜백 생성
+    private Runnable createSettingsCallback() {
+<span class="nc" id="L50">        return () -&gt; {</span>
+<span class="nc" id="L51">            System.out.println(&quot;Settings changed - clearing override and updating size&quot;);</span>
+            
+            // 현재 창 위치 저장 (화면이 표시되어 있다면)
+<span class="nc bnc" id="L54" title="All 2 branches missed.">            if (stage.isShowing()) {</span>
+<span class="nc" id="L55">                savedX = stage.getX();</span>
+<span class="nc" id="L56">                savedY = stage.getY();</span>
+            }
+            
+            // override 값 제거하여 GameSettings 값 사용
+<span class="nc" id="L60">            this.overrideWidth = null;</span>
+<span class="nc" id="L61">            this.overrideHeight = null;</span>
+            
+            // 크기 업데이트
+<span class="nc" id="L64">            updateStageSize();</span>
+<span class="nc" id="L65">        };</span>
+    }
+    
+    // 스테이지 크기 업데이트 
+    private void updateStageSize() {
+<span class="nc" id="L70">        System.out.println(&quot;Updating stage size to: &quot; + currentWidth() + &quot;x&quot; + currentHeight());</span>
+        
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (stage.getScene() != null) {</span>
+<span class="nc" id="L73">            Scene currentScene = stage.getScene();</span>
+<span class="nc" id="L74">            Scene newScene = new Scene(currentScene.getRoot(), currentWidth(), currentHeight());</span>
+            
+            // 기존 스타일시트가 있다면 복사
+<span class="nc" id="L77">            newScene.getStylesheets().addAll(currentScene.getStylesheets());</span>
+            
+<span class="nc" id="L79">            stage.setScene(newScene);</span>
+<span class="nc" id="L80">            stage.sizeToScene();</span>
+            
+            // 저장된 위치로 복원 (있다면)
+<span class="nc bnc" id="L83" title="All 4 branches missed.">            if (savedX != null &amp;&amp; savedY != null) {</span>
+<span class="nc" id="L84">                stage.setX(savedX);</span>
+<span class="nc" id="L85">                stage.setY(savedY);</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            } else if (!stage.isShowing()) {</span>
+<span class="nc" id="L87">                stage.centerOnScreen();</span>
+            }
+        }
+<span class="nc" id="L90">    }</span>
+
+    public void route(String menuId) {
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (menuId == null) return;</span>
+<span class="nc bnc" id="L94" title="All 5 branches missed.">        switch (menuId) {</span>
+            case &quot;GAME&quot;:
+<span class="nc" id="L96">                showGame();</span>
+<span class="nc" id="L97">                break;</span>
+            case &quot;SETTINGS&quot;:
+<span class="nc" id="L99">                showSettings();</span>
+<span class="nc" id="L100">                break;</span>
+            case &quot;SCOREBOARD&quot;:
+<span class="nc" id="L102">                showScoreboard();</span>
+<span class="nc" id="L103">                break;</span>
+            case &quot;EXIT&quot;:
+<span class="nc" id="L105">                exit();</span>
+<span class="nc" id="L106">                break;</span>
+            default:
+                // unknown
+        }
+<span class="nc" id="L110">    }</span>
+
+    public void showGame() {
+<span class="nc" id="L113">        Board gameBoard = new Board();</span>
+<span class="nc" id="L114">        Scene gameScene = new Scene(gameBoard.getRoot(), currentWidth(), currentHeight());</span>
+        try {
+<span class="nc" id="L116">            gameScene.getStylesheets().add(getClass().getResource(&quot;/styles.css&quot;).toExternalForm());</span>
+<span class="nc" id="L117">        } catch (Exception e) {</span>
+            // ignore missing stylesheet
+<span class="nc" id="L119">        }</span>
+<span class="nc" id="L120">        stage.setScene(gameScene);</span>
+<span class="nc" id="L121">        stage.setResizable(false);</span>
+<span class="nc" id="L122">        stage.sizeToScene();</span>
+        
+        // 저장된 위치가 있으면 사용, 없으면 중앙 정렬
+<span class="nc bnc" id="L125" title="All 4 branches missed.">        if (savedX != null &amp;&amp; savedY != null) {</span>
+<span class="nc" id="L126">            stage.setX(savedX);</span>
+<span class="nc" id="L127">            stage.setY(savedY);</span>
+        } else {
+<span class="nc" id="L129">            stage.centerOnScreen();</span>
+        }
+        
+<span class="nc" id="L132">        stage.show();</span>
+<span class="nc" id="L133">        gameBoard.getRoot().requestFocus();</span>
+<span class="nc" id="L134">    }</span>
+
+    // 매개변수 없는 showSettings (메뉴에서 호출)
+    public void showSettings() {
+<span class="nc" id="L138">        SettingsDialog settingsDialog = new SettingsDialog(stage, createSettingsCallback());</span>
+<span class="nc" id="L139">        settingsDialog.show();</span>
+<span class="nc" id="L140">    }</span>
+
+    // 매개변수 있는 showSettings (Board.java에서 호출)
+    public void showSettings(Runnable additionalCallback) {
+        // 기본 콜백과 추가 콜백을 조합
+<span class="nc" id="L145">        Runnable combinedCallback = () -&gt; {</span>
+<span class="nc" id="L146">            createSettingsCallback().run(); // 기본 크기 변경 콜백</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">            if (additionalCallback != null) {</span>
+<span class="nc" id="L148">                additionalCallback.run(); // 추가 콜백 (Board의 onSettingsChanged)</span>
+            }
+<span class="nc" id="L150">        };</span>
+        
+<span class="nc" id="L152">        SettingsDialog settingsDialog = new SettingsDialog(stage, combinedCallback);</span>
+<span class="nc" id="L153">        settingsDialog.show();</span>
+<span class="nc" id="L154">    }</span>
+
+    public void showScoreboard() {
+<span class="nc" id="L157">        List&lt;GameOverScene.ScoreEntry&gt; scores = new ArrayList&lt;&gt;();</span>
+        // TODO : 실제 점수 불러오기 아래는 더미 데이터
+<span class="nc" id="L159">        scores.add(new GameOverScene.ScoreEntry(&quot;Alice&quot;, 1200));</span>
+<span class="nc" id="L160">        scores.add(new GameOverScene.ScoreEntry(&quot;Bob&quot;, 950));</span>
+<span class="nc" id="L161">        scores.add(new GameOverScene.ScoreEntry(&quot;Charlie&quot;, 850));</span>
+<span class="nc" id="L162">        scores.add(new GameOverScene.ScoreEntry(&quot;You&quot;, 1000));</span>
+<span class="nc" id="L163">        scores.add(new GameOverScene.ScoreEntry(&quot;Dave&quot;, 750));</span>
+<span class="nc" id="L164">        scores.add(new GameOverScene.ScoreEntry(&quot;Eve&quot;, 600));</span>
+<span class="nc" id="L165">        scores.add(new GameOverScene.ScoreEntry(&quot;Frank&quot;, 500));</span>
+<span class="nc" id="L166">        scores.add(new GameOverScene.ScoreEntry(&quot;Grace&quot;, 400));</span>
+<span class="nc" id="L167">        scores.add(new GameOverScene.ScoreEntry(&quot;Heidi&quot;, 300));</span>
+<span class="nc" id="L168">        scores.add(new GameOverScene.ScoreEntry(&quot;Ivan&quot;, 200));</span>
+<span class="nc" id="L169">        scores.add(new GameOverScene.ScoreEntry(&quot;Judy&quot;, 100));</span>
+
+<span class="nc" id="L171">        GameOverScene.ScoreEntry current = new GameOverScene.ScoreEntry(&quot;You&quot;, 1000);</span>
+<span class="nc" id="L172">        Scene scoreScene = GameOverScene.create(stage, scores, current, currentWidth(), currentHeight());</span>
+<span class="nc" id="L173">        stage.setScene(scoreScene);</span>
+<span class="nc" id="L174">        stage.setResizable(false);</span>
+<span class="nc" id="L175">        stage.sizeToScene();</span>
+        
+        // 저장된 위치가 있으면 사용, 없으면 중앙 정렬
+<span class="nc bnc" id="L178" title="All 4 branches missed.">        if (savedX != null &amp;&amp; savedY != null) {</span>
+<span class="nc" id="L179">            stage.setX(savedX);</span>
+<span class="nc" id="L180">            stage.setY(savedY);</span>
+        } else {
+<span class="nc" id="L182">            stage.centerOnScreen();</span>
+        }
+        
+<span class="nc" id="L185">        stage.show();</span>
+<span class="nc" id="L186">    }</span>
+
+    public void showStartMenu() {
+<span class="nc" id="L189">        StartMenuView startMenu = new StartMenuView()</span>
+<span class="nc" id="L190">            .addMenuItem(&quot;GAME&quot;, &quot;게임 시작&quot;)</span>
+<span class="nc" id="L191">            .addMenuItem(&quot;SETTINGS&quot;, &quot;설정&quot;)</span>
+<span class="nc" id="L192">            .addMenuItem(&quot;SCOREBOARD&quot;, &quot;스코어보드&quot;)</span>
+<span class="nc" id="L193">            .addMenuItem(&quot;EXIT&quot;, &quot;종료&quot;)</span>
+<span class="nc" id="L194">            .setOnMenuSelect(this::route)</span>
+<span class="nc" id="L195">            .build();</span>
+
+<span class="nc" id="L197">        Scene scene = new Scene(startMenu.getRoot(), currentWidth(), currentHeight());</span>
+        try {
+<span class="nc" id="L199">            scene.getStylesheets().add(getClass().getResource(&quot;/tetris-menu.css&quot;).toExternalForm());</span>
+<span class="nc" id="L200">        } catch (Exception e) {</span>
+            // ignore
+<span class="nc" id="L202">        }</span>
+<span class="nc" id="L203">        stage.setTitle(&quot;Tetris&quot;);</span>
+<span class="nc" id="L204">        stage.setScene(scene);</span>
+<span class="nc" id="L205">        stage.setResizable(false);</span>
+<span class="nc" id="L206">        stage.sizeToScene();</span>
+        
+        // 저장된 위치가 있으면 사용, 없으면 중앙 정렬
+<span class="nc bnc" id="L209" title="All 4 branches missed.">        if (savedX != null &amp;&amp; savedY != null) {</span>
+<span class="nc" id="L210">            stage.setX(savedX);</span>
+<span class="nc" id="L211">            stage.setY(savedY);</span>
+        } else {
+<span class="nc" id="L213">            stage.centerOnScreen();</span>
+        }
+        
+<span class="nc" id="L216">        stage.show();</span>
+<span class="nc" id="L217">        startMenu.requestFocus();</span>
+<span class="nc" id="L218">    }</span>
+
+    public void exit() {
+<span class="nc" id="L221">        System.exit(0);</span>
+<span class="nc" id="L222">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

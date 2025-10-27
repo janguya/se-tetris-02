@@ -1,0 +1,40 @@
+/* 전체 배경 */
+.root {
+  -fx-background-color: #1a1a2e;
+}
+
+/* 타이틀 스타일 */
+.title {
+  -fx-text-fill: #00d4ff;
+  -fx-font-weight: bold;
+  -fx-effect: dropshadow(gaussian, rgba(0, 212, 255, 0.6), 10, 0.5, 0, 0);
+}
+
+/* 메뉴 아이템 기본 */
+.menu-item {
+  -fx-text-fill: #e0e0e0;
+  -fx-padding: 8 20 8 20;
+  -fx-cursor: hand;
+}
+
+/* 선택되지 않은 메뉴 */
+.menu-item.unselected {
+  -fx-text-fill: #888888;
+  -fx-font-weight: normal;
+}
+
+/* 선택된 메뉴 */
+.menu-item.selected {
+  -fx-text-fill: #00ff88;
+  -fx-font-weight: bold;
+  -fx-background-color: rgba(0, 255, 136, 0.1);
+  -fx-background-radius: 5;
+  -fx-effect: dropshadow(gaussian, rgba(0, 255, 136, 0.4), 8, 0.5, 0, 0);
+}
+
+/* 힌트 텍스트 */
+.hint {
+  -fx-text-fill: #666666;
+  -fx-font-size: 12;
+  -fx-font-family: "Consolas", monospace;
+}

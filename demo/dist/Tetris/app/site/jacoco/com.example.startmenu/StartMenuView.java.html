@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StartMenuView.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">tetris</a> &gt; <a href="index.source.html" class="el_package">com.example.startmenu</a> &gt; <span class="el_source">StartMenuView.java</span></div><h1>StartMenuView.java</h1><pre class="source lang-java linenums">package com.example.startmenu;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
+import javafx.animation.FadeTransition;
+import javafx.animation.TranslateTransition;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Parent;
+import javafx.scene.control.Label;
+import javafx.scene.input.KeyCode;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.util.Duration;
+
+public class StartMenuView {
+
+
+    // 메뉴 아이템 데이터 클래스
+    public static class MenuItem {
+        private final String id;
+        private final String label;
+
+<span class="nc" id="L27">        public MenuItem(String id, String label) {</span>
+<span class="nc" id="L28">            this.id = id;</span>
+<span class="nc" id="L29">            this.label = label;</span>
+<span class="nc" id="L30">        }</span>
+
+<span class="nc" id="L32">        public String getId() { return id; }</span>
+<span class="nc" id="L33">        public String getLabel() { return label; }</span>
+    }
+
+<span class="nc" id="L36">    private final BorderPane root = new BorderPane();</span>
+<span class="nc" id="L37">    private final VBox menuBox = new VBox(15);</span>
+<span class="nc" id="L38">    private final Label titleLabel = new Label(&quot;TETRIS&quot;);</span>
+<span class="nc" id="L39">    private final Label hintLabel = new Label(&quot;↑/↓: 이동   Enter: 선택   Esc: 종료&quot;);</span>
+    
+<span class="nc" id="L41">    private final List&lt;MenuItem&gt; menuItems = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L42">    private final List&lt;Label&gt; menuLabels = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L43">    private int selectedIndex = 0;</span>
+    private Consumer&lt;String&gt; onSelectCallback;
+    
+    // 빌더 패턴으로 체이닝 가능하도록
+<span class="nc" id="L47">    public StartMenuView() {</span>
+<span class="nc" id="L48">        initializeUI();</span>
+<span class="nc" id="L49">        setupKeyboardInput();</span>
+<span class="nc" id="L50">    }</span>
+
+    // 빌더 패턴: 메뉴 아이템 추가
+    public StartMenuView addMenuItem(String id, String label) {
+<span class="nc" id="L54">        MenuItem item = new MenuItem(id, label);</span>
+<span class="nc" id="L55">        menuItems.add(item);</span>
+        
+<span class="nc" id="L57">        Label itemLabel = new Label(label);</span>
+<span class="nc" id="L58">        itemLabel.getStyleClass().add(&quot;menu-item&quot;);</span>
+<span class="nc" id="L59">        itemLabel.setFont(Font.font(&quot;Consolas&quot;, 20));</span>
+<span class="nc" id="L60">        menuLabels.add(itemLabel);</span>
+        
+<span class="nc" id="L62">        return this;</span>
+    }
+
+    // 빌더 패턴: 선택 콜백 설정
+    public StartMenuView setOnMenuSelect(Consumer&lt;String&gt; callback) {
+<span class="nc" id="L67">        this.onSelectCallback = callback;</span>
+<span class="nc" id="L68">        return this;</span>
+    }
+
+    // 빌더 패턴: 최종 빌드
+    public StartMenuView build() {
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        if (menuItems.isEmpty()) {</span>
+<span class="nc" id="L74">            throw new IllegalStateException(&quot;메뉴 아이템이 하나 이상 필요합니다.&quot;);</span>
+        }
+<span class="nc" id="L76">        refreshMenuDisplay();</span>
+<span class="nc" id="L77">        playTitleAnimation();</span>
+<span class="nc" id="L78">        return this;</span>
+    }
+
+    private void initializeUI() {
+        // 타이틀 스타일
+<span class="nc" id="L83">        titleLabel.getStyleClass().add(&quot;title&quot;);</span>
+<span class="nc" id="L84">        titleLabel.setFont(Font.font(&quot;Consolas&quot;, 48));</span>
+        
+        // 힌트 스타일
+<span class="nc" id="L87">        hintLabel.getStyleClass().add(&quot;hint&quot;);</span>
+<span class="nc" id="L88">        hintLabel.setOpacity(0.7);</span>
+        
+        // 메뉴 박스 설정
+<span class="nc" id="L91">        menuBox.setAlignment(Pos.CENTER);</span>
+<span class="nc" id="L92">        menuBox.setPadding(new Insets(20, 0, 0, 0));</span>
+        
+        // 중앙 컨테이너
+<span class="nc" id="L95">        VBox centerContainer = new VBox(30, titleLabel, menuBox);</span>
+<span class="nc" id="L96">        centerContainer.setAlignment(Pos.CENTER);</span>
+        
+        // 레이아웃 구성
+<span class="nc" id="L99">        root.setCenter(centerContainer);</span>
+<span class="nc" id="L100">        root.setBottom(hintLabel);</span>
+<span class="nc" id="L101">        root.setPadding(new Insets(40, 20, 20, 20));</span>
+        
+<span class="nc" id="L103">        BorderPane.setAlignment(hintLabel, Pos.CENTER);</span>
+<span class="nc" id="L104">        BorderPane.setMargin(hintLabel, new Insets(0, 0, 15, 0));</span>
+        
+        // 포커스 가능하도록 설정
+<span class="nc" id="L107">        root.setFocusTraversable(true);</span>
+<span class="nc" id="L108">    }</span>
+
+    private void setupKeyboardInput() {
+<span class="nc" id="L111">        root.setOnKeyPressed(event -&gt; {</span>
+<span class="nc" id="L112">            KeyCode code = event.getCode();</span>
+            
+<span class="nc bnc" id="L114" title="All 5 branches missed.">            switch (code) {</span>
+                case UP:
+                case W:
+<span class="nc" id="L117">                    moveSelection(-1);</span>
+<span class="nc" id="L118">                    break;</span>
+                case DOWN:
+                case S:
+<span class="nc" id="L121">                    moveSelection(1);</span>
+<span class="nc" id="L122">                    break;</span>
+                case ENTER:
+                case SPACE:
+<span class="nc" id="L125">                    selectCurrentMenu();</span>
+<span class="nc" id="L126">                    break;</span>
+                case ESCAPE:
+<span class="nc" id="L128">                    handleEscape();</span>
+<span class="nc" id="L129">                    break;</span>
+                default:
+                    // 다른 키는 무시 (하단 힌트가 항상 표시됨)
+                    break;
+            }
+            
+<span class="nc" id="L135">            event.consume();</span>
+<span class="nc" id="L136">        });</span>
+<span class="nc" id="L137">    }</span>
+
+    private void moveSelection(int delta) {
+        // 이전 선택 해제 애니메이션
+<span class="nc" id="L141">        animateDeselect(menuLabels.get(selectedIndex));</span>
+        
+        // 인덱스 이동 (순환)
+<span class="nc" id="L144">        int size = menuItems.size();</span>
+<span class="nc" id="L145">        selectedIndex = (selectedIndex + delta + size) % size;</span>
+        
+        // 새 선택 강조 애니메이션
+<span class="nc" id="L148">        animateSelect(menuLabels.get(selectedIndex));</span>
+        
+<span class="nc" id="L150">        refreshMenuDisplay();</span>
+<span class="nc" id="L151">    }</span>
+
+    private void selectCurrentMenu() {
+<span class="nc bnc" id="L154" title="All 4 branches missed.">        if (onSelectCallback != null &amp;&amp; selectedIndex &lt; menuItems.size()) {</span>
+<span class="nc" id="L155">            MenuItem selected = menuItems.get(selectedIndex);</span>
+            
+            // 선택 애니메이션 후 콜백 실행
+<span class="nc" id="L158">            playSelectAnimation(menuLabels.get(selectedIndex), () -&gt; {</span>
+<span class="nc" id="L159">                onSelectCallback.accept(selected.getId());</span>
+<span class="nc" id="L160">            });</span>
+        }
+<span class="nc" id="L162">    }</span>
+
+    private void handleEscape() {
+<span class="nc bnc" id="L165" title="All 2 branches missed.">        if (onSelectCallback != null) {</span>
+<span class="nc" id="L166">            onSelectCallback.accept(&quot;EXIT&quot;);</span>
+        }
+<span class="nc" id="L168">    }</span>
+
+    private void refreshMenuDisplay() {
+<span class="nc" id="L171">        menuBox.getChildren().clear();</span>
+        
+<span class="nc bnc" id="L173" title="All 2 branches missed.">        for (int i = 0; i &lt; menuLabels.size(); i++) {</span>
+<span class="nc" id="L174">            Label label = menuLabels.get(i);</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">            boolean isSelected = (i == selectedIndex);</span>
+            
+            // CSS 클래스로 스타일 관리
+<span class="nc" id="L178">            label.getStyleClass().removeAll(&quot;selected&quot;, &quot;unselected&quot;);</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">            label.getStyleClass().add(isSelected ? &quot;selected&quot; : &quot;unselected&quot;);</span>
+            
+            // 텍스트 앞에 선택 표시
+<span class="nc bnc" id="L182" title="All 2 branches missed.">            String prefix = isSelected ? &quot;▶ &quot; : &quot;  &quot;;</span>
+<span class="nc" id="L183">            label.setText(prefix + menuItems.get(i).getLabel());</span>
+            
+<span class="nc" id="L185">            menuBox.getChildren().add(label);</span>
+        }
+<span class="nc" id="L187">    }</span>
+
+    // 애니메이션: 타이틀 등장
+    private void playTitleAnimation() {
+<span class="nc" id="L191">        FadeTransition fade = new FadeTransition(Duration.millis(800), titleLabel);</span>
+<span class="nc" id="L192">        fade.setFromValue(0.0);</span>
+<span class="nc" id="L193">        fade.setToValue(1.0);</span>
+        
+<span class="nc" id="L195">        TranslateTransition slide = new TranslateTransition(Duration.millis(800), titleLabel);</span>
+<span class="nc" id="L196">        slide.setFromY(-30);</span>
+<span class="nc" id="L197">        slide.setToY(0);</span>
+        
+<span class="nc" id="L199">        fade.play();</span>
+<span class="nc" id="L200">        slide.play();</span>
+<span class="nc" id="L201">    }</span>
+
+    // 애니메이션: 메뉴 선택
+    private void animateSelect(Label label) {
+<span class="nc" id="L205">        TranslateTransition transition = new TranslateTransition(Duration.millis(150), label);</span>
+<span class="nc" id="L206">        transition.setFromX(-10);</span>
+<span class="nc" id="L207">        transition.setToX(0);</span>
+<span class="nc" id="L208">        transition.play();</span>
+<span class="nc" id="L209">    }</span>
+
+    // 애니메이션: 메뉴 선택 해제
+    private void animateDeselect(Label label) {
+<span class="nc" id="L213">        TranslateTransition transition = new TranslateTransition(Duration.millis(150), label);</span>
+<span class="nc" id="L214">        transition.setFromX(0);</span>
+<span class="nc" id="L215">        transition.setToX(-10);</span>
+<span class="nc" id="L216">        transition.setToX(0);</span>
+<span class="nc" id="L217">        transition.play();</span>
+<span class="nc" id="L218">    }</span>
+
+    // 애니메이션: 메뉴 확정 선택
+    private void playSelectAnimation(Label label, Runnable onComplete) {
+<span class="nc" id="L222">        FadeTransition fade = new FadeTransition(Duration.millis(200), label);</span>
+<span class="nc" id="L223">        fade.setFromValue(1.0);</span>
+<span class="nc" id="L224">        fade.setToValue(0.3);</span>
+<span class="nc" id="L225">        fade.setCycleCount(2);</span>
+<span class="nc" id="L226">        fade.setAutoReverse(true);</span>
+<span class="nc" id="L227">        fade.setOnFinished(e -&gt; {</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">            if (onComplete != null) {</span>
+<span class="nc" id="L229">                onComplete.run();</span>
+            }
+<span class="nc" id="L231">        });</span>
+<span class="nc" id="L232">        fade.play();</span>
+<span class="nc" id="L233">    }</span>
+
+    public Parent getRoot() {
+<span class="nc" id="L236">        return root;</span>
+    }
+
+    public void requestFocus() {
+<span class="nc" id="L240">        root.requestFocus();</span>
+<span class="nc" id="L241">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

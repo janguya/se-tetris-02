@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="ko"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GameInputHandler.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">tetris</a> &gt; <a href="index.source.html" class="el_package">com.example.game.component</a> &gt; <span class="el_source">GameInputHandler.java</span></div><h1>GameInputHandler.java</h1><pre class="source lang-java linenums">package com.example.game.component;
+
+import com.example.settings.GameSettings;
+
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+
+public class GameInputHandler {
+    
+    public interface GameInputCallback {
+        void onMoveLeft();
+        void onMoveRight();
+        void onMoveDown();
+        void onRotate();
+        void onHardDrop();
+        void onPause();
+        void onSettings();
+        boolean isGameActive(); // 게임이 진행 중인지 확인
+        boolean isMenuVisible(); // 메뉴가 보이는지 확인
+        boolean isPaused(); // 일시정지 상태인지 확인 (추가)
+    }
+    
+    private final GameInputCallback callback;
+    private final GameSettings gameSettings;
+    
+<span class="nc" id="L26">    public GameInputHandler(GameInputCallback callback) {</span>
+<span class="nc" id="L27">        this.callback = callback;</span>
+<span class="nc" id="L28">        this.gameSettings = GameSettings.getInstance();</span>
+<span class="nc" id="L29">    }</span>
+    
+    /**
+     * 키 입력 이벤트를 처리합니다.
+     * @param event 키 이벤트
+     * @return 이벤트가 처리되었으면 true, 그렇지 않으면 false
+     */
+    public boolean handleKeyPressed(KeyEvent event) {
+<span class="nc" id="L37">        KeyCode pressedKey = event.getCode();</span>
+        
+        // ESC 키는 특별 처리 (항상 최우선)
+<span class="nc bnc" id="L40" title="All 2 branches missed.">        if (pressedKey == KeyCode.ESCAPE) {</span>
+<span class="nc" id="L41">            return handleEscapeKey();</span>
+        }
+        
+        // 메뉴가 열려있으면 다른 게임 입력 무시
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        if (callback.isMenuVisible()) {</span>
+<span class="nc" id="L46">            return false;</span>
+        }
+        
+        // 게임이 비활성 상태일 때는 일시정지만 허용
+<span class="nc bnc" id="L50" title="All 2 branches missed.">        if (!callback.isGameActive()) {</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">            if (pressedKey == gameSettings.getKeyBinding(&quot;PAUSE&quot;)) {</span>
+<span class="nc" id="L52">                callback.onPause();</span>
+<span class="nc" id="L53">                return true;</span>
+            }
+<span class="nc" id="L55">            return false;</span>
+        }
+        
+        // 게임 진행 중일 때 모든 입력 처리
+<span class="nc bnc" id="L59" title="All 4 branches missed.">        return handleGameplayInput(pressedKey) || handleNonGameplayInput(pressedKey);</span>
+    }
+    
+    /**
+     * ESC 키 특별 처리
+     */
+    private boolean handleEscapeKey() {
+        // 메뉴가 열려있으면 메뉴 닫기 (Board에서 처리)
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (callback.isMenuVisible()) {</span>
+<span class="nc" id="L68">            callback.onSettings(); // 실제로는 메뉴 닫기 처리</span>
+<span class="nc" id="L69">            return true;</span>
+        }
+        
+        // 일시정지 상태이면 재개
+<span class="nc bnc" id="L73" title="All 2 branches missed.">        if (callback.isPaused()) {</span>
+<span class="nc" id="L74">            callback.onPause(); // 토글이므로 재개됨</span>
+<span class="nc" id="L75">            return true;</span>
+        }
+        
+        // 게임 중이면 일시정지
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        if (callback.isGameActive()) {</span>
+<span class="nc" id="L80">            callback.onPause();</span>
+<span class="nc" id="L81">            return true;</span>
+        }
+        
+        // 게임 오버 상태에서는 설정/메뉴 처리
+<span class="nc" id="L85">        callback.onSettings();</span>
+<span class="nc" id="L86">        return true;</span>
+    }
+    
+    /**
+     * 게임플레이 관련 입력 처리 (게임이 진행 중일 때만)
+     */
+    private boolean handleGameplayInput(KeyCode key) {
+<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (key == gameSettings.getKeyBinding(&quot;MOVE_LEFT&quot;)) {</span>
+<span class="nc" id="L94">            callback.onMoveLeft();</span>
+<span class="nc" id="L95">            return true;</span>
+        }
+        
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        if (key == gameSettings.getKeyBinding(&quot;MOVE_RIGHT&quot;)) {</span>
+<span class="nc" id="L99">            callback.onMoveRight();</span>
+<span class="nc" id="L100">            return true;</span>
+        }
+        
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        if (key == gameSettings.getKeyBinding(&quot;MOVE_DOWN&quot;)) {</span>
+<span class="nc" id="L104">            callback.onMoveDown();</span>
+<span class="nc" id="L105">            return true;</span>
+        }
+        
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        if (key == gameSettings.getKeyBinding(&quot;ROTATE&quot;)) {</span>
+<span class="nc" id="L109">            callback.onRotate();</span>
+<span class="nc" id="L110">            return true;</span>
+        }
+        
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        if (key == gameSettings.getKeyBinding(&quot;HARD_DROP&quot;)) {</span>
+<span class="nc" id="L114">            callback.onHardDrop();</span>
+<span class="nc" id="L115">            return true;</span>
+        }
+        
+<span class="nc" id="L118">        return false;</span>
+    }
+    
+    /**
+     * 게임플레이와 무관한 입력 처리 (항상 처리 가능)
+     */
+    private boolean handleNonGameplayInput(KeyCode key) {
+<span class="nc bnc" id="L125" title="All 2 branches missed.">        if (key == gameSettings.getKeyBinding(&quot;PAUSE&quot;)) {</span>
+<span class="nc" id="L126">            callback.onPause();</span>
+<span class="nc" id="L127">            return true;</span>
+        }
+        
+        // ESC는 위에서 따로 처리하므로 여기서는 제외
+        
+<span class="nc" id="L132">        return false;</span>
+    }
+    
+    /**
+     * 설정이 변경되었을 때 호출 (필요시 키 바인딩 새로고침)
+     */
+    public void refreshKeyBindings() {
+        // 키 바인딩이 변경되었을 때 필요한 작업이 있다면 여기서 처리
+        // 현재는 GameSettings에서 직접 가져오므로 별도 작업 불필요
+<span class="nc" id="L141">    }</span>
+    
+    /**
+     * 현재 설정된 키 바인딩 정보를 문자열로 반환 (디버깅용)
+     */
+    public String getKeyBindingsInfo() {
+<span class="nc" id="L147">        StringBuilder info = new StringBuilder(&quot;Current Key Bindings:\n&quot;);</span>
+<span class="nc" id="L148">        info.append(&quot;Move Left: &quot;).append(gameSettings.getKeyBinding(&quot;MOVE_LEFT&quot;)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L149">        info.append(&quot;Move Right: &quot;).append(gameSettings.getKeyBinding(&quot;MOVE_RIGHT&quot;)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L150">        info.append(&quot;Move Down: &quot;).append(gameSettings.getKeyBinding(&quot;MOVE_DOWN&quot;)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L151">        info.append(&quot;Rotate: &quot;).append(gameSettings.getKeyBinding(&quot;ROTATE&quot;)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L152">        info.append(&quot;Hard Drop: &quot;).append(gameSettings.getKeyBinding(&quot;HARD_DROP&quot;)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L153">        info.append(&quot;Pause: &quot;).append(gameSettings.getKeyBinding(&quot;PAUSE&quot;)).append(&quot;\n&quot;);</span>
+<span class="nc" id="L154">        info.append(&quot;ESC: Always handles pause/resume/menu&quot;);</span>
+<span class="nc" id="L155">        return info.toString();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
