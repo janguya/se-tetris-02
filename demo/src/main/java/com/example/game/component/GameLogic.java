@@ -10,6 +10,9 @@ import com.example.game.blocks.OBlock;
 import com.example.game.blocks.SBlock;
 import com.example.game.blocks.TBlock;
 import com.example.game.blocks.ZBlock;
+import com.example.game.items.ItemManager;
+import com.example.game.items.weightedBlock;
+import com.example.game.items.LItem;
 
 public class GameLogic {
 
@@ -37,9 +40,18 @@ public class GameLogic {
     private static final int LINES_PER_SPEED_INCREASE = 5;    // 5줄마다 속도 증가
     private static final double SPEED_MULTIPLIER = 0.9;      // 속도 증가율 (90% = 10% 빨라짐)
     private static final double MIN_SPEED_MULTIPLIER = 0.1;  // 최대 속도 (원래의 10%)
+    
+    // 아이템 매니저
+    private ItemManager itemManager;
+    private boolean nextBlockShouldBeItem = false; // 다음 블록이 아이템이어야 하는지
 
     public GameLogic() {
+        this(true); // 기본값: 아이템 모드 비활성화
+    }
+    
+    public GameLogic(boolean itemModeEnabled) {
         random = new Random();
+        itemManager = new ItemManager(itemModeEnabled);
         initializeGame();
     }
 
@@ -62,6 +74,16 @@ public class GameLogic {
     }
 
     public Block getRandomBlock() {
+        // 다음 블록이 아이템이어야 하는 경우
+        if (nextBlockShouldBeItem) {
+            nextBlockShouldBeItem = false;
+            Block itemBlock = itemManager.spawnRandomItem();
+            if (itemBlock != null) {
+                return itemBlock;
+            }
+        }
+        
+        // 일반 블록 생성
         int blockType = random.nextInt(7);
         switch (blockType) {
             case 0:
@@ -93,8 +115,30 @@ public class GameLogic {
             placeCurrent(); // 이동 후 다시 놓기
             return true;
         } else { // 이동 불가하면 제자리
-            placeCurrent();
-            //spawnNewBlock(); // 새 블록 생성
+            // weightedBlock이면 바닥까지 떨어지면서 아래 블록들 삭제
+            if (currentBlock instanceof weightedBlock) {
+                System.out.println(">>> WeightedBlock landed! Starting fall to bottom...");
+                // placeCurrent() 하지 않고 바로 fallToBottom 호출
+                int finalY = ((weightedBlock) currentBlock).fallToBottom(board, blockTypes, y, x);
+                y = finalY; // 최종 위치로 업데이트
+                placeCurrent(); // 최종 위치에만 배치
+            } else {
+                placeCurrent(); // 일반 블록은 현재 위치에 배치
+            }
+            
+            // LItem이면 L 마커가 있는 줄 삭제
+            if (currentBlock instanceof LItem) {
+                LItem lItem = (LItem) currentBlock;
+                int lRow = lItem.getLMarkerAbsoluteRow(y);
+                System.out.println(">>> LItem landed! L marker at row " + lRow);
+                clearSingleLine(lRow);
+            }
+            
+            // 아이템 블록 착지 디버깅
+            if (currentBlock.isItemBlock()) {
+                System.out.println(">>> Item block landed: " + currentBlock.getCssClass() + " at (" + x + ", " + y + ")");
+            }
+            
             return false;
         }
     }
@@ -243,6 +287,31 @@ public class GameLogic {
         }
     }
 
+    // 특정 줄 하나만 삭제 (LItem용)
+    public void clearSingleLine(int row) {
+        if (row < 0 || row >= HEIGHT) {
+            return;
+        }
+        
+        System.out.println(">>> Clearing single line at row " + row);
+        
+        // 해당 줄 위의 모든 줄을 한 칸씩 내리기
+        for (int moveRow = row; moveRow > 0; moveRow--) {
+            System.arraycopy(board[moveRow - 1], 0, board[moveRow], 0, WIDTH);
+            System.arraycopy(blockTypes[moveRow - 1], 0, blockTypes[moveRow], 0, WIDTH);
+        }
+        
+        // 맨 위 줄 지우기
+        for (int col = 0; col < WIDTH; col++) {
+            board[0][col] = 0;
+            blockTypes[0][col] = null;
+        }
+        
+        // 통계 업데이트
+        totalLinesCleared++;
+        updateSpeedLevel();
+    }
+
     // 줄 삭제
     public int clearLines() {
         // 삭제된 줄 수 반환
@@ -280,6 +349,12 @@ public class GameLogic {
         if (linesCleared > 0) {
             totalLinesCleared += linesCleared;
             updateSpeedLevel();
+            
+            // 아이템 생성 조건 체크
+            if (itemManager.shouldSpawnItem(totalLinesCleared)) {
+                nextBlockShouldBeItem = true;
+                System.out.println(">>> Item will spawn at next block! (Total lines: " + totalLinesCleared + ")");
+            }
             
             // 디버깅 출력
             System.out.println("Lines cleared: " + linesCleared + ", Total lines: " + totalLinesCleared);
@@ -391,6 +466,10 @@ public class GameLogic {
 
     public void resetGame() {
         initializeGame();
+        if (itemManager != null) {
+            itemManager.reset();
+        }
+        nextBlockShouldBeItem = false;
     }
 
     // 디버깅용 메서드
@@ -401,5 +480,18 @@ public class GameLogic {
         System.out.println("Speed level: " + speedLevel);
         System.out.println("Speed multiplier: " + String.format("%.2f", getSpeedMultiplier()));
         System.out.println("==================");
+    }
+    
+    // 아이템 매니저 getter
+    public ItemManager getItemManager() {
+        return itemManager;
+    }
+    
+    // 다음 아이템까지 남은 줄 수
+    public int getLinesUntilNextItem() {
+        if (itemManager == null) {
+            return -1;
+        }
+        return itemManager.getLinesUntilNextItem(totalLinesCleared);
     }
 }

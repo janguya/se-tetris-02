@@ -92,7 +92,11 @@ public enum ColorScheme {
                 return getNormalColors();
         }
         
-        colors.put("block-default", Color.web("#0f4c75"));
+        // 모든 테마에 공통으로 적용되는 색상-item
+        colors.put("item-single", Color.web("#ffd700")); // Gold - 싱글 블록
+        colors.put("item-weight", Color.web("#8b4513")); // Brown - 무게 블록
+        colors.put("item-lmarker", Color.web("#ff00ff")); // Magenta - L 마커
+        
         return colors;
     }
     
