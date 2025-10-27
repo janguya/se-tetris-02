@@ -12,3 +12,7 @@ item 추가
 
 - hard drop 키 설정 수정
 - hard drop시 움직임 고정하기
+
+## 개선 필요
+- item 색맹모드 색상 지정 필요
+  
