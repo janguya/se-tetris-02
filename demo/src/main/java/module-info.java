@@ -8,6 +8,8 @@ module com.example.tetris {
     opens com.example.settings to javafx.fxml;
     opens com.example.gameover to javafx.fxml;
     opens com.example.game.component to javafx.fxml;
+
+    requires org.json;
     
     exports com.example;
     exports com.example.startmenu;
