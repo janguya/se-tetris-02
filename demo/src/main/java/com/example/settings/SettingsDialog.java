@@ -32,6 +32,7 @@ public class SettingsDialog {
     private GameSettings settings;
     private ComboBox<ColorScheme> colorSchemeCombo;
     private ComboBox<WindowSize> windowSizeCombo; // 창 크기 콤보박스 추가
+    private ComboBox<GameSettings.Difficulty> difficultyCombo; // 난이도 콤보박스
     private GridPane customColorGrid;
     private GridPane keyBindingGrid; // 키 바인딩 그리드 추가
     private Map<String, ColorPicker> colorPickers;
@@ -57,6 +58,8 @@ public class SettingsDialog {
         
         // 창 크기 섹션 추가
         VBox windowSizeSection = createWindowSizeSection();
+    // 난이도 섹션 추가
+        VBox difficultySection = createDifficultySection();
         
         VBox schemeSection = createColorSchemeSection();
         VBox customSection = createCustomColorsSection();
@@ -64,11 +67,52 @@ public class SettingsDialog {
         VBox scoreSection = createScoreSection();
         HBox buttonBox = createButtonBox();
         
-        root.getChildren().addAll(windowSizeSection, schemeSection, customSection, keyBindingSection,scoreSection,buttonBox);
+        root.getChildren().addAll(windowSizeSection, difficultySection, schemeSection, customSection, keyBindingSection, scoreSection, buttonBox);
         
         Scene scene = new Scene(root, 450, 750); // 다이얼로그 크기 증가
         scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         dialog.setScene(scene);
+    }
+
+    // 난이도 섹션 생성
+    private VBox createDifficultySection() {
+        VBox section = new VBox(10);
+
+        Label title = new Label("Difficulty:");
+        title.getStyleClass().add("settings-section-title");
+
+        difficultyCombo = new ComboBox<>();
+        difficultyCombo.getItems().addAll(GameSettings.Difficulty.values());
+        difficultyCombo.setValue(settings.getDifficulty());
+        difficultyCombo.getStyleClass().add("settings-combo");
+
+        // 표시 텍스트를 간단히 처리
+        difficultyCombo.setCellFactory(listView -> new ListCell<GameSettings.Difficulty>() {
+            @Override
+            protected void updateItem(GameSettings.Difficulty item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.name());
+                }
+            }
+        });
+
+        difficultyCombo.setButtonCell(new ListCell<GameSettings.Difficulty>() {
+            @Override
+            protected void updateItem(GameSettings.Difficulty item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.name());
+                }
+            }
+        });
+
+        section.getChildren().addAll(title, difficultyCombo);
+        return section;
     }
     
     // 창 크기 섹션 생성
@@ -267,6 +311,9 @@ public class SettingsDialog {
     // 기본값으로 리셋
     private void resetToDefault() {
         windowSizeCombo.setValue(WindowSize.MEDIUM);
+        if (difficultyCombo != null) {
+            difficultyCombo.setValue(GameSettings.Difficulty.MEDIUM);
+        }
         colorSchemeCombo.setValue(ColorScheme.NORMAL);
         Map<String, Color> defaultColors = ColorScheme.NORMAL.getColorMap();
         for (Map.Entry<String, ColorPicker> entry : colorPickers.entrySet()) {
@@ -284,6 +331,13 @@ public class SettingsDialog {
     
     // 설정 적용
     private void applySettings() {
+        // 난이도 적용
+        if (difficultyCombo != null) {
+            GameSettings.Difficulty sel = difficultyCombo.getValue();
+            if (sel != null) {
+                settings.setDifficulty(sel);
+            }
+        }
         ColorScheme selectedScheme = colorSchemeCombo.getValue();
         settings.setCurrentColorScheme(selectedScheme);
         
@@ -293,11 +347,13 @@ public class SettingsDialog {
             }
         }
         
-        if (onSettingsChanged != null) {
-            onSettingsChanged.run();
-        }
-        
+        // 먼저 다이얼로그를 닫아 UI 리소스(루트 노드 등)가 해제되도록 합니다.
         dialog.close();
+
+        // 설정 변경 콜백은 현재 FX 이벤트 처리 이후에 안전하게 실행되도록 스케줄합니다.
+        if (onSettingsChanged != null) {
+            javafx.application.Platform.runLater(onSettingsChanged);
+        }
     }
     
     public void show() {
