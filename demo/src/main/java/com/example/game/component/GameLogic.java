@@ -10,6 +10,7 @@ import com.example.game.blocks.OBlock;
 import com.example.game.blocks.SBlock;
 import com.example.game.blocks.TBlock;
 import com.example.game.blocks.ZBlock;
+import com.example.settings.GameSettings;
 
 public class GameLogic {
 
@@ -62,24 +63,43 @@ public class GameLogic {
     }
 
     public Block getRandomBlock() {
-        int blockType = random.nextInt(7);
-        switch (blockType) {
-            case 0:
-                return new IBlock();
-            case 1:
-                return new JBlock();
-            case 2:
-                return new LBlock();
-            case 3:
-                return new ZBlock();
-            case 4:
-                return new SBlock();
-            case 5:
-                return new TBlock();
-            case 6:
-                return new OBlock();
-            default:
-                return new IBlock();
+        // Base weight for each piece
+        double baseWeight = 1.0;
+
+        // Adjust I-block weight based on global difficulty from GameSettings
+        GameSettings.Difficulty difficulty = GameSettings.getInstance().getDifficulty();
+        double iWeight = baseWeight;
+        if (difficulty == GameSettings.Difficulty.EASY) {
+            iWeight *= 1.2; // 20% more likely
+        } else if (difficulty == GameSettings.Difficulty.HARD) {
+            iWeight *= 0.8; // 20% less likely
+        }
+
+        // weights order: I, J, L, Z, S, T, O
+        double[] weights = new double[] { iWeight, baseWeight, baseWeight, baseWeight, baseWeight, baseWeight, baseWeight };
+        double sum = 0.0;
+        for (double w : weights) sum += w;
+
+        double r = random.nextDouble() * sum;
+        double acc = 0.0;
+        int chosen = 0;
+        for (int i = 0; i < weights.length; i++) {
+            acc += weights[i];
+            if (r < acc) {
+                chosen = i;
+                break;
+            }
+        }
+
+        switch (chosen) {
+            case 0: return new IBlock();
+            case 1: return new JBlock();
+            case 2: return new LBlock();
+            case 3: return new ZBlock();
+            case 4: return new SBlock();
+            case 5: return new TBlock();
+            case 6: return new OBlock();
+            default: return new IBlock();
         }
     }
 

@@ -68,18 +68,21 @@ public class Router {
     // 스테이지 크기 업데이트 
     private void updateStageSize() {
         System.out.println("Updating stage size to: " + currentWidth() + "x" + currentHeight());
-        
+
+        // Avoid reusing the same root Node in a new Scene (causes
+        // "is already set as root of another scene"), so don't create
+        // a new Scene from the existing root. Instead, resize the
+        // existing stage directly.
         if (stage.getScene() != null) {
-            Scene currentScene = stage.getScene();
-            Scene newScene = new Scene(currentScene.getRoot(), currentWidth(), currentHeight());
-            
-            // 기존 스타일시트가 있다면 복사
-            newScene.getStylesheets().addAll(currentScene.getStylesheets());
-            
-            stage.setScene(newScene);
+            // Set explicit stage width/height based on settings. This
+            // preserves the current Scene and its root Node.
+            stage.setWidth(currentWidth());
+            stage.setHeight(currentHeight());
+
+            // Ensure the window respects the new size
             stage.sizeToScene();
-            
-            // 저장된 위치로 복원 (있다면)
+
+            // Restore saved position if available
             if (savedX != null && savedY != null) {
                 stage.setX(savedX);
                 stage.setY(savedY);

@@ -1,9 +1,6 @@
 package com.example.game.component;
 
 import com.example.game.blocks.Block;
-import com.example.game.blocks.IBlock;
-import com.example.game.blocks.OBlock;
-import com.example.game.blocks.TBlock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;

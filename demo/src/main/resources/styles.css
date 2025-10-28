@@ -124,8 +124,14 @@
     -fx-padding: 8 15;
 }
 
-.settings-button:hover, .settings-button-primary:hover {
-    -fx-background-color: derive(-fx-background-color, 20%);
+.settings-button:hover {
+    /* Lighter hover for default buttons (was derive(...)) */
+    -fx-background-color: #213249; /* ~20% lighter than #16213e */
+}
+
+.settings-button-primary:hover {
+    /* Lighter hover for primary button (was derive(...)) */
+    -fx-background-color: #59caa0; /* ~20% lighter than #3bb78f */
 }
 
 .settings-key-button {
@@ -141,7 +147,8 @@
 }
 
 .settings-key-button:hover {
-    -fx-background-color: derive(-fx-background-color, 15%);
+    /* Slightly lighter on hover */
+    -fx-background-color: #1b2a40; /* ~15% lighter than #16213e */
 }
 
 .settings-key-button:focused {
