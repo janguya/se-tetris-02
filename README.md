@@ -15,4 +15,5 @@ item 추가
 
 ## 개선 필요
 - item 색맹모드 색상 지정 필요
+- scoreboard 업데이트
   
