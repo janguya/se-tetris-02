@@ -81,6 +81,15 @@
     -fx-fill: #0f4c75; /* Default blue */
 }
 
+/* Item Block Colors */
+.item-single {
+    -fx-fill: #ffd700; /* Gold */
+}
+
+.item-weight {
+    -fx-fill: #8b4513; /* Brown - 무거운 느낌 */
+}
+
 .settings-dialog {
     -fx-background-color: linear-gradient(to bottom, #0f0f23, #1a1a2e);
 }
