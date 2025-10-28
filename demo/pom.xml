@@ -10,10 +10,10 @@
     <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <javafx.version>11.0.2</javafx.version>
+        <javafx.version>17.0.2</javafx.version>
         <junit.version>5.10.3</junit.version>
     </properties>
 
@@ -60,10 +60,6 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>com.example.Main</mainClass>
-                    <options>
-                        <option>--add-reads</option>
-                        <option>com.example=ALL-UNNAMED</option>
-                    </options>
                 </configuration>
             </plugin>
             <plugin>
@@ -71,12 +67,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <source>8</source>
-                    <target>8</target>
-                    <compilerArgs>
-                        <arg>--add-reads</arg>
-                        <arg>com.example=ALL-UNNAMED</arg>
-                    </compilerArgs>
+                    <source>17</source>
+                    <target>17</target>
                 </configuration>
             </plugin>
 
@@ -84,9 +76,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.1.2</version>
-                <configuration>
-                    <argLine>--add-reads com.example=ALL-UNNAMED</argLine>
-                </configuration>
             </plugin>
 
             <!-- Maven Shade Plugin: Fat JAR 생성 -->

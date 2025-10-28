@@ -1,22 +1,30 @@
 package com.example.settings;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import com.example.gameover.ScoreManager;
+import com.example.theme.ColorScheme;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ColorPicker;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import com.example.theme.ColorScheme;
 
 public class SettingsDialog {
     private Stage dialog;
@@ -52,9 +60,10 @@ public class SettingsDialog {
         VBox schemeSection = createColorSchemeSection();
         VBox customSection = createCustomColorsSection();
         VBox keyBindingSection = createKeyBindingSection(); // 키 바인딩 섹션 추가
+        VBox scoreSection = createScoreSection();
         HBox buttonBox = createButtonBox();
         
-        root.getChildren().addAll(windowSizeSection, schemeSection, customSection, keyBindingSection, buttonBox);
+        root.getChildren().addAll(windowSizeSection, schemeSection, customSection, keyBindingSection,scoreSection,buttonBox);
         
         Scene scene = new Scene(root, 450, 750); // 다이얼로그 크기 증가
         scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
@@ -340,6 +349,61 @@ public class SettingsDialog {
             Button button = keyButtons.get(entry.getKey());
             if (button != null) {
                 button.setText(entry.getValue().toString());
+            }
+        }
+    }
+
+    // 점수 관리 섹션 생성
+    private VBox createScoreSection() {
+        VBox section = new VBox(10);
+    
+        Label title = new Label("Score Management:");
+        title.getStyleClass().add("settings-section-title");
+    
+        Button resetScoresButton = new Button("Reset All Scores");
+        resetScoresButton.getStyleClass().add("settings-button-danger");
+        resetScoresButton.setPrefWidth(200);
+        resetScoresButton.setOnAction(e -> resetScores());
+    
+        Label warningLabel = new Label("⚠ This will delete all saved scores permanently!");
+        warningLabel.setStyle("-fx-text-fill: #ff6b6b; -fx-font-size: 11px;");
+    
+        section.getChildren().addAll(title, resetScoresButton, warningLabel);
+        return section;
+    }
+
+    // 점수 초기화 메서드
+    private void resetScores() {
+        // 확인 다이얼로그
+        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmAlert.setTitle("Reset Scores");
+        confirmAlert.setHeaderText("Are you sure?");
+        confirmAlert.setContentText("점수가 영구적으로 제거됩니다\n되돌릴 수 없습니다!");
+    
+        ButtonType yesButton = new ButtonType("Yes, Delete All");
+        ButtonType noButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        confirmAlert.getButtonTypes().setAll(yesButton, noButton);
+    
+        Optional<ButtonType> result = confirmAlert.showAndWait();
+    
+        if (result.isPresent() && result.get() == yesButton) {
+            // 점수 초기화 실행
+            boolean success = ScoreManager.resetScores();
+        
+            if (success) {
+                // 성공 알림
+                Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                successAlert.setTitle("Success");
+                successAlert.setHeaderText(null);
+                successAlert.setContentText("점수가 성공적으로 초기화 됐습니다!");
+                successAlert.showAndWait();
+            } else {
+                // 실패 알림
+                Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                errorAlert.setTitle("Error");
+                errorAlert.setHeaderText("Failed to reset scores");
+                errorAlert.setContentText("점수 초기화에 실패했습니다. 다시 시도해주세요.");
+                errorAlert.showAndWait();
             }
         }
     }

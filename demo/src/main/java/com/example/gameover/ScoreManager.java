@@ -1,9 +1,13 @@
 package com.example.gameover;
 
-import java.io.*;
-import java.nio.file.*;
-import java.util.*;
-import org.json.*;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 //점수 데이터를 파일에 영구 저장하고 불러오는 매니저 클래스
 public class ScoreManager {
@@ -83,5 +87,41 @@ public class ScoreManager {
     // 저장 파일 경로 반환 (디버깅용)
     public static String getScorePath() {
         return SCORE_PATH;
+    }
+
+    public static boolean resetScores() {
+    System.out.println("\n=== ScoreManager.resetScores() ===");
+    
+    File scoreFile = new File(SCORE_PATH);
+    
+    if (!scoreFile.exists()) {
+        System.out.println("Score file does not exist, nothing to delete");
+        return true;
+    }
+    
+    try {
+        boolean deleted = scoreFile.delete();
+        if (deleted) {
+            System.out.println("✓ Score file deleted successfully: " + SCORE_PATH);
+            return true;
+        } else {
+            System.err.println("✗ Failed to delete score file: " + SCORE_PATH);
+            return false;
+        }
+    } catch (SecurityException e) {
+        System.err.println("✗ Security error deleting score file: " + e.getMessage());
+        e.printStackTrace();
+        return false;
+    }
+}
+
+    //점수 파일이 존재하는지 확인
+    public static boolean scoreFileExists() {
+        return new File(SCORE_PATH).exists();
+    }
+
+    //저장된 점수 개수 반환
+    public static int getScoreCount() {
+        return loadScores().size();
     }
 }
