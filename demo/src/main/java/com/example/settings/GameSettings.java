@@ -41,6 +41,7 @@ public class GameSettings {
     private WindowSize currentWindowSize;
     private Map<String, KeyCode> keyBindings;
     private List<Runnable> windowSizeChangeListeners;
+    private boolean itemModeEnabled; // 아이템 모드 설정 추가
     
     private GameSettings() {
         prefs = Preferences.userNodeForPackage(GameSettings.class);
@@ -73,6 +74,9 @@ public class GameSettings {
             currentWindowSize = WindowSize.MEDIUM;
         }
         
+        // 아이템 모드 설정 불러오기
+        itemModeEnabled = prefs.getBoolean("itemModeEnabled", false); // 기본값: false
+        
         loadCustomColors();
         loadKeyBindings();
     }
@@ -101,13 +105,14 @@ public class GameSettings {
         keyBindings.put("MOVE_DOWN", KeyCode.valueOf(prefs.get("key_move_down", "DOWN")));
         keyBindings.put("ROTATE", KeyCode.valueOf(prefs.get("key_rotate", "UP")));
         keyBindings.put("PAUSE", KeyCode.valueOf(prefs.get("key_pause", "ESCAPE")));
-        keyBindings.put("HARD_DROP", KeyCode.valueOf(prefs.get("key_hard_drop", "DOWN")));
+        keyBindings.put("HARD_DROP", KeyCode.valueOf(prefs.get("key_hard_drop", "SPACE")));
     }
     
     // 설정 저장
     public void saveSettings() {
         prefs.put("colorScheme", currentColorScheme.name());
         prefs.put("windowSize", currentWindowSize.name());
+        prefs.putBoolean("itemModeEnabled", itemModeEnabled); // 아이템 모드 저장
         
         if (currentColorScheme == ColorScheme.CUSTOM) {
             for (Map.Entry<String, Color> entry : customColors.entrySet()) {
@@ -200,6 +205,7 @@ public class GameSettings {
         keyBindings.put("MOVE_DOWN", KeyCode.DOWN);
         keyBindings.put("ROTATE", KeyCode.UP);
         keyBindings.put("HARD_DROP", KeyCode.SPACE);
+        keyBindings.put("PAUSE", KeyCode.ESCAPE);
         saveSettings();
     }
     
@@ -222,5 +228,15 @@ public class GameSettings {
                 System.err.println("Error in window size change listener: " + e.getMessage());
             }
         }
+    }
+    
+    // 아이템 모드 관련 메서드
+    public boolean isItemModeEnabled() {
+        return itemModeEnabled;
+    }
+    
+    public void setItemModeEnabled(boolean enabled) {
+        this.itemModeEnabled = enabled;
+        saveSettings();
     }
 }
