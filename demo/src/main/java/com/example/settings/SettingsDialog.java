@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.example.gameover.ScoreManager;
+
 import com.example.theme.ColorScheme;
 
 import javafx.geometry.Insets;
@@ -211,9 +212,9 @@ public class SettingsDialog {
         
         // 키 바인딩 버튼들 생성
         keyButtons = new HashMap<>();
-        String[] actionNames = {"Move Left", "Move Right", "Move Down", "Rotate", "Pause", "Settings"};
-        String[] actionKeys = {"MOVE_LEFT", "MOVE_RIGHT", "MOVE_DOWN", "ROTATE", "PAUSE", "SETTINGS"};
-        
+        String[] actionNames = {"Move Left", "Move Right", "Move Down", "Rotate", "Pause", "Hard drop"};
+        String[] actionKeys = {"MOVE_LEFT", "MOVE_RIGHT", "MOVE_DOWN", "ROTATE", "PAUSE", "HARD_DROP"};
+
         for (int i = 0; i < actionNames.length; i++) {
             Label label = new Label(actionNames[i] + ":");
             label.getStyleClass().add("settings-color-label");
