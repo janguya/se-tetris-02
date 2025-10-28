@@ -361,8 +361,7 @@ public class SettingsDialog {
         title.getStyleClass().add("settings-section-title");
     
         Button resetScoresButton = new Button("Reset All Scores");
-        resetScoresButton.getStyleClass().add("settings-button-danger");
-        resetScoresButton.setPrefWidth(200);
+        resetScoresButton.getStyleClass().add("settings-button");
         resetScoresButton.setOnAction(e -> resetScores());
     
         Label warningLabel = new Label("⚠ This will delete all saved scores permanently!");
@@ -380,8 +379,8 @@ public class SettingsDialog {
         confirmAlert.setHeaderText("Are you sure?");
         confirmAlert.setContentText("점수가 영구적으로 제거됩니다\n되돌릴 수 없습니다!");
     
-        ButtonType yesButton = new ButtonType("Yes, Delete All");
-        ButtonType noButton = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType yesButton = new ButtonType("초기화");
+        ButtonType noButton = new ButtonType("취소", ButtonBar.ButtonData.CANCEL_CLOSE);
         confirmAlert.getButtonTypes().setAll(yesButton, noButton);
     
         Optional<ButtonType> result = confirmAlert.showAndWait();
