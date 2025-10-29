@@ -311,6 +311,12 @@ public class ScorePanel {
 
     // 점수, 레벨, 라인 수 업데이트 메서드
     public void addScore(int points) {
+        score += points;
+        updateScoreDisplay();
+    }
+    
+    // 난이도 배율이 적용된 점수 추가 (줄 삭제 시 사용)
+    public void addScoreWithDifficulty(int points) {
         Difficulty difficulty = GameSettings.getInstance().getDifficulty();
         if (difficulty == Difficulty.EASY) {
             points = (int) (points * EASY_DIFFICULTY_MULTIPLIER);
@@ -396,8 +402,8 @@ public class ScorePanel {
                 break;
         }
 
-        // 레벨에 따른 점수 배율 적용
-        addScore(baseScore * level);
+        // 레벨에 따른 점수 배율 적용하고 난이도 배율도 적용
+        addScoreWithDifficulty(baseScore * level);
         addLines(linesCount);
     }
 

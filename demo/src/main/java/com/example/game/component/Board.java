@@ -442,18 +442,40 @@ public class Board implements GameInputCallback {
 
     // 블록 아래로 이동 처리
     private void handleMoveDown() {
+        Block currentBlock = gameLogic.getCurrentBlock();
+        boolean isLItemBlock = currentBlock instanceof LItem;
+        
         boolean moved = gameLogic.moveDown();
 
         if (moved) {
             // 블록이 성공적으로 아래로 이동했을 때 점수 증가
             scorePanel.addScore(1);
         } else {
+            // L-item이 착지했을 경우 L 줄 삭제 점수 추가 (줄 삭제와 중복되지 않도록)
+            boolean lItemLineCleared = false;
+            if (isLItemBlock) {
+                LItem lItem = (LItem) currentBlock;
+                int lRow = lItem.getLMarkerAbsoluteRow(gameLogic.getCurrentY());
+                boolean cleared = gameLogic.clearSingleLine(lRow);
+                if (cleared) {
+                    scorePanel.addScoreWithDifficulty(100); // L-item 줄 삭제 점수 (난이도 배율 적용)
+                    lItemLineCleared = true;
+                }
+            }
+            
             // 줄 삭제 체크 - 애니메이션 시작
             List<Integer> fullLines = gameLogic.findFullLines();
             if (!fullLines.isEmpty()) {
-                pendingLinesToClear = fullLines;
-                lineAnimation.start();
-                return; // 애니메이션이 끝날 때까지 대기
+                // L-item이 이미 줄을 삭제했다면 중복 방지
+                if (lItemLineCleared && fullLines.size() == 1) {
+                    // L-item이 삭제한 줄과 동일한 경우 점수 중복 방지
+                    // 이미 100점을 받았으므로 추가 점수 없음
+                    pendingLinesToClear = new ArrayList<>(); // 빈 리스트로 설정하여 애니메이션 스킵
+                } else {
+                    pendingLinesToClear = fullLines;
+                    lineAnimation.start();
+                    return; // 애니메이션이 끝날 때까지 대기
+                }
             }
 
             // 블록이 맨 위에 닿았는지 확인
@@ -710,6 +732,9 @@ public class Board implements GameInputCallback {
             return;
         }
 
+        Block currentBlock = gameLogic.getCurrentBlock();
+        boolean isLItemBlock = currentBlock instanceof LItem;
+
         boolean dropped = false;
         while (gameLogic.moveDown()) {
             dropped = true;
@@ -720,13 +745,31 @@ public class Board implements GameInputCallback {
             return;
         }
 
+        // L-item이 착지했을 경우 L 줄 삭제 점수 추가 (줄 삭제와 중복되지 않도록)
+        boolean lItemLineCleared = false;
+        if (isLItemBlock) {
+            LItem lItem = (LItem) currentBlock;
+            int lRow = lItem.getLMarkerAbsoluteRow(gameLogic.getCurrentY());
+            boolean cleared = gameLogic.clearSingleLine(lRow);
+            if (cleared) {
+                scorePanel.addScoreWithDifficulty(100); // L-item 줄 삭제 점수 
+                lItemLineCleared = true;
+            }
+        }
+
         // 줄 삭제 체크 - 애니메이션 시작
         List<Integer> fullLines = gameLogic.findFullLines();
         if (!fullLines.isEmpty()) {
-            pendingLinesToClear = fullLines;
-            lineAnimation.start();
-            return; // 애니메이션이 끝날 때까지 대기
+            // L-item이 이미 줄을 삭제했다면 중복 방지
+            if (lItemLineCleared && fullLines.size() == 1) {
+                // L-item이 삭제한 줄과 동일한 경우 점수 중복 방지
+                pendingLinesToClear = new ArrayList<>();
+            } else {
+                pendingLinesToClear = fullLines;
+                lineAnimation.start();
+                return; // 애니메이션이 끝날 때까지 대기
             }
+        }
 
         if (gameLogic.isBlockAtTop()) {
             if (!isGameOver) {

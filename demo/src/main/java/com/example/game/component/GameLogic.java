@@ -358,9 +358,10 @@ public class GameLogic {
     }
 
     // 특정 줄 하나만 삭제 (LItem용)
-    public void clearSingleLine(int row) {
+    // 반환값: true = 줄이 삭제됨, false = 줄이 비어있어서 삭제 안됨
+    public boolean clearSingleLine(int row) {
         if (row < 0 || row >= HEIGHT) {
-            return;
+            return false;
         }
         
         System.out.println(">>> Clearing single line at row " + row);
@@ -380,6 +381,8 @@ public class GameLogic {
         // 통계 업데이트
         totalLinesCleared++;
         updateSpeedLevel();
+        
+        return true;
     }
 
     // 1단계: 삭제할 줄 찾기 (애니메이션용)
