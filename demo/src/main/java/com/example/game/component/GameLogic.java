@@ -1,5 +1,7 @@
 package com.example.game.component;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import com.example.game.blocks.Block;
@@ -10,12 +12,12 @@ import com.example.game.blocks.OBlock;
 import com.example.game.blocks.SBlock;
 import com.example.game.blocks.TBlock;
 import com.example.game.blocks.ZBlock;
-import com.example.settings.GameSettings;
+import com.example.game.items.BombBlock;
 import com.example.game.items.ItemManager;
-import com.example.game.items.weightedBlock;
 import com.example.game.items.LItem;
 import com.example.game.items.SandBlock;
-import com.example.game.items.BombBlock;
+import com.example.game.items.weightedBlock;
+import com.example.settings.GameSettings;
 
 public class GameLogic {
 
@@ -47,6 +49,10 @@ public class GameLogic {
     // 아이템 매니저
     private ItemManager itemManager;
     private boolean nextBlockShouldBeItem = false; // 다음 블록이 아이템이어야 하는지
+
+    // 줄 삭제 애니메이션 관련
+    private List<Integer> linesToClear = new ArrayList<>();
+    private boolean isAnimatingClear = false;
 
     public GameLogic() {
         this(true); // 기본값: 아이템 모드 비활성화
@@ -348,12 +354,9 @@ public class GameLogic {
         updateSpeedLevel();
     }
 
-    // 줄 삭제
-    public int clearLines() {
-        // 삭제된 줄 수 반환
-        int linesCleared = 0;
-
-        // 아래에서 위로 검사
+    // 1단계: 삭제할 줄 찾기 (애니메이션용)
+    public List<Integer> findFullLines() {
+        List<Integer> fullLines = new ArrayList<>();
         for (int row = HEIGHT - 1; row >= 0; row--) {
             boolean fullLine = true;
             for (int col = 0; col < WIDTH; col++) {
@@ -362,41 +365,53 @@ public class GameLogic {
                     break;
                 }
             }
-
-            // 줄이 꽉 찼으면 삭제
             if (fullLine) {
-                // 위의 줄들을 한 칸씩 내리기
-                for (int moveRow = row; moveRow > 0; moveRow--) {
-                    System.arraycopy(board[moveRow - 1], 0, board[moveRow], 0, WIDTH);
-                    System.arraycopy(blockTypes[moveRow - 1], 0, blockTypes[moveRow], 0, WIDTH);
-                }
-                // 맨 위 줄 지우기
-                for (int col = 0; col < WIDTH; col++) {
-                    board[0][col] = 0;
-                    blockTypes[0][col] = null;
-                }
-
-                linesCleared++;
-                row++;
+                fullLines.add(row);
             }
         }
+        return fullLines;
+    }
 
-        // 줄 삭제 통계 업데이트
+    // 2단계: 실제로 줄 삭제 실행
+    public int executeLineClear(List<Integer> linesToClear) {
+        if (linesToClear == null || linesToClear.isEmpty()) {
+        return 0;
+        }
+        
+        int linesCleared = linesToClear.size();
+    
+        // ⭐ 새 보드 생성 방식 - 삭제 대상이 아닌 줄만 복사
+        int[][] newBoard = new int[HEIGHT][WIDTH];
+        String[][] newBlockTypes = new String[HEIGHT][WIDTH];
+        
+        int newRow = HEIGHT - 1; // 새 보드의 맨 아래부터 채움
+        
+        // 기존 보드를 아래에서 위로 순회
+        for (int oldRow = HEIGHT - 1; oldRow >= 0; oldRow--) {
+            // 삭제 대상이 아닌 줄만 새 보드에 복사
+            if (!linesToClear.contains(oldRow)) {
+                System.arraycopy(board[oldRow], 0, newBoard[newRow], 0, WIDTH);
+                System.arraycopy(blockTypes[oldRow], 0, newBlockTypes[newRow], 0, WIDTH);
+                newRow--;
+            } else {
+                System.out.println(">> Skipping row " + oldRow + " (marked for deletion)");
+            }
+        }
+        
+        // 새 보드로 교체
+        board = newBoard;
+        blockTypes = newBlockTypes;
+    
+        // 통계 업데이트
         if (linesCleared > 0) {
             totalLinesCleared += linesCleared;
             updateSpeedLevel();
-            
+        
             // 아이템 생성 조건 체크
             if (itemManager.shouldSpawnItem(totalLinesCleared)) {
                 nextBlockShouldBeItem = true;
-                System.out.println(">>> Item will spawn at next block! (Total lines: " + totalLinesCleared + ")");
             }
-            
-            // 디버깅 출력
-            System.out.println("Lines cleared: " + linesCleared + ", Total lines: " + totalLinesCleared);
-            System.out.println("Blocks spawned: " + totalBlocksSpawned + ", Speed level: " + speedLevel);
         }
-
         return linesCleared;
     }
 
