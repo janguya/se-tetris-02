@@ -12,6 +12,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.example.settings.GameSettings;
+import com.example.utils.Logger;
 
 //점수 데이터를 파일에 영구 저장하고 불러오는 매니저 클래스
 public class ScoreManager {
@@ -42,7 +43,7 @@ public class ScoreManager {
 
             File scoreFile = new File(SCORE_PATH);
             if (!scoreFile.exists()) {
-                System.out.println("Score file not found, starting with empty leaderboard");
+                Logger.info("Score file not found, starting with empty leaderboard");
                 return scores;
             }
 
@@ -52,10 +53,6 @@ public class ScoreManager {
 
             String key = isItemMode ? "item" : "normal";
             JsonArray jsonArray = root.has(key) ? root.getAsJsonArray(key) : null;
-
-            System.out.println("Debug: Loaded JSON content: " + content);
-            System.out.println("Debug: Loaded JSON root: " + root);
-            System.out.println("Debug: Loaded JSON array: " + "key" + key + "jsonArray" + jsonArray);
 
             if (jsonArray == null) {
                 // missing key => empty
@@ -80,12 +77,11 @@ public class ScoreManager {
                 scores.add(entry);
             }
 
-            System.out.println("✓ Loaded " + scores.size() + " scores (mode=" + (isItemMode ? "item" : "normal")
-                    + ") from: " + SCORE_PATH);
+            Logger.info("Loaded %d scores (mode=%s) from: %s",
+                    scores.size(), (isItemMode ? "item" : "normal"), SCORE_PATH);
 
         } catch (Exception e) {
-            System.err.println("Failed to load scores: " + e.getMessage());
-            e.printStackTrace();
+            Logger.error("Failed to load scores: " + e.getMessage(), e);
         }
 
         return scores;
@@ -144,11 +140,10 @@ public class ScoreManager {
             // 파일에 쓰기 (들여쓰기 포맷)
             Files.write(Paths.get(SCORE_PATH), gson.toJson(root).getBytes());
 
-            System.out.println("✓ Saved " + limit + " scores (mode=" + key + ") to: " + SCORE_PATH);
+            Logger.info("Saved %d scores (mode=%s) to: %s", limit, key, SCORE_PATH);
 
         } catch (Exception e) {
-            System.err.println("Failed to save scores: " + e.getMessage());
-            e.printStackTrace();
+            Logger.error("Failed to save scores: " + e.getMessage(), e);
         }
     }
 
@@ -158,19 +153,19 @@ public class ScoreManager {
     }
 
     public static boolean resetScores() {
-        System.out.println("\n=== ScoreManager.resetScores() ===");
+        Logger.info("ScoreManager.resetScores()");
 
         File scoreFile = new File(SCORE_PATH);
 
         if (!scoreFile.exists()) {
-            System.out.println("Score file does not exist, nothing to delete");
+            Logger.info("Score file does not exist, nothing to delete");
             return true;
         }
 
         try {
             boolean deleted = scoreFile.delete();
             if (deleted) {
-                System.out.println("✓ Score file deleted successfully: " + SCORE_PATH);
+                Logger.info("Score file deleted successfully: %s", SCORE_PATH);
                 // Clear any in-memory cached leaderboard so scores don't get resurrected
                 try {
                     GameOverScene.clearLeaderboard();
@@ -195,12 +190,11 @@ public class ScoreManager {
                 }
                 return true;
             } else {
-                System.err.println("✗ Failed to delete score file: " + SCORE_PATH);
+                Logger.error("Failed to delete score file: " + SCORE_PATH);
                 return false;
             }
         } catch (SecurityException e) {
-            System.err.println("✗ Security error deleting score file: " + e.getMessage());
-            e.printStackTrace();
+            Logger.error("Security error deleting score file: " + e.getMessage(), e);
             return false;
         }
     }
@@ -240,8 +234,7 @@ public class ScoreManager {
             try {
                 r.run();
             } catch (Throwable t) {
-                System.err.println("Error in reset listener: " + t.getMessage());
-                t.printStackTrace();
+                Logger.error("Error in reset listener: " + t.getMessage(), t);
             }
         }
     }

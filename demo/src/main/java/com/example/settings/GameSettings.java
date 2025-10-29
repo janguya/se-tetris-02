@@ -14,6 +14,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import com.example.theme.ColorScheme;
+import com.example.utils.Logger;
 
 import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
@@ -106,10 +107,10 @@ public class GameSettings {
             // 키 바인딩 로드
             loadKeyBindingsFromJson(json);
 
-            System.out.println("✓ Settings loaded from: " + SETTINGS_PATH);
+            Logger.info("Settings loaded from: %s", SETTINGS_PATH);
 
         } catch (Exception e) {
-            System.err.println("Failed to load settings, using defaults: " + e.getMessage());
+            Logger.error("Failed to load settings, using defaults: " + e.getMessage());
             loadDefaultSettings();
         }
     }
@@ -240,11 +241,10 @@ public class GameSettings {
             // 파일에 저장 (포맷팅된 JSON)
             Files.write(Paths.get(SETTINGS_PATH), gson.toJson(json).getBytes());
 
-            System.out.println("✓ Settings saved to: " + SETTINGS_PATH);
+            Logger.info("Settings saved to: %s", SETTINGS_PATH);
 
         } catch (Exception e) {
-            System.err.println("Failed to save settings: " + e.getMessage());
-            e.printStackTrace();
+            Logger.error("Failed to save settings: " + e.getMessage(), e);
         }
     }
 

@@ -53,8 +53,6 @@ public class GameOverScene {
         if (LEADERBOARD == null) {
             boolean isItem = com.example.settings.GameSettings.getInstance().isItemModeEnabled();
             LEADERBOARD = ScoreManager.loadScores(isItem);
-            System.out.println("Leaderboard initialized (mode=" + (isItem ? "item" : "normal") + ") with "
-                    + LEADERBOARD.size() + " entries");
         }
     }
 
