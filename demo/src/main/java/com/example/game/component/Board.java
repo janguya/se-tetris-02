@@ -303,7 +303,7 @@ public class Board implements GameInputCallback {
             public void onExit() {
                 exitGame();
             }
-        }, scorePanel.getScore());
+        }, scorePanel.getScore(), gameSettings.isItemModeEnabled(), gameSettings.getDifficulty());
     }
 
     // 설정 메뉴 표시

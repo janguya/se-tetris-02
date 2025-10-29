@@ -17,7 +17,7 @@ public class GameSettings {
     private static GameSettings instance;
     private Preferences prefs;
     // 전역 난이도 설정 (기본 MEDIUM)
-    private Difficulty currentDifficulty = Difficulty.MEDIUM;
+    private Difficulty currentDifficulty = Difficulty.NORMAL;
     private ColorScheme currentColorScheme;
     private Map<String, Color> customColors;
     private WindowSize currentWindowSize;
@@ -57,11 +57,11 @@ public class GameSettings {
         }
 
         // 난이도 설정 불러오기
-        String difficultyName = prefs.get("difficulty", Difficulty.MEDIUM.name());
+        String difficultyName = prefs.get("difficulty", Difficulty.NORMAL.name());
         try {
             currentDifficulty = Difficulty.valueOf(difficultyName);
         } catch (IllegalArgumentException e) {
-            currentDifficulty = Difficulty.MEDIUM;
+            currentDifficulty = Difficulty.NORMAL;
         }
         
         // 아이템 모드 설정 불러오기
@@ -127,7 +127,7 @@ public class GameSettings {
     // 전역 난이도 접근자
     public enum Difficulty {
         EASY,
-        MEDIUM,
+        NORMAL,
         HARD
     }
 

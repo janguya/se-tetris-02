@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import com.example.Router;
+import com.example.settings.GameSettings.Difficulty;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -20,18 +21,41 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.application.Platform;
 
 public class GameOverScene {
+
+    static {
+        // 구독: 스코어 리셋 시 캐시 무효화를 요청
+        try {
+            com.example.gameover.ScoreManager.addResetListener(() -> {
+                // Try to run on FX thread; if toolkit not initialized (e.g. during unit tests),
+                // fall back to directly clearing the cache.
+                try {
+                    Platform.runLater(() -> LEADERBOARD = null);
+                } catch (IllegalStateException ise) {
+                    // Toolkit not initialized — clear directly
+                    LEADERBOARD = null;
+                }
+            });
+        } catch (Throwable t) {
+            // ignore if ScoreManager not available at class load time
+        }
+    }
 
     private static final int MAX_SCORES = 10; // 상위 10개만 표시
 
     private static List<ScoreEntry> LEADERBOARD = null;
 
+    // (per-score fields are stored in ScoreEntry)
+
     // 리더보드 초기화 (파일에서 로드)
     private static void initializeLeaderboard() {
         if (LEADERBOARD == null) {
-            LEADERBOARD = ScoreManager.loadScores();
-            System.out.println("Leaderboard initialized with " + LEADERBOARD.size() + " entries");
+            boolean isItem = com.example.settings.GameSettings.getInstance().isItemModeEnabled();
+            LEADERBOARD = ScoreManager.loadScores(isItem);
+            System.out.println("Leaderboard initialized (mode=" + (isItem ? "item" : "normal") + ") with "
+                    + LEADERBOARD.size() + " entries");
         }
     }
 
@@ -45,24 +69,40 @@ public class GameOverScene {
 
         ScoreEntry currentPlayer = null;
         if (qualifies) {
-            String name = askName(stage, finalScore);
-            if(name == null){
-                currentPlayer = null; // 취소 눌렀을 때
-            }else{
-                if(name.trim().isEmpty()) {
-                    name = "Player"; // 빈 이름 방지
+            // 애니메이션 도중 게임 종료되면 버그 발생 가능성 방지
+            javafx.application.Platform.runLater(() -> {
+                String name = askName(stage, finalScore);
+                if (name != null) {
+                    if (name.trim().isEmpty())
+                        name = "Player";
+                    boolean isItemMode = com.example.settings.GameSettings.getInstance().isItemModeEnabled();
+                    com.example.settings.GameSettings.Difficulty diff = com.example.settings.GameSettings.getInstance()
+                            .getDifficulty();
+                    ScoreEntry added = addScore(name.trim(), finalScore, isItemMode, diff);
+                    // 파일에 저장 (모드별로 분리)
+                    ScoreManager.saveScores(LEADERBOARD, isItemMode);
+                    // 정렬 후 화면 생성, 현재 플레이어를 하이라이트
+                    Scene scene = create(stage, LEADERBOARD, added, 400, 500);
+                    stage.setScene(scene);
+                    stage.show();
+                } else {
+                    // 취소한 경우 일반 화면으로 (플레이어 없음)
+                    Scene scene = create(stage, LEADERBOARD, null, 400, 500);
+                    stage.setScene(scene);
+                    stage.show();
                 }
-            currentPlayer = addScore(name.trim(), finalScore); // 보드에 추가하고 참조 반환
-            
-            // 파일에 저장
-            ScoreManager.saveScores(LEADERBOARD);
-            }
+            });
+        } else {
+            // 정렬 후 화면 생성
+            Scene scene = create(stage, LEADERBOARD, currentPlayer, 400, 500);
+            stage.setScene(scene);
+            stage.show();
         }
+    }
 
-        //정렬 후 화면 생성
-        Scene scene = create(stage, LEADERBOARD, currentPlayer, 400, 500);
-        stage.setScene(scene);
-        stage.show();
+    // 외부에서 리더보드 캐시를 초기화(예: 파일 삭제 후 메모리상의 목록 제거)
+    public static void clearLeaderboard() {
+        LEADERBOARD = null;
     }
 
     public static Scene create(Stage stage, List<ScoreEntry> scores, ScoreEntry currentPlayer, int width, int height) {
@@ -109,7 +149,7 @@ public class GameOverScene {
         mainMenuButton.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         mainMenuButton.setPrefSize(120, 40);
         mainMenuButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 5;");
-        
+
         mainMenuButton.setOnAction(e -> {
             Router router = new Router(stage);
             router.showStartMenu();
@@ -126,7 +166,7 @@ public class GameOverScene {
         root.getChildren().addAll(gameOverText, scoreBoardLabel, scoreListView, buttons);
         return new Scene(root, width, height);
     }
-    
+
     // 기존 메소드 호환성 유지
     public static Scene create(Stage stage, List<ScoreEntry> scores, ScoreEntry currentPlayer) {
         return create(stage, scores, currentPlayer, 400, 500);
@@ -143,7 +183,7 @@ public class GameOverScene {
         return result.orElse(null);
     }
 
-    //등록 자격
+    // 등록 자격
     private static boolean qualifies(int score) {
         if (LEADERBOARD.size() < MAX_SCORES) {
             return true;
@@ -153,8 +193,10 @@ public class GameOverScene {
     }
 
     // 등록
-    private static ScoreEntry addScore(String name, int score) {
-        ScoreEntry entry = new ScoreEntry(name, score);
+    private static ScoreEntry addScore(String name, int score, boolean isItemMode,
+            Difficulty difficulty) {
+        ScoreEntry entry = new ScoreEntry(name, score, isItemMode,
+                difficulty == null ? Difficulty.NORMAL : difficulty);
         LEADERBOARD.add(entry);
         LEADERBOARD.sort(Comparator.comparingInt(ScoreEntry::getScore).reversed());
         // 상위 N개만 유지
@@ -168,10 +210,18 @@ public class GameOverScene {
     public static class ScoreEntry {
         private String name;
         private int score;
+        private boolean isItemMode;
+        private Difficulty difficulty;
 
         public ScoreEntry(String name, int score) {
+            this(name, score, false, Difficulty.NORMAL);
+        }
+
+        public ScoreEntry(String name, int score, boolean isItemMode, Difficulty difficulty) {
             this.name = name;
             this.score = score;
+            this.isItemMode = isItemMode;
+            this.difficulty = difficulty == null ? Difficulty.NORMAL : difficulty;
         }
 
         public String getName() {
@@ -182,19 +232,28 @@ public class GameOverScene {
             return score;
         }
 
+        public boolean isItemMode() {
+            return isItemMode;
+        }
+
+        public Difficulty getDifficulty() {
+            return difficulty;
+        }
+
         @Override
         public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (obj == null || getClass() != obj.getClass()) return false;
+            if (this == obj)
+                return true;
+            if (obj == null || getClass() != obj.getClass())
+                return false;
             ScoreEntry that = (ScoreEntry) obj;
-            return score == that.score && Objects.equals(name, that.name);
+            return score == that.score && Objects.equals(name, that.name)
+                    && isItemMode == that.isItemMode && difficulty == that.difficulty;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, score);
+            return Objects.hash(name, score, isItemMode, difficulty);
         }
     }
 }
-
-

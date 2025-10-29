@@ -38,37 +38,38 @@ public class SettingsDialog {
     private Map<String, ColorPicker> colorPickers;
     private Map<String, Button> keyButtons; // 키 바인딩 버튼들
     private Runnable onSettingsChanged;
-    
+
     public SettingsDialog(Stage parentStage, Runnable onSettingsChanged) {
         this.settings = GameSettings.getInstance();
         this.onSettingsChanged = onSettingsChanged;
         createDialog(parentStage);
     }
-    
+
     private void createDialog(Stage parentStage) {
         dialog = new Stage();
         dialog.initModality(Modality.WINDOW_MODAL);
         dialog.initOwner(parentStage);
         dialog.setTitle("Game Settings");
         dialog.setResizable(false);
-        
+
         VBox root = new VBox(20);
         root.setPadding(new Insets(20));
         root.getStyleClass().add("settings-dialog");
-        
+
         // 창 크기 섹션 추가
         VBox windowSizeSection = createWindowSizeSection();
-    // 난이도 섹션 추가
+        // 난이도 섹션 추가
         VBox difficultySection = createDifficultySection();
-        
+
         VBox schemeSection = createColorSchemeSection();
         VBox customSection = createCustomColorsSection();
         VBox keyBindingSection = createKeyBindingSection(); // 키 바인딩 섹션 추가
         VBox scoreSection = createScoreSection();
         HBox buttonBox = createButtonBox();
-        
-        root.getChildren().addAll(windowSizeSection, difficultySection, schemeSection, customSection, keyBindingSection, scoreSection, buttonBox);
-        
+
+        root.getChildren().addAll(windowSizeSection, difficultySection, schemeSection, customSection, keyBindingSection,
+                scoreSection, buttonBox);
+
         Scene scene = new Scene(root, 450, 750); // 다이얼로그 크기 증가
         scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         dialog.setScene(scene);
@@ -114,19 +115,19 @@ public class SettingsDialog {
         section.getChildren().addAll(title, difficultyCombo);
         return section;
     }
-    
+
     // 창 크기 섹션 생성
     private VBox createWindowSizeSection() {
         VBox section = new VBox(10);
-        
+
         Label title = new Label("Window Size:");
         title.getStyleClass().add("settings-section-title");
-        
+
         windowSizeCombo = new ComboBox<>();
         windowSizeCombo.getItems().addAll(WindowSize.values());
         windowSizeCombo.setValue(settings.getCurrentWindowSize());
         windowSizeCombo.getStyleClass().add("settings-combo");
-        
+
         // 창 크기 변경 시 즉시 적용 (실시간 미리보기)
         windowSizeCombo.setOnAction(e -> {
             WindowSize selectedSize = windowSizeCombo.getValue();
@@ -134,7 +135,7 @@ public class SettingsDialog {
                 settings.setCurrentWindowSize(selectedSize);
             }
         });
-        
+
         windowSizeCombo.setCellFactory(listView -> new ListCell<WindowSize>() {
             @Override
             protected void updateItem(WindowSize item, boolean empty) {
@@ -146,7 +147,7 @@ public class SettingsDialog {
                 }
             }
         });
-        
+
         windowSizeCombo.setButtonCell(new ListCell<WindowSize>() {
             @Override
             protected void updateItem(WindowSize item, boolean empty) {
@@ -158,23 +159,23 @@ public class SettingsDialog {
                 }
             }
         });
-        
+
         section.getChildren().addAll(title, windowSizeCombo);
         return section;
     }
-    
+
     // 색상 스킴 섹션 생성
     private VBox createColorSchemeSection() {
         VBox section = new VBox(10);
-        
+
         Label title = new Label("Color Scheme:");
         title.getStyleClass().add("settings-section-title");
-        
+
         colorSchemeCombo = new ComboBox<>();
         colorSchemeCombo.getItems().addAll(ColorScheme.values());
         colorSchemeCombo.setValue(settings.getCurrentColorScheme());
         colorSchemeCombo.getStyleClass().add("settings-combo");
-        
+
         // 콤보박스 커스텀 셀 팩토리 및 버튼 셀
         colorSchemeCombo.setCellFactory(listView -> new ListCell<ColorScheme>() {
             @Override
@@ -187,7 +188,7 @@ public class SettingsDialog {
                 }
             }
         });
-        
+
         // 버튼 셀도 동일하게 설정
         colorSchemeCombo.setButtonCell(new ListCell<ColorScheme>() {
             @Override
@@ -200,119 +201,119 @@ public class SettingsDialog {
                 }
             }
         });
-        
+
         colorSchemeCombo.setOnAction(e -> updateCustomColorVisibility());
-        
+
         section.getChildren().addAll(title, colorSchemeCombo);
         return section;
     }
-    
+
     // 커스텀 색상 섹션 생성
     private VBox createCustomColorsSection() {
         VBox section = new VBox(10);
-        
+
         Label title = new Label("Custom Colors:");
         title.getStyleClass().add("settings-section-title");
-        
+
         customColorGrid = new GridPane();
         customColorGrid.setHgap(10);
         customColorGrid.setVgap(8);
         customColorGrid.setAlignment(Pos.CENTER_LEFT);
-        
+
         // 블록별 컬러 피커 생성
         colorPickers = new HashMap<>();
-        String[] blockNames = {"I Block", "O Block", "J Block", "L Block", "S Block", "T Block", "Z Block"};
-        String[] blockTypes = {"block-i", "block-o", "block-j", "block-l", "block-s", "block-t", "block-z"};
-        
+        String[] blockNames = { "I Block", "O Block", "J Block", "L Block", "S Block", "T Block", "Z Block" };
+        String[] blockTypes = { "block-i", "block-o", "block-j", "block-l", "block-s", "block-t", "block-z" };
+
         for (int i = 0; i < blockNames.length; i++) {
             Label label = new Label(blockNames[i] + ":");
             label.getStyleClass().add("settings-color-label");
-            
+
             ColorPicker picker = new ColorPicker();
             picker.setValue(settings.getCustomColor(blockTypes[i]));
             picker.getStyleClass().add("settings-color-picker");
             colorPickers.put(blockTypes[i], picker);
-            
+
             customColorGrid.add(label, 0, i);
             customColorGrid.add(picker, 1, i);
         }
-        
+
         section.getChildren().addAll(title, customColorGrid);
         updateCustomColorVisibility();
         return section;
     }
-    
+
     // 키 바인딩 섹션 생성
     private VBox createKeyBindingSection() {
         VBox section = new VBox(10);
-        
+
         Label title = new Label("Key Bindings:");
         title.getStyleClass().add("settings-section-title");
-        
+
         keyBindingGrid = new GridPane();
         keyBindingGrid.setHgap(10);
         keyBindingGrid.setVgap(8);
         keyBindingGrid.setAlignment(Pos.CENTER_LEFT);
-        
+
         // 키 바인딩 버튼들 생성
         keyButtons = new HashMap<>();
-        String[] actionNames = {"Move Left", "Move Right", "Move Down", "Rotate", "Pause", "Hard drop"};
-        String[] actionKeys = {"MOVE_LEFT", "MOVE_RIGHT", "MOVE_DOWN", "ROTATE", "PAUSE", "HARD_DROP"};
+        String[] actionNames = { "Move Left", "Move Right", "Move Down", "Rotate", "Pause", "Hard drop" };
+        String[] actionKeys = { "MOVE_LEFT", "MOVE_RIGHT", "MOVE_DOWN", "ROTATE", "PAUSE", "HARD_DROP" };
 
         for (int i = 0; i < actionNames.length; i++) {
             Label label = new Label(actionNames[i] + ":");
             label.getStyleClass().add("settings-color-label");
-            
+
             Button keyButton = new Button(settings.getKeyBinding(actionKeys[i]).toString());
             keyButton.getStyleClass().add("settings-key-button");
             keyButton.setPrefWidth(100);
-            
+
             final String actionKey = actionKeys[i];
             keyButton.setOnAction(e -> captureKey(keyButton, actionKey));
-            
+
             keyButtons.put(actionKeys[i], keyButton);
-            
+
             keyBindingGrid.add(label, 0, i);
             keyBindingGrid.add(keyButton, 1, i);
         }
-        
+
         section.getChildren().addAll(title, keyBindingGrid);
         return section;
     }
-    
+
     // 버튼 박스 생성
     private HBox createButtonBox() {
         HBox buttonBox = new HBox(10);
         buttonBox.setAlignment(Pos.CENTER);
-        
+
         Button resetButton = new Button("Reset to Default");
         resetButton.getStyleClass().add("settings-button");
         resetButton.setOnAction(e -> resetToDefault());
-        
+
         Button cancelButton = new Button("Cancel");
         cancelButton.getStyleClass().add("settings-button");
         cancelButton.setOnAction(e -> dialog.close());
-        
+
         Button applyButton = new Button("Apply");
         applyButton.getStyleClass().add("settings-button-primary");
         applyButton.setOnAction(e -> applySettings());
-        
+
         buttonBox.getChildren().addAll(resetButton, cancelButton, applyButton);
         return buttonBox;
     }
-    
+
     // 커스텀 색상 섹션 표시 여부 업데이트
     private void updateCustomColorVisibility() {
         boolean isCustom = colorSchemeCombo.getValue() == ColorScheme.CUSTOM;
         customColorGrid.setVisible(isCustom);
         customColorGrid.setManaged(isCustom);
     }
-    
+
     // 기본값으로 리셋
     private void resetToDefault() {
         windowSizeCombo.setValue(WindowSize.MEDIUM);
         if (difficultyCombo != null) {
-            difficultyCombo.setValue(GameSettings.Difficulty.MEDIUM);
+            difficultyCombo.setValue(GameSettings.Difficulty.NORMAL);
         }
         colorSchemeCombo.setValue(ColorScheme.NORMAL);
         Map<String, Color> defaultColors = ColorScheme.NORMAL.getColorMap();
@@ -322,13 +323,13 @@ public class SettingsDialog {
                 entry.getValue().setValue(defaultColor);
             }
         }
-        
+
         // 키 바인딩 기본값으로 리셋
         settings.resetKeyBindingsToDefault();
         updateKeyButtonLabels();
         updateCustomColorVisibility();
     }
-    
+
     // 설정 적용
     private void applySettings() {
         // 난이도 적용
@@ -340,13 +341,13 @@ public class SettingsDialog {
         }
         ColorScheme selectedScheme = colorSchemeCombo.getValue();
         settings.setCurrentColorScheme(selectedScheme);
-        
+
         if (selectedScheme == ColorScheme.CUSTOM) {
             for (Map.Entry<String, ColorPicker> entry : colorPickers.entrySet()) {
                 settings.setCustomColor(entry.getKey(), entry.getValue().getValue());
             }
         }
-        
+
         // 먼저 다이얼로그를 닫아 UI 리소스(루트 노드 등)가 해제되도록 합니다.
         dialog.close();
 
@@ -355,11 +356,11 @@ public class SettingsDialog {
             javafx.application.Platform.runLater(onSettingsChanged);
         }
     }
-    
+
     public void show() {
         dialog.show();
     }
-    
+
     // 키 캡처 메서드
     private void captureKey(Button button, String actionKey) {
         button.setText("Press a key...");
@@ -371,7 +372,7 @@ public class SettingsDialog {
                 button.setOnKeyPressed(null);
                 return;
             }
-            
+
             // 중복 키 체크
             if (isKeyAlreadyUsed(keyCode, actionKey)) {
                 button.setText(settings.getKeyBinding(actionKey).toString());
@@ -379,7 +380,7 @@ public class SettingsDialog {
                 showAlert("Key Already Used", "This key is already assigned to another action.");
                 return;
             }
-            
+
             button.setText(keyCode.toString());
             settings.setKeyBinding(actionKey, keyCode);
             button.setOnKeyPressed(null);
@@ -387,7 +388,7 @@ public class SettingsDialog {
         });
         button.requestFocus();
     }
-    
+
     // 키 중복 체크
     private boolean isKeyAlreadyUsed(KeyCode keyCode, String currentAction) {
         Map<String, KeyCode> allBindings = settings.getAllKeyBindings();
@@ -398,7 +399,7 @@ public class SettingsDialog {
         }
         return false;
     }
-    
+
     // 키 버튼 라벨 업데이트
     private void updateKeyButtonLabels() {
         Map<String, KeyCode> allBindings = settings.getAllKeyBindings();
@@ -413,17 +414,17 @@ public class SettingsDialog {
     // 점수 관리 섹션 생성
     private VBox createScoreSection() {
         VBox section = new VBox(10);
-    
+
         Label title = new Label("Score Management:");
         title.getStyleClass().add("settings-section-title");
-    
+
         Button resetScoresButton = new Button("Reset All Scores");
         resetScoresButton.getStyleClass().add("settings-button");
         resetScoresButton.setOnAction(e -> resetScores());
-    
+
         Label warningLabel = new Label("⚠ This will delete all saved scores permanently!");
         warningLabel.setStyle("-fx-text-fill: #ff6b6b; -fx-font-size: 11px;");
-    
+
         section.getChildren().addAll(title, resetScoresButton, warningLabel);
         return section;
     }
@@ -435,17 +436,17 @@ public class SettingsDialog {
         confirmAlert.setTitle("Reset Scores");
         confirmAlert.setHeaderText("Are you sure?");
         confirmAlert.setContentText("점수가 영구적으로 제거됩니다\n되돌릴 수 없습니다!");
-    
+
         ButtonType yesButton = new ButtonType("초기화");
         ButtonType noButton = new ButtonType("취소", ButtonBar.ButtonData.CANCEL_CLOSE);
         confirmAlert.getButtonTypes().setAll(yesButton, noButton);
-    
+
         Optional<ButtonType> result = confirmAlert.showAndWait();
-    
+
         if (result.isPresent() && result.get() == yesButton) {
             // 점수 초기화 실행
             boolean success = ScoreManager.resetScores();
-        
+
             if (success) {
                 // 성공 알림
                 Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
@@ -463,7 +464,7 @@ public class SettingsDialog {
             }
         }
     }
-    
+
     // 알림 다이얼로그 표시
     private void showAlert(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
