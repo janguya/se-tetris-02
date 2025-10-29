@@ -77,30 +77,45 @@ public class Board implements GameInputCallback {
     // GameInputCallback 구현
     @Override
     public void onMoveLeft() {
+        if (lineAnimation.isActive()) {
+            return; // 애니메이션 중에는 입력 무시
+        }
         gameLogic.moveLeft();
         drawBoard();
     }
 
     @Override
     public void onMoveRight() {
+        if (lineAnimation.isActive()) {
+            return; // 애니메이션 중에는 입력 무시
+        }
         gameLogic.moveRight();
         drawBoard();
     }
 
     @Override
     public void onMoveDown() {
+        if (lineAnimation.isActive()) {
+            return; // 애니메이션 중에는 입력 무시
+        }
         handleMoveDown();
         drawBoard();
     }
 
     @Override
     public void onRotate() {
+        if (lineAnimation.isActive()) {
+            return; // 애니메이션 중에는 입력 무시
+        }
         gameLogic.rotateBlock();
         drawBoard();
     }
 
     @Override
     public void onHardDrop() {
+        if (lineAnimation.isActive()) {
+            return; // 애니메이션 중에는 입력 무시
+        }
         hardDrop();
         drawBoard();
     }
@@ -464,22 +479,25 @@ public class Board implements GameInputCallback {
             // 블록이 성공적으로 아래로 이동했을 때 점수 증가
             scorePanel.addScore(1);
         } else {
+            // 줄 삭제 체크 - 먼저 꽉 찬 줄 찾기 (L-item 줄 채우기 전에)
+            List<Integer> fullLines = gameLogic.findFullLines();
+            
             // L-item이 착지했을 경우 L 줄을 애니메이션 대상에 추가
             if (isLItemBlock) {
                 LItem lItem = (LItem) currentBlock;
                 lItemRow = lItem.getLMarkerAbsoluteRow(gameLogic.getCurrentY());
+                System.out.println(">>> L-item landed at row: " + lItemRow);
                 
                 // L-item 줄의 빈 셀을 임시로 채워서 애니메이션이 제대로 작동하도록 함
                 fillEmptyCellsInLine(lItemRow);
             }
             
-            // 줄 삭제 체크 - 애니메이션 시작
-            List<Integer> fullLines = gameLogic.findFullLines();
             List<Integer> linesToAnimate = new ArrayList<>();
             
             // L-item 줄 추가
             if (lItemRow >= 0) {
                 linesToAnimate.add(lItemRow);
+                System.out.println(">>> Adding L-item row to animate: " + lItemRow);
                 scorePanel.addScoreWithDifficulty(100); // L-item 줄 삭제 점수 (난이도 배율 적용)
             }
             
@@ -487,6 +505,7 @@ public class Board implements GameInputCallback {
             for (Integer line : fullLines) {
                 if (!linesToAnimate.contains(line)) {
                     linesToAnimate.add(line);
+                    System.out.println(">>> Adding full line to animate: " + line);
                 }
             }
             
@@ -764,23 +783,26 @@ public class Board implements GameInputCallback {
             return;
         }
 
+        // 줄 삭제 체크 - 먼저 꽉 찬 줄 찾기 (L-item 줄 채우기 전에)
+        List<Integer> fullLines = gameLogic.findFullLines();
+        
         // L-item이 착지했을 경우 L 줄을 애니메이션 대상에 추가
         int lItemRow = -1;
         if (isLItemBlock) {
             LItem lItem = (LItem) currentBlock;
             lItemRow = lItem.getLMarkerAbsoluteRow(gameLogic.getCurrentY());
+            System.out.println(">>> L-item hard-dropped at row: " + lItemRow);
             
             // L-item 줄의 빈 셀을 임시로 채워서 애니메이션이 제대로 작동하도록 함
             fillEmptyCellsInLine(lItemRow);
         }
 
-        // 줄 삭제 체크 - 애니메이션 시작
-        List<Integer> fullLines = gameLogic.findFullLines();
         List<Integer> linesToAnimate = new ArrayList<>();
         
         // L-item 줄 추가
         if (lItemRow >= 0) {
             linesToAnimate.add(lItemRow);
+            System.out.println(">>> Adding L-item row to animate: " + lItemRow);
             scorePanel.addScoreWithDifficulty(100); // L-item 줄 삭제 점수 (난이도 배율 적용)
         }
         
@@ -788,6 +810,7 @@ public class Board implements GameInputCallback {
         for (Integer line : fullLines) {
             if (!linesToAnimate.contains(line)) {
                 linesToAnimate.add(line);
+                System.out.println(">>> Adding full line to animate: " + line);
             }
         }
         
