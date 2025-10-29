@@ -2,7 +2,7 @@
 
 ## 개요
 
-프로젝트에 간단한 로깅 유틸리티 클래스를 추가했습니다. 이를 통해 개발 중에는 로그를 보고, 프로덕션 빌드에서는 로그가 비활성화할 수 있는 옵션을 제공.
+프로젝트에 간단한 로깅 유틸리티 클래스를 추가했습니다. 이를 통해 개발 중에는 로그를 보고, 프로덕션 빌드에서는 로그를 비활성화할 수 있는 옵션을 제공.
 
 ## 사용 방법
 
@@ -54,7 +54,6 @@ private static final boolean DEBUG_MODE = false;
 
 ```java
 System.out.println("✓ Settings saved to: " + SETTINGS_PATH);
-System.out.println(">>> ItemManager: Item should spawn!");
 System.err.println("Failed to save: " + e.getMessage());
 e.printStackTrace();
 ```
@@ -63,6 +62,5 @@ e.printStackTrace();
 
 ```java
 Logger.info("Settings saved to: %s", SETTINGS_PATH);
-Logger.debug("ItemManager: Item should spawn!");
 Logger.error("Failed to save: " + e.getMessage(), e);
 ```
