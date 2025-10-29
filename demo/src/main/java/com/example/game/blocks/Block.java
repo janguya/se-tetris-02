@@ -43,4 +43,12 @@ public abstract class Block {
             return shape[0].length;
         return 0;
     }
+    
+    /**
+     * 아이템 블록 여부 확인
+     * 기본적으로 false, 아이템 블록들은 이를 오버라이드
+     */
+    public boolean isItemBlock() {
+        return false;
+    }
 }

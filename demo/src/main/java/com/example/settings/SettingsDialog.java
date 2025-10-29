@@ -1,11 +1,25 @@
 package com.example.settings;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import com.example.gameover.ScoreManager;
+
+import com.example.theme.ColorScheme;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ColorPicker;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -13,16 +27,12 @@ import javafx.scene.paint.Color;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import com.example.theme.ColorScheme;
-
 public class SettingsDialog {
     private Stage dialog;
     private GameSettings settings;
     private ComboBox<ColorScheme> colorSchemeCombo;
     private ComboBox<WindowSize> windowSizeCombo; // 창 크기 콤보박스 추가
+    private ComboBox<GameSettings.Difficulty> difficultyCombo; // 난이도 콤보박스
     private GridPane customColorGrid;
     private GridPane keyBindingGrid; // 키 바인딩 그리드 추가
     private Map<String, ColorPicker> colorPickers;
@@ -48,17 +58,61 @@ public class SettingsDialog {
         
         // 창 크기 섹션 추가
         VBox windowSizeSection = createWindowSizeSection();
+    // 난이도 섹션 추가
+        VBox difficultySection = createDifficultySection();
         
         VBox schemeSection = createColorSchemeSection();
         VBox customSection = createCustomColorsSection();
         VBox keyBindingSection = createKeyBindingSection(); // 키 바인딩 섹션 추가
+        VBox scoreSection = createScoreSection();
         HBox buttonBox = createButtonBox();
         
-        root.getChildren().addAll(windowSizeSection, schemeSection, customSection, keyBindingSection, buttonBox);
+        root.getChildren().addAll(windowSizeSection, difficultySection, schemeSection, customSection, keyBindingSection, scoreSection, buttonBox);
         
         Scene scene = new Scene(root, 450, 750); // 다이얼로그 크기 증가
         scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         dialog.setScene(scene);
+    }
+
+    // 난이도 섹션 생성
+    private VBox createDifficultySection() {
+        VBox section = new VBox(10);
+
+        Label title = new Label("Difficulty:");
+        title.getStyleClass().add("settings-section-title");
+
+        difficultyCombo = new ComboBox<>();
+        difficultyCombo.getItems().addAll(GameSettings.Difficulty.values());
+        difficultyCombo.setValue(settings.getDifficulty());
+        difficultyCombo.getStyleClass().add("settings-combo");
+
+        // 표시 텍스트를 간단히 처리
+        difficultyCombo.setCellFactory(listView -> new ListCell<GameSettings.Difficulty>() {
+            @Override
+            protected void updateItem(GameSettings.Difficulty item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.name());
+                }
+            }
+        });
+
+        difficultyCombo.setButtonCell(new ListCell<GameSettings.Difficulty>() {
+            @Override
+            protected void updateItem(GameSettings.Difficulty item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.name());
+                }
+            }
+        });
+
+        section.getChildren().addAll(title, difficultyCombo);
+        return section;
     }
     
     // 창 크기 섹션 생성
@@ -202,9 +256,9 @@ public class SettingsDialog {
         
         // 키 바인딩 버튼들 생성
         keyButtons = new HashMap<>();
-        String[] actionNames = {"Move Left", "Move Right", "Move Down", "Rotate", "Pause", "Settings"};
-        String[] actionKeys = {"MOVE_LEFT", "MOVE_RIGHT", "MOVE_DOWN", "ROTATE", "PAUSE", "SETTINGS"};
-        
+        String[] actionNames = {"Move Left", "Move Right", "Move Down", "Rotate", "Pause", "Hard drop"};
+        String[] actionKeys = {"MOVE_LEFT", "MOVE_RIGHT", "MOVE_DOWN", "ROTATE", "PAUSE", "HARD_DROP"};
+
         for (int i = 0; i < actionNames.length; i++) {
             Label label = new Label(actionNames[i] + ":");
             label.getStyleClass().add("settings-color-label");
@@ -257,6 +311,9 @@ public class SettingsDialog {
     // 기본값으로 리셋
     private void resetToDefault() {
         windowSizeCombo.setValue(WindowSize.MEDIUM);
+        if (difficultyCombo != null) {
+            difficultyCombo.setValue(GameSettings.Difficulty.MEDIUM);
+        }
         colorSchemeCombo.setValue(ColorScheme.NORMAL);
         Map<String, Color> defaultColors = ColorScheme.NORMAL.getColorMap();
         for (Map.Entry<String, ColorPicker> entry : colorPickers.entrySet()) {
@@ -274,6 +331,13 @@ public class SettingsDialog {
     
     // 설정 적용
     private void applySettings() {
+        // 난이도 적용
+        if (difficultyCombo != null) {
+            GameSettings.Difficulty sel = difficultyCombo.getValue();
+            if (sel != null) {
+                settings.setDifficulty(sel);
+            }
+        }
         ColorScheme selectedScheme = colorSchemeCombo.getValue();
         settings.setCurrentColorScheme(selectedScheme);
         
@@ -283,11 +347,13 @@ public class SettingsDialog {
             }
         }
         
-        if (onSettingsChanged != null) {
-            onSettingsChanged.run();
-        }
-        
+        // 먼저 다이얼로그를 닫아 UI 리소스(루트 노드 등)가 해제되도록 합니다.
         dialog.close();
+
+        // 설정 변경 콜백은 현재 FX 이벤트 처리 이후에 안전하게 실행되도록 스케줄합니다.
+        if (onSettingsChanged != null) {
+            javafx.application.Platform.runLater(onSettingsChanged);
+        }
     }
     
     public void show() {
@@ -340,6 +406,60 @@ public class SettingsDialog {
             Button button = keyButtons.get(entry.getKey());
             if (button != null) {
                 button.setText(entry.getValue().toString());
+            }
+        }
+    }
+
+    // 점수 관리 섹션 생성
+    private VBox createScoreSection() {
+        VBox section = new VBox(10);
+    
+        Label title = new Label("Score Management:");
+        title.getStyleClass().add("settings-section-title");
+    
+        Button resetScoresButton = new Button("Reset All Scores");
+        resetScoresButton.getStyleClass().add("settings-button");
+        resetScoresButton.setOnAction(e -> resetScores());
+    
+        Label warningLabel = new Label("⚠ This will delete all saved scores permanently!");
+        warningLabel.setStyle("-fx-text-fill: #ff6b6b; -fx-font-size: 11px;");
+    
+        section.getChildren().addAll(title, resetScoresButton, warningLabel);
+        return section;
+    }
+
+    // 점수 초기화 메서드
+    private void resetScores() {
+        // 확인 다이얼로그
+        Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmAlert.setTitle("Reset Scores");
+        confirmAlert.setHeaderText("Are you sure?");
+        confirmAlert.setContentText("점수가 영구적으로 제거됩니다\n되돌릴 수 없습니다!");
+    
+        ButtonType yesButton = new ButtonType("초기화");
+        ButtonType noButton = new ButtonType("취소", ButtonBar.ButtonData.CANCEL_CLOSE);
+        confirmAlert.getButtonTypes().setAll(yesButton, noButton);
+    
+        Optional<ButtonType> result = confirmAlert.showAndWait();
+    
+        if (result.isPresent() && result.get() == yesButton) {
+            // 점수 초기화 실행
+            boolean success = ScoreManager.resetScores();
+        
+            if (success) {
+                // 성공 알림
+                Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
+                successAlert.setTitle("Success");
+                successAlert.setHeaderText(null);
+                successAlert.setContentText("점수가 성공적으로 초기화 됐습니다!");
+                successAlert.showAndWait();
+            } else {
+                // 실패 알림
+                Alert errorAlert = new Alert(Alert.AlertType.ERROR);
+                errorAlert.setTitle("Error");
+                errorAlert.setHeaderText("Failed to reset scores");
+                errorAlert.setContentText("점수 초기화에 실패했습니다. 다시 시도해주세요.");
+                errorAlert.showAndWait();
             }
         }
     }

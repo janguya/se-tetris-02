@@ -1,45 +1,29 @@
 package com.example.settings;
 
-import javafx.scene.paint.Color;
-import javafx.scene.input.KeyCode;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.prefs.Preferences;
 
 import com.example.theme.ColorScheme;
 
-// 화면 크기 열거형 추가
-enum WindowSize {
-    SMALL("작은 화면", 400, 520),
-    MEDIUM("중간 화면", 480, 640),
-    LARGE("큰 화면", 560, 720),
-    EXTRA_LARGE("매우 큰 화면", 640, 800);
-    
-    private final String displayName;
-    private final int width;
-    private final int height;
-    
-    WindowSize(String displayName, int width, int height) {
-        this.displayName = displayName;
-        this.width = width;
-        this.height = height;
-    }
-    
-    public String getDisplayName() { return displayName; }
-    public int getWidth() { return width; }
-    public int getHeight() { return height; }
-}
+import javafx.scene.input.KeyCode;
+import javafx.scene.paint.Color;
+
+ 
 
 public class GameSettings {
     private static GameSettings instance;
     private Preferences prefs;
+    // 전역 난이도 설정 (기본 MEDIUM)
+    private Difficulty currentDifficulty = Difficulty.MEDIUM;
     private ColorScheme currentColorScheme;
     private Map<String, Color> customColors;
     private WindowSize currentWindowSize;
     private Map<String, KeyCode> keyBindings;
     private List<Runnable> windowSizeChangeListeners;
+    private boolean itemModeEnabled; // 아이템 모드 설정 추가
     
     private GameSettings() {
         prefs = Preferences.userNodeForPackage(GameSettings.class);
@@ -71,6 +55,17 @@ public class GameSettings {
         } catch (IllegalArgumentException e) {
             currentWindowSize = WindowSize.MEDIUM;
         }
+
+        // 난이도 설정 불러오기
+        String difficultyName = prefs.get("difficulty", Difficulty.MEDIUM.name());
+        try {
+            currentDifficulty = Difficulty.valueOf(difficultyName);
+        } catch (IllegalArgumentException e) {
+            currentDifficulty = Difficulty.MEDIUM;
+        }
+        
+        // 아이템 모드 설정 불러오기
+        itemModeEnabled = prefs.getBoolean("itemModeEnabled", false); // 기본값: false
         
         loadCustomColors();
         loadKeyBindings();
@@ -99,14 +94,16 @@ public class GameSettings {
         keyBindings.put("MOVE_RIGHT", KeyCode.valueOf(prefs.get("key_move_right", "RIGHT")));
         keyBindings.put("MOVE_DOWN", KeyCode.valueOf(prefs.get("key_move_down", "DOWN")));
         keyBindings.put("ROTATE", KeyCode.valueOf(prefs.get("key_rotate", "UP")));
-        keyBindings.put("PAUSE", KeyCode.valueOf(prefs.get("key_pause", "SPACE")));
-        keyBindings.put("SETTINGS", KeyCode.valueOf(prefs.get("key_settings", "ESCAPE")));
+        keyBindings.put("PAUSE", KeyCode.valueOf(prefs.get("key_pause", "ESCAPE")));
+        keyBindings.put("HARD_DROP", KeyCode.valueOf(prefs.get("key_hard_drop", "SPACE")));
     }
     
     // 설정 저장
     public void saveSettings() {
         prefs.put("colorScheme", currentColorScheme.name());
         prefs.put("windowSize", currentWindowSize.name());
+        prefs.put("difficulty", currentDifficulty.name());
+        prefs.putBoolean("itemModeEnabled", itemModeEnabled); // 아이템 모드 저장
         
         if (currentColorScheme == ColorScheme.CUSTOM) {
             for (Map.Entry<String, Color> entry : customColors.entrySet()) {
@@ -124,7 +121,24 @@ public class GameSettings {
         prefs.put("key_move_down", keyBindings.get("MOVE_DOWN").name());
         prefs.put("key_rotate", keyBindings.get("ROTATE").name());
         prefs.put("key_pause", keyBindings.get("PAUSE").name());
-        prefs.put("key_settings", keyBindings.get("SETTINGS").name());
+        prefs.put("key_hard_drop", keyBindings.get("HARD_DROP").name());
+    }
+
+    // 전역 난이도 접근자
+    public enum Difficulty {
+        EASY,
+        MEDIUM,
+        HARD
+    }
+
+    public Difficulty getDifficulty() {
+        return currentDifficulty;
+    }
+
+    public void setDifficulty(Difficulty difficulty) {
+        if (difficulty == null) return;
+        this.currentDifficulty = difficulty;
+        saveSettings();
     }
     
     // 현재 색상 테마 및 커스텀 색상 접근자
@@ -198,8 +212,8 @@ public class GameSettings {
         keyBindings.put("MOVE_RIGHT", KeyCode.RIGHT);
         keyBindings.put("MOVE_DOWN", KeyCode.DOWN);
         keyBindings.put("ROTATE", KeyCode.UP);
-        keyBindings.put("PAUSE", KeyCode.SPACE);
-        keyBindings.put("SETTINGS", KeyCode.ESCAPE);
+        keyBindings.put("HARD_DROP", KeyCode.SPACE);
+        keyBindings.put("PAUSE", KeyCode.ESCAPE);
         saveSettings();
     }
     
@@ -222,5 +236,15 @@ public class GameSettings {
                 System.err.println("Error in window size change listener: " + e.getMessage());
             }
         }
+    }
+    
+    // 아이템 모드 관련 메서드
+    public boolean isItemModeEnabled() {
+        return itemModeEnabled;
+    }
+    
+    public void setItemModeEnabled(boolean enabled) {
+        this.itemModeEnabled = enabled;
+        saveSettings();
     }
 }

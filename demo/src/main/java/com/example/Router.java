@@ -1,16 +1,16 @@
 package com.example;
 
+import java.util.List;
+
 import com.example.game.component.Board;
 import com.example.gameover.GameOverScene;
+import com.example.gameover.ScoreManager;
 import com.example.settings.GameSettings;
 import com.example.settings.SettingsDialog;
 import com.example.startmenu.StartMenuView;
 
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class Router {
     private final Stage stage;
@@ -68,18 +68,21 @@ public class Router {
     // 스테이지 크기 업데이트 
     private void updateStageSize() {
         System.out.println("Updating stage size to: " + currentWidth() + "x" + currentHeight());
-        
+
+        // Avoid reusing the same root Node in a new Scene (causes
+        // "is already set as root of another scene"), so don't create
+        // a new Scene from the existing root. Instead, resize the
+        // existing stage directly.
         if (stage.getScene() != null) {
-            Scene currentScene = stage.getScene();
-            Scene newScene = new Scene(currentScene.getRoot(), currentWidth(), currentHeight());
-            
-            // 기존 스타일시트가 있다면 복사
-            newScene.getStylesheets().addAll(currentScene.getStylesheets());
-            
-            stage.setScene(newScene);
+            // Set explicit stage width/height based on settings. This
+            // preserves the current Scene and its root Node.
+            stage.setWidth(currentWidth());
+            stage.setHeight(currentHeight());
+
+            // Ensure the window respects the new size
             stage.sizeToScene();
-            
-            // 저장된 위치로 복원 (있다면)
+
+            // Restore saved position if available
             if (savedX != null && savedY != null) {
                 stage.setX(savedX);
                 stage.setY(savedY);
@@ -95,6 +98,9 @@ public class Router {
             case "GAME":
                 showGame();
                 break;
+            case "ITEM_MODE":
+                toggleItemMode();
+                break;
             case "SETTINGS":
                 showSettings();
                 break;
@@ -107,6 +113,13 @@ public class Router {
             default:
                 // unknown
         }
+    }
+    
+    private void toggleItemMode() {
+        GameSettings settings = GameSettings.getInstance();
+        settings.setItemModeEnabled(!settings.isItemModeEnabled());
+        // 메뉴 새로고침
+        showStartMenu();
     }
 
     public void showGame() {
@@ -153,23 +166,21 @@ public class Router {
         settingsDialog.show();
     }
 
-    public void showScoreboard() {
-        List<GameOverScene.ScoreEntry> scores = new ArrayList<>();
-        // TODO : 실제 점수 불러오기 아래는 더미 데이터
-        scores.add(new GameOverScene.ScoreEntry("Alice", 1200));
-        scores.add(new GameOverScene.ScoreEntry("Bob", 950));
-        scores.add(new GameOverScene.ScoreEntry("Charlie", 850));
-        scores.add(new GameOverScene.ScoreEntry("You", 1000));
-        scores.add(new GameOverScene.ScoreEntry("Dave", 750));
-        scores.add(new GameOverScene.ScoreEntry("Eve", 600));
-        scores.add(new GameOverScene.ScoreEntry("Frank", 500));
-        scores.add(new GameOverScene.ScoreEntry("Grace", 400));
-        scores.add(new GameOverScene.ScoreEntry("Heidi", 300));
-        scores.add(new GameOverScene.ScoreEntry("Ivan", 200));
-        scores.add(new GameOverScene.ScoreEntry("Judy", 100));
-
-        GameOverScene.ScoreEntry current = new GameOverScene.ScoreEntry("You", 1000);
-        Scene scoreScene = GameOverScene.create(stage, scores, current, currentWidth(), currentHeight());
+        public void showScoreboard() {
+        System.out.println("\n=== Router.showScoreboard() ===");
+        
+        // ⭐ JSON 파일에서 실제 점수 불러오기 ⭐
+        List<GameOverScene.ScoreEntry> scores = ScoreManager.loadScores();
+        
+        System.out.println("Loaded " + scores.size() + " scores from file");
+        
+        // 점수가 없으면 안내 메시지용 더미 데이터 추가
+        if (scores.isEmpty()) {
+            System.out.println("No scores found, showing empty scoreboard");
+        }
+        
+        // 현재 플레이어는 null (스코어보드 보기만 하는 경우)
+        Scene scoreScene = GameOverScene.create(stage, scores, null, currentWidth(), currentHeight());
         stage.setScene(scoreScene);
         stage.setResizable(false);
         stage.sizeToScene();
@@ -186,8 +197,12 @@ public class Router {
     }
 
     public void showStartMenu() {
+        GameSettings settings = GameSettings.getInstance();
+        String itemModeLabel = settings.isItemModeEnabled() ? "아이템 모드: ON" : "아이템 모드: OFF";
+        
         StartMenuView startMenu = new StartMenuView()
             .addMenuItem("GAME", "게임 시작")
+            .addMenuItem("ITEM_MODE", itemModeLabel)
             .addMenuItem("SETTINGS", "설정")
             .addMenuItem("SCOREBOARD", "스코어보드")
             .addMenuItem("EXIT", "종료")
@@ -196,7 +211,7 @@ public class Router {
 
         Scene scene = new Scene(startMenu.getRoot(), currentWidth(), currentHeight());
         try {
-            scene.getStylesheets().add(getClass().getResource("tetris-menu.css").toExternalForm());
+            scene.getStylesheets().add(getClass().getResource("/tetris-menu.css").toExternalForm());
         } catch (Exception e) {
             // ignore
         }
