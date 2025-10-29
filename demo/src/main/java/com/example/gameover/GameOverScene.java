@@ -18,8 +18,6 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.application.Platform;
@@ -119,12 +117,16 @@ public class GameOverScene {
         VBox root = new VBox(20);
         root.setAlignment(Pos.TOP_CENTER);
         root.setPadding(new Insets(20));
+        root.getStyleClass().add("game-over-root");
 
         Text gameOverText = new Text("게임 종료");
-        gameOverText.setFont(Font.font("Arial", FontWeight.BOLD, 36));
+        gameOverText.getStyleClass().add("game-over-title");
 
         Label scoreBoardLabel = new Label("🏆 스코어 보드");
-        scoreBoardLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        scoreBoardLabel.getStyleClass().add("game-over-subtitle");
+
+        Label infoLabel = new Label("각 모드별 상위 10개까지 저장됩니다");
+        infoLabel.getStyleClass().add("game-over-info");
 
         // load both modes
         List<ScoreEntry> normalList = ScoreManager.loadScores(false);
@@ -148,24 +150,23 @@ public class GameOverScene {
         buttons.setAlignment(Pos.CENTER);
 
         Button mainMenuButton = new Button("메인으로");
-        mainMenuButton.setFont(Font.font("Arial", FontWeight.BOLD, 18));
-        mainMenuButton.setPrefSize(120, 40);
-        mainMenuButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 5;");
+        mainMenuButton.getStyleClass().add("game-over-button");
+        mainMenuButton.setPrefSize(140, 45);
         mainMenuButton.setOnAction(e -> {
             Router router = new Router(stage);
             router.showStartMenu();
         });
 
         Button quitButton = new Button("종료");
-        quitButton.setFont(Font.font("Arial", FontWeight.BOLD, 18));
-        quitButton.setPrefSize(120, 40);
-        quitButton.setStyle("-fx-background-color: #D32F2F; -fx-text-fill: white; -fx-background-radius: 5;");
+        quitButton.getStyleClass().add("game-over-button-quit");
+        quitButton.setPrefSize(140, 45);
         quitButton.setOnAction(e -> stage.close());
 
         buttons.getChildren().addAll(mainMenuButton, quitButton);
 
-        root.getChildren().addAll(gameOverText, scoreBoardLabel, leaderboardContainer, buttons);
+        root.getChildren().addAll(gameOverText, scoreBoardLabel, infoLabel, leaderboardContainer, buttons);
         Scene scene = new Scene(root, width, height);
+        scene.getStylesheets().add(GameOverScene.class.getResource("/styles.css").toExternalForm());
         return scene;
     }
 
@@ -175,12 +176,10 @@ public class GameOverScene {
         VBox panel = new VBox(10);
         panel.setAlignment(Pos.TOP_CENTER);
         panel.setPadding(new Insets(10));
-        panel.setStyle(
-                "-fx-border-color: #cccccc; -fx-border-width: 1; -fx-border-radius: 5; -fx-background-radius: 5;");
+        panel.getStyleClass().add("scoreboard-panel");
 
         Label titleLabel = new Label(title);
-        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 18));
-        titleLabel.setStyle("-fx-text-fill: #333333;");
+        titleLabel.getStyleClass().add("scoreboard-title");
 
         ListView<HBox> listView = buildScoreListView(scores, currentPlayer, listHeight);
         VBox.setVgrow(listView, javafx.scene.layout.Priority.ALWAYS);
@@ -192,6 +191,7 @@ public class GameOverScene {
     private static ListView<HBox> buildScoreListView(List<ScoreEntry> scores, ScoreEntry currentPlayer,
             int listHeight) {
         ListView<HBox> view = new ListView<>();
+        view.getStyleClass().add("scoreboard-list");
         view.setPrefHeight(listHeight);
         view.setMaxHeight(listHeight);
         VBox.setVgrow(view, javafx.scene.layout.Priority.ALWAYS);
@@ -203,8 +203,7 @@ public class GameOverScene {
         VBox placeholderBox = new VBox();
         placeholderBox.setAlignment(Pos.CENTER);
         Label placeholder = new Label("기록이 없습니다");
-        placeholder.setStyle("-fx-text-fill: #9e9e9e; -fx-font-size: 18px; -fx-alignment: center;");
-        placeholder.setWrapText(true);
+        placeholder.getStyleClass().add("scoreboard-placeholder");
         placeholderBox.getChildren().add(placeholder);
         // bind placeholder to fill entire ListView height
         placeholderBox.minHeightProperty().bind(view.heightProperty());
@@ -215,10 +214,10 @@ public class GameOverScene {
             ScoreEntry entry = scores.get(i);
 
             Label left = new Label(String.format("%2d. %s", i + 1, entry.getName()));
-            left.setFont(Font.font("Arial", 16));
+            left.getStyleClass().add("score-name");
 
             Label right = new Label(String.format("%d", entry.getScore()));
-            right.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+            right.getStyleClass().add("score-value");
 
             HBox row = new HBox();
             HBox.setHgrow(left, javafx.scene.layout.Priority.ALWAYS);
@@ -226,10 +225,13 @@ public class GameOverScene {
             row.getChildren().addAll(left, right);
             row.setPadding(new Insets(8, 12, 8, 12));
             row.setSpacing(10);
-            row.setStyle("-fx-border-color: transparent transparent #e0e0e0 transparent; -fx-border-width: 0 0 1 0;");
 
             if (entry.equals(currentPlayer)) {
-                row.setStyle(row.getStyle() + " -fx-background-color: linear-gradient(to right, #fff8dc, #ffd700);");
+                row.getStyleClass().add("score-row-highlight");
+            } else {
+                row.getStyleClass().add("score-row");
+                row.setStyle(
+                        "-fx-border-color: transparent transparent #16213e transparent; -fx-border-width: 0 0 1 0;");
             }
 
             view.getItems().add(row);
