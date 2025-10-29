@@ -137,6 +137,42 @@ public class GameLogic {
     public boolean moveDown() {
         // 현재 블록 지우기
         eraseCurrent();
+        
+        // weightedBlock인 경우 특별 처리: 지나가는 블록 삭제하고 바닥까지 떨어짐
+        if (currentBlock instanceof weightedBlock) {
+            // 다음 위치(y+1)의 블록들을 미리 삭제 (무게추가 지나갈 자리)
+            for (int i = 0; i < currentBlock.width(); i++) {
+                for (int j = 0; j < currentBlock.height(); j++) {
+                    if (currentBlock.getShape(i, j) == 1) {
+                        int col = x + i;
+                        int row = y + j + 1;  // 다음 위치 확인
+                        
+                        // 다음 위치의 블록 제거
+                        if (col >= 0 && col < WIDTH && 
+                            row >= 0 && row < HEIGHT) {
+                            if (board[row][col] == 1) {
+                                board[row][col] = 0;
+                                blockTypes[row][col] = null;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 블록을 삭제한 후에는 항상 이동 가능해짐
+            // 바닥에 닿을 때까지 계속 이동
+            if (y + currentBlock.height() < HEIGHT) {
+                y++;
+                placeCurrent();
+                return true;
+            } else {
+                // 바닥에 도착
+                placeCurrent();
+                return false;
+            }
+        }
+        
+        // 일반 블록 처리
         // 아래로 이동 가능하면 이동
         if (canMove(x, y + 1, currentBlock)) {
             y++;
@@ -149,14 +185,6 @@ public class GameLogic {
                 SandBlock sandBlock = (SandBlock) currentBlock;
                 sandBlock.applyGravity(board, blockTypes, y, x);
                 // SandBlock은 고정하지 않음 - 바로 다음 블록으로
-            }
-            // weightedBlock이면 바닥까지 떨어지면서 아래 블록들 삭제
-            else if (currentBlock instanceof weightedBlock) {
-                System.out.println(">>> WeightedBlock landed! Starting fall to bottom...");
-                // placeCurrent() 하지 않고 바로 fallToBottom 호출
-                int finalY = ((weightedBlock) currentBlock).fallToBottom(board, blockTypes, y, x);
-                y = finalY; // 최종 위치로 업데이트
-                placeCurrent(); // 최종 위치에만 배치
             } else {
                 placeCurrent(); // 일반 블록은 현재 위치에 배치
             }
