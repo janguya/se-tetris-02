@@ -1,5 +1,7 @@
 package com.example.game.component;
 
+import com.example.settings.GameSettings.Difficulty;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -59,8 +61,8 @@ public class MenuOverlay {
         showMenu(MenuType.PAUSE_MENU, callback, null);
     }
     
-    public void showGameOverMenu(MenuCallback callback, int finalScore) {
-        showMenu(MenuType.GAME_OVER_MENU, callback, finalScore);
+    public void showGameOverMenu(MenuCallback callback, int finalScore, boolean isItemMode, Difficulty difficulty) {
+        showMenu(MenuType.GAME_OVER_MENU, callback, finalScore, isItemMode, difficulty);
     }
     
     public void showSettingsMenu(MenuCallback callback) {
@@ -68,6 +70,10 @@ public class MenuOverlay {
     }
     
     private void showMenu(MenuType menuType, MenuCallback callback, Integer finalScore) {
+        showMenu(menuType, callback, finalScore, false, null);
+    }
+
+    private void showMenu(MenuType menuType, MenuCallback callback, Integer finalScore, boolean isItemMode, Difficulty difficulty) {
         menuContainer.getChildren().clear();
         
         // 타이틀

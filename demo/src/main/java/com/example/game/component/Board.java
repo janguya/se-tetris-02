@@ -110,7 +110,7 @@ public class Board implements GameInputCallback {
         togglePause();
     }
 
-// togglePause() 메서드 추가
+    // togglePause() 메서드 추가
     private void togglePause() {
         if (isPaused || menuOverlay.isVisible()) {
             // 현재 일시정지 상태 또는 메뉴가 열려있음 → 재개
@@ -309,7 +309,7 @@ public class Board implements GameInputCallback {
             public void onExit() {
                 exitGame();
             }
-        }, scorePanel.getScore());
+        }, scorePanel.getScore(), gameSettings.isItemModeEnabled(), gameSettings.getDifficulty());
     }
 
     // 설정 메뉴 표시
@@ -564,11 +564,11 @@ public class Board implements GameInputCallback {
         Color blockColor = colorMap.get(currentBlock.getCssClass());
         int currentX = gameLogic.getCurrentX();
         int currentY = gameLogic.getCurrentY();
-        
+
         // LItem인지 확인
         boolean isLItem = currentBlock instanceof LItem;
         LItem lItem = isLItem ? (LItem) currentBlock : null;
-        
+
         // BombBlock인지 확인
         boolean isBombBlock = currentBlock instanceof BombBlock;
         BombBlock bombBlock = isBombBlock ? (BombBlock) currentBlock : null;
@@ -580,7 +580,7 @@ public class Board implements GameInputCallback {
                     // 셀 위치 계산
                     int drawX = (currentX + i) * cellSize;
                     int drawY = (currentY + j) * cellSize;
-                    
+
                     // L 마커가 있는 셀인지 확인
                     if (isLItem && lItem.hasLMarker(j, i)) {
                         // L 마커 셀은 특별한 색상으로 그리고 "L" 텍스트 추가
@@ -592,8 +592,7 @@ public class Board implements GameInputCallback {
                         // B 마커 셀은 검은색으로 그리고 "B" 텍스트 추가
                         Color bMarkerColor = colorMap.get("item-bmarker");
                         drawBMarkerCell(drawX, drawY, bMarkerColor);
-                    }
-                    else {
+                    } else {
                         // 일반 셀 그리기
                         drawCell(drawX, drawY, blockColor);
                     }
@@ -618,7 +617,7 @@ public class Board implements GameInputCallback {
         gc.fillRect(x + 2, y + cellSize - 5, cellSize - 4, 3);
         gc.fillRect(x + cellSize - 5, y + 2, 3, cellSize - 4);
     }
-    
+
     // L 마커 셀 그리기 (특별한 스타일)
     private void drawLMarkerCell(double x, double y, Color color) {
         // 메인 셀 (L 마커 색상)
@@ -634,23 +633,23 @@ public class Board implements GameInputCallback {
         gc.setFill(color.darker());
         gc.fillRect(x + 2, y + cellSize - 5, cellSize - 4, 3);
         gc.fillRect(x + cellSize - 5, y + 2, 3, cellSize - 4);
-        
+
         // "L" 텍스트 그리기
         gc.setFill(Color.BLACK);
         gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.6));
-        
+
         // 텍스트 중앙 정렬을 위한 계산
         javafx.scene.text.Text tempText = new javafx.scene.text.Text("L");
         tempText.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.6));
         double textWidth = tempText.getBoundsInLocal().getWidth();
         double textHeight = tempText.getBoundsInLocal().getHeight();
-        
+
         double textX = x + (cellSize - textWidth) / 2;
         double textY = y + (cellSize + textHeight) / 2 - 2;
-        
+
         gc.fillText("L", textX, textY);
     }
-    
+
     // B 마커 셀 그리기 (폭탄 마커)
     private void drawBMarkerCell(double x, double y, Color color) {
         // 메인 셀 (B 마커 색상 - 검은색)
@@ -670,16 +669,16 @@ public class Board implements GameInputCallback {
         // "B" 텍스트 그리기 (검은색)
         gc.setFill(Color.BLACK);
         gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.6));
-        
+
         // 텍스트 중앙 정렬을 위한 계산
         javafx.scene.text.Text tempText = new javafx.scene.text.Text("B");
         tempText.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.6));
         double textWidth = tempText.getBoundsInLocal().getWidth();
         double textHeight = tempText.getBoundsInLocal().getHeight();
-        
+
         double textX = x + (cellSize - textWidth) / 2;
         double textY = y + (cellSize + textHeight) / 2 - 2;
-        
+
         gc.fillText("B", textX, textY);
     }
 
