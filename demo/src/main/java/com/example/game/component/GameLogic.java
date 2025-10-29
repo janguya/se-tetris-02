@@ -12,9 +12,7 @@ import com.example.game.blocks.OBlock;
 import com.example.game.blocks.SBlock;
 import com.example.game.blocks.TBlock;
 import com.example.game.blocks.ZBlock;
-import com.example.game.items.BombBlock;
 import com.example.game.items.ItemManager;
-import com.example.game.items.LItem;
 import com.example.game.items.SandBlock;
 import com.example.game.items.weightedBlock;
 import com.example.settings.GameSettings;
@@ -189,24 +187,12 @@ public class GameLogic {
                 placeCurrent(); // 일반 블록은 현재 위치에 배치
             }
             
-            // LItem이면 L 마커가 있는 줄 삭제
-            if (currentBlock instanceof LItem) {
-                LItem lItem = (LItem) currentBlock;
-                int lRow = lItem.getLMarkerAbsoluteRow(y);
-                System.out.println(">>> LItem landed! L marker at row " + lRow);
-                clearSingleLine(lRow);
-            }
-            
-            // BombBlock이면 B 마커 주변 3x3 폭파
-            if (currentBlock instanceof BombBlock) {
-                BombBlock bombBlock = (BombBlock) currentBlock;
-                bombBlock.explode(board, blockTypes, y, x);
-                System.out.println(">>> BombBlock exploded!");
-            }
+            // LItem과 BombBlock은 Board.java에서 애니메이션과 함께 처리됨
+            // 여기서는 착지 처리만 수행
             
             // 아이템 블록 착지 디버깅
             if (currentBlock.isItemBlock()) {
-                System.out.println(">>> Item block landed: " + currentBlock.getCssClass() + " at (" + x + ", " + y + ")");
+                System.out.println(">>> Item block landed: " + currentBlock.getClass().getSimpleName() + " at (" + x + ", " + y + ")");
             }
             
             return false;

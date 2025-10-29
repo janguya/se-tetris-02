@@ -47,6 +47,8 @@ public class Board implements GameInputCallback {
     private final long baseDropInterval = 1_000_000_000L; // 1초 (기본 속도)
     private Animation lineAnimation; // 애니메이션 객체 추가
     private List<Integer> pendingLinesToClear; // 삭제 대기 중인 줄들
+    private int[][] pendingExplosionCells; // 폭발 대기 중인 셀들 (BombBlock용)
+    private boolean isExplosionAnimation = false; // 폭발 애니메이션 여부
 
     public Board() {
         // 컴포넌츠 초기화
@@ -57,6 +59,7 @@ public class Board implements GameInputCallback {
         inputHandler = new GameInputHandler(this); // 입력 핸들러 초기화
         lineAnimation = new Animation(); // 애니메이션 초기화
         pendingLinesToClear = new ArrayList<>();
+        pendingExplosionCells = null;
 
         // 동적 크기 계산
         calculateDynamicSizes();
@@ -402,25 +405,59 @@ public class Board implements GameInputCallback {
                 
                 // 애니메이션이 진행 중이면 애니메이션만 업데이트
                 if (animationFinished) {  
-                    // 애니메이션 종료 후 실제 줄 삭제 실행
-                    // L-item 줄은 이미 점수를 받았으므로, 꽉 찬 줄만 점수 계산
-                    List<Integer> fullLines = gameLogic.findFullLines();
-                    List<Integer> fullLinesInPending = new ArrayList<>();
-                    for (Integer line : pendingLinesToClear) {
-                        if (fullLines.contains(line)) {
-                            fullLinesInPending.add(line);
+                    if (isExplosionAnimation && pendingExplosionCells != null) {
+                        // 폭발 애니메이션 완료 - 실제 폭발 실행
+                        System.out.println(">>> BombBlock: Explosion animation finished, executing explosion");
+                        
+                        // 폭발 영역의 블록 삭제
+                        int[][] board = gameLogic.getBoard();
+                        String[][] blockTypes = gameLogic.getBlockTypes();
+                        
+                        int destroyedCount = 0;
+                        for (int[] cell : pendingExplosionCells) {
+                            int row = cell[0];
+                            int col = cell[1];
+                            if (board[row][col] == 1) {
+                                board[row][col] = 0;
+                                blockTypes[row][col] = null;
+                                destroyedCount++;
+                            }
                         }
+                        
+                        System.out.println(">>> BombBlock: Destroyed " + destroyedCount + " blocks");
+                        scorePanel.addScoreWithDifficulty(destroyedCount * 10); // 파괴된 블록당 10점
+                        
+                        // 폭발 후 줄 삭제 체크
+                        List<Integer> fullLines = gameLogic.findFullLines();
+                        if (!fullLines.isEmpty()) {
+                            gameLogic.executeLineClear(fullLines);
+                            scorePanel.calculateLineScore(fullLines.size());
+                            updateSpeedDisplay();
+                        }
+                        
+                        pendingExplosionCells = null;
+                        isExplosionAnimation = false;
+                    } else {
+                        // 일반 줄 삭제 애니메이션 완료
+                        // L-item 줄은 이미 점수를 받았으므로, 꽉 찬 줄만 점수 계산
+                        List<Integer> fullLines = gameLogic.findFullLines();
+                        List<Integer> fullLinesInPending = new ArrayList<>();
+                        for (Integer line : pendingLinesToClear) {
+                            if (fullLines.contains(line)) {
+                                fullLinesInPending.add(line);
+                            }
+                        }
+                        
+                        // 모든 줄 삭제 실행 (L-item 줄 + 꽉 찬 줄)
+                        gameLogic.executeLineClear(pendingLinesToClear);
+                        
+                        // 꽉 찬 줄에 대해서만 추가 점수
+                        if (fullLinesInPending.size() > 0) {
+                            scorePanel.calculateLineScore(fullLinesInPending.size());
+                            updateSpeedDisplay();
+                        }
+                        pendingLinesToClear.clear();
                     }
-                    
-                    // 모든 줄 삭제 실행 (L-item 줄 + 꽉 찬 줄)
-                    gameLogic.executeLineClear(pendingLinesToClear);
-                    
-                    // 꽉 찬 줄에 대해서만 추가 점수
-                    if (fullLinesInPending.size() > 0) {
-                        scorePanel.calculateLineScore(fullLinesInPending.size());
-                        updateSpeedDisplay();
-                    }
-                    pendingLinesToClear.clear();
                         
                     // 블록이 맨 위에 닿았는지 확인
                     if (gameLogic.isBlockAtTop()) {
@@ -471,6 +508,7 @@ public class Board implements GameInputCallback {
     private void handleMoveDown() {
         Block currentBlock = gameLogic.getCurrentBlock();
         boolean isLItemBlock = currentBlock instanceof LItem;
+        boolean isBombBlock = currentBlock instanceof BombBlock;
         int lItemRow = -1;
         
         boolean moved = gameLogic.moveDown();
@@ -479,6 +517,27 @@ public class Board implements GameInputCallback {
             // 블록이 성공적으로 아래로 이동했을 때 점수 증가
             scorePanel.addScore(1);
         } else {
+            // BombBlock이 착지했을 경우 폭발 애니메이션
+            if (isBombBlock) {
+                BombBlock bombBlock = (BombBlock) currentBlock;
+                int[][] explosionCells = bombBlock.getExplosionCells(
+                    gameLogic.getCurrentY(), 
+                    gameLogic.getCurrentX(),
+                    GameLogic.HEIGHT,
+                    GameLogic.WIDTH
+                );
+                
+                // 폭발 영역의 빈 셀을 임시로 채워서 애니메이션이 제대로 작동하도록 함
+                fillExplosionCells(explosionCells);
+                
+                // 폭발 애니메이션 시작
+                pendingExplosionCells = explosionCells;
+                isExplosionAnimation = true;
+                lineAnimation.start();
+                System.out.println(">>> BombBlock: Starting explosion animation with " + explosionCells.length + " cells");
+                return; // 애니메이션이 끝날 때까지 대기
+            }
+            
             // 줄 삭제 체크 - 먼저 꽉 찬 줄 찾기 (L-item 줄 채우기 전에)
             List<Integer> fullLines = gameLogic.findFullLines();
             
@@ -512,6 +571,7 @@ public class Board implements GameInputCallback {
             // 애니메이션 시작
             if (!linesToAnimate.isEmpty()) {
                 pendingLinesToClear = linesToAnimate;
+                isExplosionAnimation = false;
                 lineAnimation.start();
                 return; // 애니메이션이 끝날 때까지 대기
             }
@@ -561,8 +621,15 @@ public class Board implements GameInputCallback {
 
         // 애니메이션이 진행 중이면 애니메이션 그리기
         if (lineAnimation.isActive()) {
-            lineAnimation.draw(gc, pendingLinesToClear, gameLogic.getBlockTypes(), 
-                         currentColors, cellSize, GameLogic.WIDTH);
+            if (isExplosionAnimation && pendingExplosionCells != null) {
+                // 폭발 애니메이션 (하늘색)
+                lineAnimation.drawExplosion(gc, pendingExplosionCells, gameLogic.getBlockTypes(), 
+                                          currentColors, cellSize);
+            } else {
+                // 일반 줄 삭제 애니메이션 (노란색)
+                lineAnimation.draw(gc, pendingLinesToClear, gameLogic.getBlockTypes(), 
+                             currentColors, cellSize, GameLogic.WIDTH);
+            }
         }else{
             drawCurrentBlock(currentColors);
         }
@@ -772,6 +839,7 @@ public class Board implements GameInputCallback {
 
         Block currentBlock = gameLogic.getCurrentBlock();
         boolean isLItemBlock = currentBlock instanceof LItem;
+        boolean isBombBlock = currentBlock instanceof BombBlock;
 
         boolean dropped = false;
         while (gameLogic.moveDown()) {
@@ -781,6 +849,27 @@ public class Board implements GameInputCallback {
 
         if (!dropped) {
             return;
+        }
+
+        // BombBlock이 착지했을 경우 폭발 애니메이션
+        if (isBombBlock) {
+            BombBlock bombBlock = (BombBlock) currentBlock;
+            int[][] explosionCells = bombBlock.getExplosionCells(
+                gameLogic.getCurrentY(), 
+                gameLogic.getCurrentX(),
+                GameLogic.HEIGHT,
+                GameLogic.WIDTH
+            );
+            
+            // 폭발 영역의 빈 셀을 임시로 채워서 애니메이션이 제대로 작동하도록 함
+            fillExplosionCells(explosionCells);
+            
+            // 폭발 애니메이션 시작
+            pendingExplosionCells = explosionCells;
+            isExplosionAnimation = true;
+            lineAnimation.start();
+            System.out.println(">>> BombBlock: Starting explosion animation (hard drop) with " + explosionCells.length + " cells");
+            return; // 애니메이션이 끝날 때까지 대기
         }
 
         // 줄 삭제 체크 - 먼저 꽉 찬 줄 찾기 (L-item 줄 채우기 전에)
@@ -817,6 +906,7 @@ public class Board implements GameInputCallback {
         // 애니메이션 시작
         if (!linesToAnimate.isEmpty()) {
             pendingLinesToClear = linesToAnimate;
+            isExplosionAnimation = false;
             lineAnimation.start();
             return; // 애니메이션이 끝날 때까지 대기
         }
@@ -855,6 +945,23 @@ public class Board implements GameInputCallback {
         String[][] blockTypes = gameLogic.getBlockTypes();
         
         for (int col = 0; col < GameLogic.WIDTH; col++) {
+            if (board[row][col] == 0) {
+                // 빈 셀을 임시로 채움 (애니메이션에만 사용)
+                board[row][col] = 1;
+                blockTypes[row][col] = "block-default"; // 기본 블록 타입
+            }
+        }
+    }
+    
+    // BombBlock 폭발 영역의 빈 셀을 임시로 채우기 (애니메이션용)
+    private void fillExplosionCells(int[][] explosionCells) {
+        int[][] board = gameLogic.getBoard();
+        String[][] blockTypes = gameLogic.getBlockTypes();
+        
+        for (int[] cell : explosionCells) {
+            int row = cell[0];
+            int col = cell[1];
+            
             if (board[row][col] == 0) {
                 // 빈 셀을 임시로 채움 (애니메이션에만 사용)
                 board[row][col] = 1;
