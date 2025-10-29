@@ -83,11 +83,11 @@
 
 /* Item Block Colors */
 .item-single {
-    -fx-fill: #ffd700; /* Gold */
+    -fx-fill: #ffffff; /* Gold */
 }
 
 .item-weight {
-    -fx-fill: #8b4513; /* Brown - 무거운 느낌 */
+    -fx-fill: #ffffff; /* Brown - 무거운 느낌 */
 }
 
 .settings-dialog {
