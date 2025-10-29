@@ -67,6 +67,7 @@ public class GameOverScene {
 
         // top10 미만이거나 최하위보다 크면 등록
         boolean qualifies = qualifies(finalScore);
+        GameSettings settings = GameSettings.getInstance();
 
         ScoreEntry currentPlayer = null;
         if (qualifies) {
@@ -78,12 +79,19 @@ public class GameOverScene {
                         name = "Player";
                     boolean isItemMode = GameSettings.getInstance().isItemModeEnabled();
                     Difficulty diff = GameSettings.getInstance().getDifficulty();
-                    ScoreEntry added = addScore(name.trim(), finalScore, isItemMode, diff);
+
+                    // 현재 모드의 최신 데이터를 파일에서 다시 로드
+                    List<ScoreEntry> currentModeList = ScoreManager.loadScores(isItemMode);
+                    ScoreEntry added = addScoreToList(currentModeList, name.trim(), finalScore, isItemMode, diff);
+
                     // 파일에 저장 (모드별로 분리)
-                    ScoreManager.saveScores(LEADERBOARD, isItemMode);
+                    ScoreManager.saveScores(currentModeList, isItemMode);
+
+                    // LEADERBOARD 캐시 업데이트
+                    LEADERBOARD = currentModeList;
+
                     // 정렬 후 화면 생성, 현재 플레이어를 하이라이트
-                    GameSettings settings = GameSettings.getInstance();
-                    Scene scene = create(stage, LEADERBOARD, added, settings.getWindowWidth(),
+                    Scene scene = create(stage, currentModeList, added, settings.getWindowWidth(),
                             settings.getWindowHeight());
                     stage.setScene(scene);
                     stage.show();
@@ -95,7 +103,8 @@ public class GameOverScene {
             });
         } else {
             // 정렬 후 화면 생성
-            Scene scene = create(stage, LEADERBOARD, currentPlayer, 400, 500);
+            Scene scene = create(stage, LEADERBOARD, currentPlayer, settings.getWindowWidth(),
+                    settings.getWindowHeight());
             stage.setScene(scene);
             stage.show();
         }
@@ -263,6 +272,20 @@ public class GameOverScene {
         // 상위 N개만 유지
         if (LEADERBOARD.size() > MAX_SCORES) {
             LEADERBOARD.remove(LEADERBOARD.size() - 1);
+        }
+        return entry;
+    }
+
+    // 주어진 리스트에 스코어 추가 (파일 로드 후 사용)
+    private static ScoreEntry addScoreToList(List<ScoreEntry> list, String name, int score, boolean isItemMode,
+            Difficulty difficulty) {
+        ScoreEntry entry = new ScoreEntry(name, score, isItemMode,
+                difficulty == null ? Difficulty.NORMAL : difficulty);
+        list.add(entry);
+        list.sort(Comparator.comparingInt(ScoreEntry::getScore).reversed());
+        // 상위 N개만 유지
+        if (list.size() > MAX_SCORES) {
+            list.remove(list.size() - 1);
         }
         return entry;
     }
