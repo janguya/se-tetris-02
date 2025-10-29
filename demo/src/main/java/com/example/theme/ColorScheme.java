@@ -98,6 +98,7 @@ public enum ColorScheme {
         colors.put("item-lmarker", Color.WHITE); 
         colors.put("item-sand", Color.WHITE); 
         colors.put("item-bmarker", Color.WHITE); 
+        colors.put("item", Color.WHITE); 
         
         // Default color for filled empty cells in animation
         colors.put("block-default", Color.LIGHTGRAY); 

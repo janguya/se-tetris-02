@@ -244,8 +244,16 @@ class ItemsTest {
         }
 
         // explode 호출 - 예외가 발생하지 않아야 함
+        // 새 API 사용: getExplosionCells() -> executeExplosion()
         assertDoesNotThrow(() -> {
-            bombBlock.explode(board, blockTypes, 17, 5);
+            // B 마커를 중심으로 3x3 폭발할 셀 좌표 계산
+            int[][] explosionCells = bombBlock.getExplosionCells(17, 5, board.length, board[0].length);
+            assertNotNull(explosionCells, "폭발 셀 배열은 null이 아니어야 합니다");
+            assertTrue(explosionCells.length > 0, "최소 1개 이상의 폭발 셀이 있어야 합니다");
+            
+            // 실제 폭발 실행
+            int destroyed = bombBlock.executeExplosion(board, blockTypes, explosionCells);
+            assertTrue(destroyed >= 0, "삭제된 블록 수는 0 이상이어야 합니다");
         }, "explode는 예외를 발생시키지 않아야 합니다");
     }
 
