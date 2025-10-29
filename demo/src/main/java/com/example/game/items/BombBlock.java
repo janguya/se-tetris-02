@@ -89,36 +89,64 @@ public class BombBlock extends Block {
     }
     
     /**
-     * B 마커 주변 3x3 범위를 폭파
-     * @param board 게임 보드
-     * @param blockTypes 블록 타입 배열
+     * B 마커 주변 3x3 범위에서 폭발할 셀 좌표 반환 (애니메이션용)
      * @param blockY 블록의 Y 좌표
      * @param blockX 블록의 X 좌표
-     * @return 삭제된 블록 수
+     * @param boardHeight 보드 높이
+     * @param boardWidth 보드 너비
+     * @return 폭발할 셀 좌표 배열 [[row, col], ...]
      */
-    public int explode(int[][] board, String[][] blockTypes, int blockY, int blockX) {
+    public int[][] getExplosionCells(int blockY, int blockX, int boardHeight, int boardWidth) {
         int bombRow = getBMarkerAbsoluteRow(blockY);
         int bombCol = getBMarkerAbsoluteCol(blockX);
         
-        System.out.println(">>> BombBlock: Exploding at (" + bombCol + ", " + bombRow + ")");
+        System.out.println(">>> BombBlock: Getting explosion cells at (" + bombCol + ", " + bombRow + ")");
         
-        int destroyedCount = 0;
+        // 최대 9개의 셀 (3x3)
+        int[][] cells = new int[9][2];
+        int count = 0;
         
-        // B를 중심으로 3x3 범위 폭파
+        // B를 중심으로 3x3 범위
         for (int row = bombRow - 1; row <= bombRow + 1; row++) {
             for (int col = bombCol - 1; col <= bombCol + 1; col++) {
                 // 보드 범위 내에 있는지 확인
-                if (row >= 0 && row < board.length && 
-                    col >= 0 && col < board[0].length) {
-                    
-                    // 블록이 있으면 삭제
-                    if (board[row][col] == 1) {
-                        board[row][col] = 0;
-                        blockTypes[row][col] = null;
-                        destroyedCount++;
-                        System.out.println(">>> BombBlock: Destroyed block at (" + col + ", " + row + ")");
-                    }
+                if (row >= 0 && row < boardHeight && 
+                    col >= 0 && col < boardWidth) {
+                    cells[count][0] = row;
+                    cells[count][1] = col;
+                    count++;
                 }
+            }
+        }
+        
+        // 실제 셀 수만큼 배열 크기 조정
+        int[][] result = new int[count][2];
+        System.arraycopy(cells, 0, result, 0, count);
+        
+        System.out.println(">>> BombBlock: Total explosion cells: " + count);
+        return result;
+    }
+    
+    /**
+     * 실제로 폭발 영역의 블록들을 삭제
+     * @param board 게임 보드
+     * @param blockTypes 블록 타입 배열
+     * @param explosionCells 폭발할 셀 좌표
+     * @return 삭제된 블록 수
+     */
+    public int executeExplosion(int[][] board, String[][] blockTypes, int[][] explosionCells) {
+        int destroyedCount = 0;
+        
+        for (int[] cell : explosionCells) {
+            int row = cell[0];
+            int col = cell[1];
+            
+            // 블록이 있으면 삭제
+            if (board[row][col] == 1) {
+                board[row][col] = 0;
+                blockTypes[row][col] = null;
+                destroyedCount++;
+                System.out.println(">>> BombBlock: Destroyed block at (" + col + ", " + row + ")");
             }
         }
         
