@@ -1,13 +1,15 @@
 package com.example.game.component;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import com.example.Router;
 import com.example.game.blocks.Block;
 import com.example.game.component.GameInputHandler.GameInputCallback;
 import com.example.game.component.MenuOverlay.MenuCallback;
-import com.example.game.items.LItem;
 import com.example.game.items.BombBlock;
+import com.example.game.items.LItem;
 import com.example.settings.GameSettings;
 
 import javafx.animation.AnimationTimer;
@@ -43,6 +45,8 @@ public class Board implements GameInputCallback {
     private boolean isGameOver = false; // 게임 오버 상태
 
     private final long baseDropInterval = 1_000_000_000L; // 1초 (기본 속도)
+    private Animation lineAnimation; // 애니메이션 객체 추가
+    private List<Integer> pendingLinesToClear; // 삭제 대기 중인 줄들
 
     public Board() {
         // 컴포넌츠 초기화
@@ -51,6 +55,8 @@ public class Board implements GameInputCallback {
         scorePanel = new ScorePanel();
         menuOverlay = new MenuOverlay(); // 오버레이 초기화
         inputHandler = new GameInputHandler(this); // 입력 핸들러 초기화
+        lineAnimation = new Animation(); // 애니메이션 초기화
+        pendingLinesToClear = new ArrayList<>();
 
         // 동적 크기 계산
         calculateDynamicSizes();
@@ -372,17 +378,53 @@ public class Board implements GameInputCallback {
                 if (isPaused || menuOverlay.isVisible()) {
                     return;
                 }
+                // 애니메이션 업데이트
+                boolean animationFinished = false;
+                if (lineAnimation.isActive()) {
+                    animationFinished = lineAnimation.update(now);
+                    drawBoard();
+                }
+                
+                // 애니메이션이 진행 중이면 애니메이션만 업데이트
+                if (animationFinished) {  
+                    // 애니메이션 종료 후 실제 줄 삭제 실행
+                    int linesCleared = gameLogic.executeLineClear(pendingLinesToClear);
+                    if (linesCleared > 0) {
+                        scorePanel.calculateLineScore(linesCleared);
+                        updateSpeedDisplay();
+                    }
+                    pendingLinesToClear.clear();
+                        
+                    // 블록이 맨 위에 닿았는지 확인
+                    if (gameLogic.isBlockAtTop()) {
+                        if (!isGameOver) {
+                            isGameOver = true;
+                            gameOver();
+                        }
+                        drawBoard();
+                        return;
+                    }
+        
+                    // 다음 블록 생성
+                    boolean spawned = gameLogic.spawnNextPiece();
+                    if (!spawned && !isGameOver) {
+                        isGameOver = true;
+                        gameOver();
+                    }
+                    drawBoard();
+                    return;
+                }
 
-                // 동적으로 계산된 드롭 간격 사용
+                if (lineAnimation.isActive()) {
+                    return;
+                }
+
+                // 일반 게임 로직
                 long currentDropInterval = gameLogic.getDropInterval(baseDropInterval);
-
                 if (now - lastUpdate >= currentDropInterval) {
                     handleMoveDown();
-                    // 보드 다시 그리기
                     drawBoard();
                     lastUpdate = now;
-
-                    // 속도 정보 업데이트
                     updateSpeedDisplay();
                 }
             }
@@ -406,18 +448,16 @@ public class Board implements GameInputCallback {
             // 블록이 성공적으로 아래로 이동했을 때 점수 증가
             scorePanel.addScore(1);
         } else {
-
-            // 라인 제거 및 점수 계산
-            int linesCleared = gameLogic.clearLines();
-            if (linesCleared > 0) {
-                scorePanel.calculateLineScore(linesCleared);
-                // 속도가 변경되었을 수 있으므로 업데이트
-                updateSpeedDisplay();
+            // 줄 삭제 체크 - 애니메이션 시작
+            List<Integer> fullLines = gameLogic.findFullLines();
+            if (!fullLines.isEmpty()) {
+                pendingLinesToClear = fullLines;
+                lineAnimation.start();
+                return; // 애니메이션이 끝날 때까지 대기
             }
 
             // 블록이 맨 위에 닿았는지 확인
             if (gameLogic.isBlockAtTop()) {
-
                 if (!isGameOver) {
                     isGameOver = true;
                     gameOver();
@@ -425,7 +465,7 @@ public class Board implements GameInputCallback {
                 return;
             }
 
-            // 게임 오버 체크
+            // 다음 블록 생성
             boolean spawned = gameLogic.spawnNextPiece();
             if (!spawned) {
                 if (!isGameOver) {
@@ -440,12 +480,13 @@ public class Board implements GameInputCallback {
         if (gameLoop != null) {
             gameLoop.stop();
         }
-
-        // 현재 Stage 구해와서 GameOverScene 호출
-        Stage stage = (Stage) root.getScene().getWindow();
+        // Platform.runLater로 감싸기!
+        javafx.application.Platform.runLater(() -> {
+        Stage stage = (Stage) mainContainer.getScene().getWindow();
+        
         com.example.gameover.GameOverScene.show(stage, scorePanel.getScore());
-
-    }
+    });
+}
 
     // 보드 그리기
     private void drawBoard() {
@@ -457,7 +498,14 @@ public class Board implements GameInputCallback {
 
         drawGrid();
         drawPlacedBlocks(currentColors);
-        drawCurrentBlock(currentColors);
+
+        // 애니메이션이 진행 중이면 애니메이션 그리기
+        if (lineAnimation.isActive()) {
+            lineAnimation.draw(gc, pendingLinesToClear, gameLogic.getBlockTypes(), 
+                         currentColors, cellSize, GameLogic.WIDTH);
+        }else{
+            drawCurrentBlock(currentColors);
+        }
 
         scorePanel.updateNextBlock(gameLogic.getNextBlock());
 
@@ -673,11 +721,13 @@ public class Board implements GameInputCallback {
             return;
         }
 
-        int linesCleared = gameLogic.clearLines();
-        if (linesCleared > 0) {
-            scorePanel.calculateLineScore(linesCleared);
-            updateSpeedDisplay();
-        }
+        // 줄 삭제 체크 - 애니메이션 시작
+        List<Integer> fullLines = gameLogic.findFullLines();
+        if (!fullLines.isEmpty()) {
+            pendingLinesToClear = fullLines;
+            lineAnimation.start();
+            return; // 애니메이션이 끝날 때까지 대기
+            }
 
         if (gameLogic.isBlockAtTop()) {
             if (!isGameOver) {
