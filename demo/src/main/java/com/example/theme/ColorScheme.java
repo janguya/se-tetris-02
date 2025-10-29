@@ -93,11 +93,14 @@ public enum ColorScheme {
         }
         
         // 모든 테마에 공통으로 적용되는 색상-item
-        colors.put("item-single", Color.web("#ffffffff")); 
-        colors.put("item-weight", Color.web("#ffffffff")); 
-        colors.put("item-lmarker", Color.web("#ffffffff")); 
-        colors.put("item-sand", Color.web("#ffffffff")); 
-        colors.put("item-bmarker", Color.web("#ffffffff")); 
+        colors.put("item-single", Color.WHITE); 
+        colors.put("item-weight", Color.WHITE); 
+        colors.put("item-lmarker", Color.WHITE); 
+        colors.put("item-sand", Color.WHITE); 
+        colors.put("item-bmarker", Color.WHITE); 
+        
+        // Default color for filled empty cells in animation
+        colors.put("block-default", Color.LIGHTGRAY); 
         
         return colors;
     }

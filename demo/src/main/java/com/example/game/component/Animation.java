@@ -74,7 +74,14 @@ public class Animation {
         for (int row : lines) {
             for (int col = 0; col < boardWidth; col++) {
                 String cssClass = blockTypes[row][col];
-                Color blockColor = colorMap.getOrDefault(cssClass, colorMap.get("block-default"));
+                Color blockColor;
+                
+                // null 체크: cssClass가 null이면 기본 색상 사용
+                if (cssClass == null) {
+                    blockColor = colorMap.getOrDefault("block-default", Color.GRAY);
+                } else {
+                    blockColor = colorMap.getOrDefault(cssClass, colorMap.get("block-default"));
+                }
                 
                 double x = col * cellSize;
                 double y = row * cellSize;
@@ -118,6 +125,11 @@ public class Animation {
      * 밝게 빛나는 효과 그리기
      */
     private void drawBrightEffect(GraphicsContext gc, double x, double y, int cellSize, Color baseColor) {
+        // null 체크: baseColor가 null이면 기본 회색 사용
+        if (baseColor == null) {
+            baseColor = Color.GRAY;
+        }
+        
         Color brightColor = baseColor.brighter();
         
         // 메인 셀

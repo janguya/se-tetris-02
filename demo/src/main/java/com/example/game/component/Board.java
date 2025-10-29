@@ -388,9 +388,21 @@ public class Board implements GameInputCallback {
                 // 애니메이션이 진행 중이면 애니메이션만 업데이트
                 if (animationFinished) {  
                     // 애니메이션 종료 후 실제 줄 삭제 실행
-                    int linesCleared = gameLogic.executeLineClear(pendingLinesToClear);
-                    if (linesCleared > 0) {
-                        scorePanel.calculateLineScore(linesCleared);
+                    // L-item 줄은 이미 점수를 받았으므로, 꽉 찬 줄만 점수 계산
+                    List<Integer> fullLines = gameLogic.findFullLines();
+                    List<Integer> fullLinesInPending = new ArrayList<>();
+                    for (Integer line : pendingLinesToClear) {
+                        if (fullLines.contains(line)) {
+                            fullLinesInPending.add(line);
+                        }
+                    }
+                    
+                    // 모든 줄 삭제 실행 (L-item 줄 + 꽉 찬 줄)
+                    gameLogic.executeLineClear(pendingLinesToClear);
+                    
+                    // 꽉 찬 줄에 대해서만 추가 점수
+                    if (fullLinesInPending.size() > 0) {
+                        scorePanel.calculateLineScore(fullLinesInPending.size());
                         updateSpeedDisplay();
                     }
                     pendingLinesToClear.clear();
@@ -444,6 +456,7 @@ public class Board implements GameInputCallback {
     private void handleMoveDown() {
         Block currentBlock = gameLogic.getCurrentBlock();
         boolean isLItemBlock = currentBlock instanceof LItem;
+        int lItemRow = -1;
         
         boolean moved = gameLogic.moveDown();
 
@@ -451,31 +464,37 @@ public class Board implements GameInputCallback {
             // 블록이 성공적으로 아래로 이동했을 때 점수 증가
             scorePanel.addScore(1);
         } else {
-            // L-item이 착지했을 경우 L 줄 삭제 점수 추가 (줄 삭제와 중복되지 않도록)
-            boolean lItemLineCleared = false;
+            // L-item이 착지했을 경우 L 줄을 애니메이션 대상에 추가
             if (isLItemBlock) {
                 LItem lItem = (LItem) currentBlock;
-                int lRow = lItem.getLMarkerAbsoluteRow(gameLogic.getCurrentY());
-                boolean cleared = gameLogic.clearSingleLine(lRow);
-                if (cleared) {
-                    scorePanel.addScoreWithDifficulty(100); // L-item 줄 삭제 점수 (난이도 배율 적용)
-                    lItemLineCleared = true;
-                }
+                lItemRow = lItem.getLMarkerAbsoluteRow(gameLogic.getCurrentY());
+                
+                // L-item 줄의 빈 셀을 임시로 채워서 애니메이션이 제대로 작동하도록 함
+                fillEmptyCellsInLine(lItemRow);
             }
             
             // 줄 삭제 체크 - 애니메이션 시작
             List<Integer> fullLines = gameLogic.findFullLines();
-            if (!fullLines.isEmpty()) {
-                // L-item이 이미 줄을 삭제했다면 중복 방지
-                if (lItemLineCleared && fullLines.size() == 1) {
-                    // L-item이 삭제한 줄과 동일한 경우 점수 중복 방지
-                    // 이미 100점을 받았으므로 추가 점수 없음
-                    pendingLinesToClear = new ArrayList<>(); // 빈 리스트로 설정하여 애니메이션 스킵
-                } else {
-                    pendingLinesToClear = fullLines;
-                    lineAnimation.start();
-                    return; // 애니메이션이 끝날 때까지 대기
+            List<Integer> linesToAnimate = new ArrayList<>();
+            
+            // L-item 줄 추가
+            if (lItemRow >= 0) {
+                linesToAnimate.add(lItemRow);
+                scorePanel.addScoreWithDifficulty(100); // L-item 줄 삭제 점수 (난이도 배율 적용)
+            }
+            
+            // 꽉 찬 줄 추가 (L-item 줄과 중복 제거)
+            for (Integer line : fullLines) {
+                if (!linesToAnimate.contains(line)) {
+                    linesToAnimate.add(line);
                 }
+            }
+            
+            // 애니메이션 시작
+            if (!linesToAnimate.isEmpty()) {
+                pendingLinesToClear = linesToAnimate;
+                lineAnimation.start();
+                return; // 애니메이션이 끝날 때까지 대기
             }
 
             // 블록이 맨 위에 닿았는지 확인
@@ -745,30 +764,38 @@ public class Board implements GameInputCallback {
             return;
         }
 
-        // L-item이 착지했을 경우 L 줄 삭제 점수 추가 (줄 삭제와 중복되지 않도록)
-        boolean lItemLineCleared = false;
+        // L-item이 착지했을 경우 L 줄을 애니메이션 대상에 추가
+        int lItemRow = -1;
         if (isLItemBlock) {
             LItem lItem = (LItem) currentBlock;
-            int lRow = lItem.getLMarkerAbsoluteRow(gameLogic.getCurrentY());
-            boolean cleared = gameLogic.clearSingleLine(lRow);
-            if (cleared) {
-                scorePanel.addScoreWithDifficulty(100); // L-item 줄 삭제 점수 
-                lItemLineCleared = true;
-            }
+            lItemRow = lItem.getLMarkerAbsoluteRow(gameLogic.getCurrentY());
+            
+            // L-item 줄의 빈 셀을 임시로 채워서 애니메이션이 제대로 작동하도록 함
+            fillEmptyCellsInLine(lItemRow);
         }
 
         // 줄 삭제 체크 - 애니메이션 시작
         List<Integer> fullLines = gameLogic.findFullLines();
-        if (!fullLines.isEmpty()) {
-            // L-item이 이미 줄을 삭제했다면 중복 방지
-            if (lItemLineCleared && fullLines.size() == 1) {
-                // L-item이 삭제한 줄과 동일한 경우 점수 중복 방지
-                pendingLinesToClear = new ArrayList<>();
-            } else {
-                pendingLinesToClear = fullLines;
-                lineAnimation.start();
-                return; // 애니메이션이 끝날 때까지 대기
+        List<Integer> linesToAnimate = new ArrayList<>();
+        
+        // L-item 줄 추가
+        if (lItemRow >= 0) {
+            linesToAnimate.add(lItemRow);
+            scorePanel.addScoreWithDifficulty(100); // L-item 줄 삭제 점수 (난이도 배율 적용)
+        }
+        
+        // 꽉 찬 줄 추가 (L-item 줄과 중복 제거)
+        for (Integer line : fullLines) {
+            if (!linesToAnimate.contains(line)) {
+                linesToAnimate.add(line);
             }
+        }
+        
+        // 애니메이션 시작
+        if (!linesToAnimate.isEmpty()) {
+            pendingLinesToClear = linesToAnimate;
+            lineAnimation.start();
+            return; // 애니메이션이 끝날 때까지 대기
         }
 
         if (gameLogic.isBlockAtTop()) {
@@ -795,6 +822,24 @@ public class Board implements GameInputCallback {
         scorePanel.cleanup();
     }
 
+    // L-item 줄의 빈 셀을 임시로 채우기 (애니메이션용)
+    private void fillEmptyCellsInLine(int row) {
+        if (row < 0 || row >= GameLogic.HEIGHT) {
+            return;
+        }
+        
+        int[][] board = gameLogic.getBoard();
+        String[][] blockTypes = gameLogic.getBlockTypes();
+        
+        for (int col = 0; col < GameLogic.WIDTH; col++) {
+            if (board[row][col] == 0) {
+                // 빈 셀을 임시로 채움 (애니메이션에만 사용)
+                board[row][col] = 1;
+                blockTypes[row][col] = "block-default"; // 기본 블록 타입
+            }
+        }
+    }
+    
     // 일시정지 오버레이 그리기
     private void drawPauseOverlay() {
         // 반투명 배경

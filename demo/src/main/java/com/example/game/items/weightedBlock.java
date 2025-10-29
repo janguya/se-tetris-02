@@ -18,7 +18,7 @@ public class weightedBlock extends ItemBlock {
             {0, 1, 1, 0},
             {1, 1, 1, 1}
         };
-        cssClass = "item-weight";
+        cssClass = "item";
     }
     
     /**
