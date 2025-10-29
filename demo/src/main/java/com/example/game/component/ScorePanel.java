@@ -184,6 +184,9 @@ public class ScorePanel {
         // BombBlock인지 확인
         boolean isBombBlock = nextBlock instanceof BombBlock;
         BombBlock bombBlock = isBombBlock ? (BombBlock) nextBlock : null;
+        
+        // SandBlock인지 확인
+        boolean isSandBlock = nextBlock instanceof com.example.game.items.SandBlock;
 
         // 다음 블록 그리기
         for (int i = 0; i < nextBlock.width(); i++) {
@@ -203,6 +206,12 @@ public class ScorePanel {
                         // B 마커 셀은 검은색으로 그리고 "B" 텍스트 추가
                         Color bMarkerColor = colorMap.get("item-bmarker");
                         drawBMarkerNextBlockCell(drawX, drawY, bMarkerColor);
+                    }
+                    // Sand 블록인지 확인
+                    else if (isSandBlock) {
+                        // Sand 블록은 점박이 패턴으로 그리기
+                        Color sandColor = colorMap.get("item-sand");
+                        drawSandNextBlockCell(drawX, drawY, sandColor);
                     } else {
                         // 일반 셀 그리기
                         drawNextBlockCell(drawX, drawY, blockColor);
@@ -302,6 +311,36 @@ public class ScorePanel {
         double textY = y + (cellSize + textHeight) / 2 - 1;
 
         nextBlockGc.fillText("B", textX, textY);
+    }
+    
+    // Sand 다음 블록 셀 그리기 (점박이 패턴으로 모래 질감 표현)
+    private void drawSandNextBlockCell(double x, double y, Color color) {
+        // Main cell (Sand 색상)
+        nextBlockGc.setFill(color);
+        nextBlockGc.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+
+        // Highlight effect
+        nextBlockGc.setFill(color.brighter());
+        nextBlockGc.fillRect(x + 2, y + 2, cellSize - 4, 2);
+        nextBlockGc.fillRect(x + 2, y + 2, 2, cellSize - 4);
+
+        // Shadow effect
+        nextBlockGc.setFill(color.darker());
+        nextBlockGc.fillRect(x + 2, y + cellSize - 4, cellSize - 4, 2);
+        nextBlockGc.fillRect(x + cellSize - 4, y + 2, 2, cellSize - 4);
+        
+        // 점박이 패턴 그리기 (모래 질감)
+        nextBlockGc.setFill(Color.web("#8B7355")); // 갈색 (모래색)
+        double dotSize = Math.max(1, cellSize * 0.12); // 점 크기 (작게)
+        
+        // 규칙적인 점 패턴 (4x4 그리드로 촘촘하게)
+        for (int row = 0; row < 4; row++) {
+            for (int col = 0; col < 4; col++) {
+                double dotX = x + cellSize * 0.15 + col * cellSize * 0.23;
+                double dotY = y + cellSize * 0.15 + row * cellSize * 0.23;
+                nextBlockGc.fillOval(dotX, dotY, dotSize, dotSize);
+            }
+        }
     }
 
     // 업데이트된 색상 적용

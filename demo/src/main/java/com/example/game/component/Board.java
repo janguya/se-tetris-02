@@ -672,8 +672,14 @@ public class Board implements GameInputCallback {
                     String cssClass = blockTypes[row][col];
                     // cssClass에 해당하는 색상을 가져오고, 없으면 기본 색상 사용
                     Color blockColor = colorMap.getOrDefault(cssClass, colorMap.get("block-default"));
-                    // 셀 그리기
-                    drawCell(col * cellSize, row * cellSize, blockColor);
+                    
+                    // Sand 블록인지 확인하여 특별한 스타일로 그리기
+                    if ("item-sand".equals(cssClass)) {
+                        drawSandCell(col * cellSize, row * cellSize, blockColor);
+                    } else {
+                        // 일반 셀 그리기
+                        drawCell(col * cellSize, row * cellSize, blockColor);
+                    }
                 }
             }
         }
@@ -699,6 +705,9 @@ public class Board implements GameInputCallback {
         // BombBlock인지 확인
         boolean isBombBlock = currentBlock instanceof BombBlock;
         BombBlock bombBlock = isBombBlock ? (BombBlock) currentBlock : null;
+        
+        // SandBlock인지 확인
+        boolean isSandBlock = currentBlock instanceof com.example.game.items.SandBlock;
 
         // 현재 블록 그리기
         for (int i = 0; i < currentBlock.width(); i++) {
@@ -719,6 +728,12 @@ public class Board implements GameInputCallback {
                         // B 마커 셀은 검은색으로 그리고 "B" 텍스트 추가
                         Color bMarkerColor = colorMap.get("item-bmarker");
                         drawBMarkerCell(drawX, drawY, bMarkerColor);
+                    }
+                    // Sand 블록인지 확인
+                    else if (isSandBlock) {
+                        // Sand 블록은 점박이 패턴으로 그리기
+                        Color sandColor = colorMap.get("item-sand");
+                        drawSandCell(drawX, drawY, sandColor);
                     } else {
                         // 일반 셀 그리기
                         drawCell(drawX, drawY, blockColor);
@@ -807,6 +822,36 @@ public class Board implements GameInputCallback {
         double textY = y + (cellSize + textHeight) / 2 - 2;
 
         gc.fillText("B", textX, textY);
+    }
+    
+    // Sand 셀 그리기 (점박이 패턴으로 모래 질감 표현)
+    private void drawSandCell(double x, double y, Color color) {
+        // 메인 셀 (Sand 색상 - 흰색)
+        gc.setFill(color);
+        gc.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+
+        // 하이라이트 효과
+        gc.setFill(color.brighter());
+        gc.fillRect(x + 2, y + 2, cellSize - 4, 3);
+        gc.fillRect(x + 2, y + 2, 3, cellSize - 4);
+
+        // 그림자 효과
+        gc.setFill(color.darker());
+        gc.fillRect(x + 2, y + cellSize - 5, cellSize - 4, 3);
+        gc.fillRect(x + cellSize - 5, y + 2, 3, cellSize - 4);
+        
+        // 점박이 패턴 그리기 (모래 질감)
+        gc.setFill(Color.web("#8B7355")); // 갈색 (모래색)
+        double dotSize = Math.max(2, cellSize * 0.15); // 점 크기
+        
+        // 규칙적인 점 패턴 (4x4 그리드로 촘촘하게)
+        for (int row = 0; row < 4; row++) {
+            for (int col = 0; col < 4; col++) {
+                double dotX = x + cellSize * 0.15 + col * cellSize * 0.23;
+                double dotY = y + cellSize * 0.15 + row * cellSize * 0.23;
+                gc.fillOval(dotX, dotY, dotSize, dotSize);
+            }
+        }
     }
 
     // 메인 컨테이너 반환 (오버레이 포함)
