@@ -588,7 +588,7 @@ public class Board implements GameInputCallback {
         gc.fillRect(x + cellSize - 5, y + 2, 3, cellSize - 4);
         
         // "L" 텍스트 그리기
-        gc.setFill(Color.WHITE);
+        gc.setFill(Color.BLACK);
         gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.6));
         
         // 텍스트 중앙 정렬을 위한 계산
@@ -619,8 +619,8 @@ public class Board implements GameInputCallback {
         gc.fillRect(x + 2, y + cellSize - 5, cellSize - 4, 3);
         gc.fillRect(x + cellSize - 5, y + 2, 3, cellSize - 4);
         
-        // "B" 텍스트 그리기 (흰색)
-        gc.setFill(Color.WHITE);
+        // "B" 텍스트 그리기 (검은색)
+        gc.setFill(Color.BLACK);
         gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.6));
         
         // 텍스트 중앙 정렬을 위한 계산

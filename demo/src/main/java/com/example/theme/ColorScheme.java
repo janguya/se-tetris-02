@@ -93,11 +93,11 @@ public enum ColorScheme {
         }
         
         // 모든 테마에 공통으로 적용되는 색상-item
-        colors.put("item-single", Color.web("#ffd700")); // Gold - 싱글 블록
-        colors.put("item-weight", Color.web("#8b4513")); // Brown - 무게 블록
-        colors.put("item-lmarker", Color.web("#ff00ff")); // Magenta - L 마커
-        colors.put("item-sand", Color.web("#f4a460")); // Sandy Brown - 모래 블록
-        colors.put("item-bmarker", Color.web("#000000")); // Black - B 마커 (폭탄)
+        colors.put("item-single", Color.web("#ffffffff")); 
+        colors.put("item-weight", Color.web("#ffffffff")); 
+        colors.put("item-lmarker", Color.web("#ffffffff")); 
+        colors.put("item-sand", Color.web("#ffffffff")); 
+        colors.put("item-bmarker", Color.web("#ffffffff")); 
         
         return colors;
     }
