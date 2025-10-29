@@ -17,7 +17,7 @@ import com.example.utils.Logger;
  * - 랜덤으로 아이템 종류 결정
  */
 public class ItemManager {
-    private static final int LINES_FOR_ITEM = 1; // 10줄마다 아이템 생성
+    private static final int LINES_FOR_ITEM = 10; // 10줄마다 아이템 생성
     private int lastItemSpawnLines = 0; // 마지막 아이템 생성 시점의 줄 수
     private Random random;
     private boolean itemModeEnabled; // 아이템 모드 활성화 여부
