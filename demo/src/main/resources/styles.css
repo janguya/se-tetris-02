@@ -94,6 +94,35 @@
     -fx-background-color: linear-gradient(to bottom, #0f0f23, #1a1a2e);
 }
 
+.settings-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+
+.settings-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.settings-scroll-pane .scroll-bar:vertical {
+    -fx-background-color: transparent;
+}
+
+.settings-scroll-pane .scroll-bar:vertical .track {
+    -fx-background-color: #16213e;
+    -fx-border-color: #3bb78f;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+}
+
+.settings-scroll-pane .scroll-bar:vertical .thumb {
+    -fx-background-color: #3bb78f;
+    -fx-background-radius: 5;
+}
+
+.settings-scroll-pane .scroll-bar:vertical .thumb:hover {
+    -fx-background-color: #59caa0;
+}
+
 .settings-section-title {
     -fx-font-family: "Arial";
     -fx-font-size: 16px;

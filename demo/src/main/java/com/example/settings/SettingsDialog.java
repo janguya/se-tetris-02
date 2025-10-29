@@ -19,6 +19,7 @@ import javafx.scene.control.ColorPicker;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
@@ -37,11 +38,13 @@ public class SettingsDialog {
     private GridPane keyBindingGrid; // 키 바인딩 그리드 추가
     private Map<String, ColorPicker> colorPickers;
     private Map<String, Button> keyButtons; // 키 바인딩 버튼들
+    private Map<String, KeyCode> pendingKeyBindings; // Apply 버튼 누를 때까지 임시 저장
     private Runnable onSettingsChanged;
 
     public SettingsDialog(Stage parentStage, Runnable onSettingsChanged) {
         this.settings = GameSettings.getInstance();
         this.onSettingsChanged = onSettingsChanged;
+        this.pendingKeyBindings = new HashMap<>();
         createDialog(parentStage);
     }
 
@@ -67,10 +70,23 @@ public class SettingsDialog {
         VBox scoreSection = createScoreSection();
         HBox buttonBox = createButtonBox();
 
-        root.getChildren().addAll(windowSizeSection, difficultySection, schemeSection, customSection, keyBindingSection,
-                scoreSection, buttonBox);
+        // 컨텐츠를 담을 VBox (버튼은 제외)
+        VBox contentBox = new VBox(20);
+        contentBox.getChildren().addAll(windowSizeSection, difficultySection, schemeSection, customSection,
+                keyBindingSection, scoreSection);
 
-        Scene scene = new Scene(root, 450, 750); // 다이얼로그 크기 증가
+        // ScrollPane 추가
+        ScrollPane scrollPane = new ScrollPane(contentBox);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER); // 가로 스크롤바 숨김
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED); // 세로 스크롤바는 필요시 표시
+        scrollPane.getStyleClass().add("settings-scroll-pane");
+        scrollPane.setPrefViewportHeight(600); // 스크롤 영역 높이 설정
+
+        root.getChildren().addAll(scrollPane, buttonBox);
+
+        Scene scene = new Scene(root, 450, 750); // 다이얼로그 크기
         scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         dialog.setScene(scene);
     }
@@ -292,7 +308,11 @@ public class SettingsDialog {
 
         Button cancelButton = new Button("Cancel");
         cancelButton.getStyleClass().add("settings-button");
-        cancelButton.setOnAction(e -> dialog.close());
+        cancelButton.setOnAction(e -> {
+            // Cancel 버튼 누르면 대기 중인 키 바인딩 변경사항 취소
+            pendingKeyBindings.clear();
+            dialog.close();
+        });
 
         Button applyButton = new Button("Apply");
         applyButton.getStyleClass().add("settings-button-primary");
@@ -324,9 +344,24 @@ public class SettingsDialog {
             }
         }
 
-        // 키 바인딩 기본값으로 리셋
-        settings.resetKeyBindingsToDefault();
-        updateKeyButtonLabels();
+        // 키 바인딩 기본값으로 리셋 (실제 설정에는 반영하지 않고 버튼만 변경)
+        pendingKeyBindings.clear();
+        Map<String, KeyCode> defaultKeyBindings = new HashMap<>();
+        defaultKeyBindings.put("MOVE_LEFT", KeyCode.LEFT);
+        defaultKeyBindings.put("MOVE_RIGHT", KeyCode.RIGHT);
+        defaultKeyBindings.put("MOVE_DOWN", KeyCode.DOWN);
+        defaultKeyBindings.put("ROTATE", KeyCode.UP);
+        defaultKeyBindings.put("HARD_DROP", KeyCode.SPACE);
+        defaultKeyBindings.put("PAUSE", KeyCode.ESCAPE);
+
+        for (Map.Entry<String, KeyCode> entry : defaultKeyBindings.entrySet()) {
+            Button button = keyButtons.get(entry.getKey());
+            if (button != null) {
+                button.setText(entry.getValue().toString());
+            }
+            pendingKeyBindings.put(entry.getKey(), entry.getValue());
+        }
+
         updateCustomColorVisibility();
     }
 
@@ -348,6 +383,11 @@ public class SettingsDialog {
             }
         }
 
+        // 키 바인딩 적용 (pendingKeyBindings에 저장된 값들을 실제로 저장)
+        for (Map.Entry<String, KeyCode> entry : pendingKeyBindings.entrySet()) {
+            settings.setKeyBinding(entry.getKey(), entry.getValue());
+        }
+
         // 먼저 다이얼로그를 닫아 UI 리소스(루트 노드 등)가 해제되도록 합니다.
         dialog.close();
 
@@ -358,45 +398,92 @@ public class SettingsDialog {
     }
 
     public void show() {
+        // 다이얼로그를 열 때마다 pendingKeyBindings 초기화
+        pendingKeyBindings.clear();
+        // 현재 설정값으로 버튼 텍스트 업데이트
+        updateKeyButtonLabels();
         dialog.show();
     }
 
     // 키 캡처 메서드
     private void captureKey(Button button, String actionKey) {
+        String originalText = button.getText();
         button.setText("Press a key...");
-        button.setOnKeyPressed(event -> {
+
+        // 버튼의 기본 동작 비활성화
+        button.setOnAction(null);
+
+        // 필터를 저장할 배열 (람다에서 참조하기 위해)
+        @SuppressWarnings("unchecked")
+        final javafx.event.EventHandler<javafx.scene.input.KeyEvent>[] filters = new javafx.event.EventHandler[2];
+
+        // KEY_PRESSED 필터: 실제 키 캡처 처리
+        javafx.event.EventHandler<javafx.scene.input.KeyEvent> keyPressedFilter = event -> {
             KeyCode keyCode = event.getCode();
-            // ESC는 설정 키로 예약되어 있어서 중복 방지
-            if (keyCode == KeyCode.ESCAPE && !actionKey.equals("SETTINGS")) {
-                button.setText(settings.getKeyBinding(actionKey).toString());
-                button.setOnKeyPressed(null);
+
+            // 필터 제거
+            button.removeEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, filters[0]);
+            button.removeEventFilter(javafx.scene.input.KeyEvent.KEY_RELEASED, filters[1]);
+
+            // ESC는 취소
+            if (keyCode == KeyCode.ESCAPE) {
+                button.setText(originalText);
+                button.setOnAction(e -> captureKey(button, actionKey));
+                event.consume();
                 return;
             }
 
             // 중복 키 체크
-            if (isKeyAlreadyUsed(keyCode, actionKey)) {
-                button.setText(settings.getKeyBinding(actionKey).toString());
-                button.setOnKeyPressed(null);
+            if (isKeyAlreadyUsedInPending(keyCode, actionKey)) {
+                button.setText(originalText);
+                button.setOnAction(e -> captureKey(button, actionKey));
                 showAlert("Key Already Used", "This key is already assigned to another action.");
+                event.consume();
                 return;
             }
 
+            // 임시 저장
             button.setText(keyCode.toString());
-            settings.setKeyBinding(actionKey, keyCode);
-            button.setOnKeyPressed(null);
+            pendingKeyBindings.put(actionKey, keyCode);
+            button.setOnAction(e -> captureKey(button, actionKey));
             event.consume();
-        });
+        };
+
+        // KEY_RELEASED 필터: 모든 릴리즈 이벤트 소비 (스페이스바 버튼 클릭 방지)
+        javafx.event.EventHandler<javafx.scene.input.KeyEvent> keyReleasedFilter = event -> {
+            event.consume();
+        };
+
+        // 필터 배열에 저장
+        filters[0] = keyPressedFilter;
+        filters[1] = keyReleasedFilter;
+
+        // 필터 등록 (이벤트 캡처 단계에서 가로채기)
+        button.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, keyPressedFilter);
+        button.addEventFilter(javafx.scene.input.KeyEvent.KEY_RELEASED, keyReleasedFilter);
+
         button.requestFocus();
     }
 
-    // 키 중복 체크
-    private boolean isKeyAlreadyUsed(KeyCode keyCode, String currentAction) {
-        Map<String, KeyCode> allBindings = settings.getAllKeyBindings();
-        for (Map.Entry<String, KeyCode> entry : allBindings.entrySet()) {
+    // 키 중복 체크 (현재 설정 + 대기 중인 변경사항 확인)
+    private boolean isKeyAlreadyUsedInPending(KeyCode keyCode, String currentAction) {
+        // 1. 이미 대기 중인 키 바인딩 확인
+        for (Map.Entry<String, KeyCode> entry : pendingKeyBindings.entrySet()) {
             if (!entry.getKey().equals(currentAction) && entry.getValue() == keyCode) {
                 return true;
             }
         }
+
+        // 2. 현재 저장된 키 바인딩 확인 (단, 대기 중인 변경사항으로 덮어쓰이지 않는 것만)
+        Map<String, KeyCode> allBindings = settings.getAllKeyBindings();
+        for (Map.Entry<String, KeyCode> entry : allBindings.entrySet()) {
+            if (!entry.getKey().equals(currentAction)
+                    && !pendingKeyBindings.containsKey(entry.getKey())
+                    && entry.getValue() == keyCode) {
+                return true;
+            }
+        }
+
         return false;
     }
 
