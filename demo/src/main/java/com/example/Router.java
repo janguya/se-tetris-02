@@ -62,8 +62,8 @@ public class Router {
             this.overrideWidth = null;
             this.overrideHeight = null;
 
-            // 크기 업데이트
-            updateStageSize();
+            // 크기 업데이트 후 시작 메뉴로 돌아가기
+            showStartMenu();
         };
     }
 
