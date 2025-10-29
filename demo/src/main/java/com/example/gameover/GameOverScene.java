@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import com.example.Router;
+import com.example.settings.GameSettings;
 import com.example.settings.GameSettings.Difficulty;
 
 import javafx.geometry.Insets;
@@ -75,21 +76,21 @@ public class GameOverScene {
                 if (name != null) {
                     if (name.trim().isEmpty())
                         name = "Player";
-                    boolean isItemMode = com.example.settings.GameSettings.getInstance().isItemModeEnabled();
-                    com.example.settings.GameSettings.Difficulty diff = com.example.settings.GameSettings.getInstance()
-                            .getDifficulty();
+                    boolean isItemMode = GameSettings.getInstance().isItemModeEnabled();
+                    Difficulty diff = GameSettings.getInstance().getDifficulty();
                     ScoreEntry added = addScore(name.trim(), finalScore, isItemMode, diff);
                     // 파일에 저장 (모드별로 분리)
                     ScoreManager.saveScores(LEADERBOARD, isItemMode);
                     // 정렬 후 화면 생성, 현재 플레이어를 하이라이트
-                    Scene scene = create(stage, LEADERBOARD, added, 400, 500);
+                    GameSettings settings = GameSettings.getInstance();
+                    Scene scene = create(stage, LEADERBOARD, added, settings.getWindowWidth(),
+                            settings.getWindowHeight());
                     stage.setScene(scene);
                     stage.show();
                 } else {
-                    // 취소한 경우 일반 화면으로 (플레이어 없음)
-                    Scene scene = create(stage, LEADERBOARD, null, 400, 500);
-                    stage.setScene(scene);
-                    stage.show();
+                    // 취소한 경우 일반 화면으로
+                    Router router = new Router(stage);
+                    router.showStartMenu();
                 }
             });
         } else {
@@ -108,7 +109,7 @@ public class GameOverScene {
     public static Scene create(Stage stage, List<ScoreEntry> scores, ScoreEntry currentPlayer, int width, int height) {
         VBox root = new VBox(20);
         root.setAlignment(Pos.TOP_CENTER);
-        root.setPadding(new Insets(40, 20, 40, 20));
+        root.setPadding(new Insets(20));
 
         Text gameOverText = new Text("게임 종료");
         gameOverText.setFont(Font.font("Arial", FontWeight.BOLD, 36));
@@ -116,40 +117,31 @@ public class GameOverScene {
         Label scoreBoardLabel = new Label("🏆 스코어 보드");
         scoreBoardLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
 
-        ListView<HBox> scoreListView = new ListView<>();
-        // 화면 크기에 비례한 리스트 높이 계산
-        int listHeight = Math.min((26 * MAX_SCORES) + 20, height - 200);
-        scoreListView.setPrefHeight(listHeight);
-        scoreListView.setMaxHeight(listHeight);
+        // load both modes
+        List<ScoreEntry> normalList = ScoreManager.loadScores(false);
+        List<ScoreEntry> itemList = ScoreManager.loadScores(true);
 
-        scores.sort(Comparator.comparingInt(ScoreEntry::getScore).reversed());
+        int listHeight = Math.max((int) (height * 0.6), Math.min((26 * MAX_SCORES) + 20, height - 160));
 
-        for (int i = 0; i < Math.min(scores.size(), MAX_SCORES); i++) {
-            ScoreEntry entry = scores.get(i);
-            String text = String.format("%2d. %s - %d점", i + 1, entry.getName(), entry.getScore());
+        // 좌우 나란히 배치할 리더보드
+        VBox leftPanel = buildScoreBoardPanel("일반 모드", normalList, currentPlayer, listHeight);
+        VBox rightPanel = buildScoreBoardPanel("아이템 모드", itemList, currentPlayer, listHeight);
 
-            Label label = new Label(text);
-            label.setFont(Font.font("Arial", 16));
+        // HBox로 좌우 분할 (1:1 비율)
+        HBox leaderboardContainer = new HBox(10);
+        leaderboardContainer.setAlignment(Pos.CENTER);
+        HBox.setHgrow(leftPanel, javafx.scene.layout.Priority.ALWAYS);
+        HBox.setHgrow(rightPanel, javafx.scene.layout.Priority.ALWAYS);
+        leaderboardContainer.getChildren().addAll(leftPanel, rightPanel);
+        VBox.setVgrow(leaderboardContainer, javafx.scene.layout.Priority.ALWAYS);
 
-            HBox row = new HBox(label);
-            row.setPadding(new Insets(5));
-
-            if (entry.equals(currentPlayer)) {
-                row.setStyle("-fx-background-color: #ffd700;");
-                label.setFont(Font.font("Arial", FontWeight.BOLD, 16));
-            }
-
-            scoreListView.getItems().add(row);
-        }
-        HBox buttons = new HBox(12);
+        HBox buttons = new HBox(14);
         buttons.setAlignment(Pos.CENTER);
 
-        // 메인으로 돌아가는 버튼 추가
         Button mainMenuButton = new Button("메인으로");
         mainMenuButton.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         mainMenuButton.setPrefSize(120, 40);
         mainMenuButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 5;");
-
         mainMenuButton.setOnAction(e -> {
             Router router = new Router(stage);
             router.showStartMenu();
@@ -163,8 +155,77 @@ public class GameOverScene {
 
         buttons.getChildren().addAll(mainMenuButton, quitButton);
 
-        root.getChildren().addAll(gameOverText, scoreBoardLabel, scoreListView, buttons);
-        return new Scene(root, width, height);
+        root.getChildren().addAll(gameOverText, scoreBoardLabel, leaderboardContainer, buttons);
+        Scene scene = new Scene(root, width, height);
+        return scene;
+    }
+
+    // 스코어보드 패널 생성 (제목 + 리스트)
+    private static VBox buildScoreBoardPanel(String title, List<ScoreEntry> scores, ScoreEntry currentPlayer,
+            int listHeight) {
+        VBox panel = new VBox(10);
+        panel.setAlignment(Pos.TOP_CENTER);
+        panel.setPadding(new Insets(10));
+        panel.setStyle(
+                "-fx-border-color: #cccccc; -fx-border-width: 1; -fx-border-radius: 5; -fx-background-radius: 5;");
+
+        Label titleLabel = new Label(title);
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        titleLabel.setStyle("-fx-text-fill: #333333;");
+
+        ListView<HBox> listView = buildScoreListView(scores, currentPlayer, listHeight);
+        VBox.setVgrow(listView, javafx.scene.layout.Priority.ALWAYS);
+
+        panel.getChildren().addAll(titleLabel, listView);
+        return panel;
+    }
+
+    private static ListView<HBox> buildScoreListView(List<ScoreEntry> scores, ScoreEntry currentPlayer,
+            int listHeight) {
+        ListView<HBox> view = new ListView<>();
+        view.setPrefHeight(listHeight);
+        view.setMaxHeight(listHeight);
+        VBox.setVgrow(view, javafx.scene.layout.Priority.ALWAYS);
+        // set fixed cell size so empty rows match actual row height
+        view.setFixedCellSize(40);
+
+        scores.sort(Comparator.comparingInt(ScoreEntry::getScore).reversed());
+        // if empty, ensure placeholder fills the view
+        VBox placeholderBox = new VBox();
+        placeholderBox.setAlignment(Pos.CENTER);
+        Label placeholder = new Label("기록이 없습니다");
+        placeholder.setStyle("-fx-text-fill: #9e9e9e; -fx-font-size: 18px; -fx-alignment: center;");
+        placeholder.setWrapText(true);
+        placeholderBox.getChildren().add(placeholder);
+        // bind placeholder to fill entire ListView height
+        placeholderBox.minHeightProperty().bind(view.heightProperty());
+        placeholderBox.prefHeightProperty().bind(view.heightProperty());
+        view.setPlaceholder(placeholderBox);
+
+        for (int i = 0; i < Math.min(scores.size(), MAX_SCORES); i++) {
+            ScoreEntry entry = scores.get(i);
+
+            Label left = new Label(String.format("%2d. %s", i + 1, entry.getName()));
+            left.setFont(Font.font("Arial", 16));
+
+            Label right = new Label(String.format("%d", entry.getScore()));
+            right.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+
+            HBox row = new HBox();
+            HBox.setHgrow(left, javafx.scene.layout.Priority.ALWAYS);
+            left.setMaxWidth(Double.MAX_VALUE);
+            row.getChildren().addAll(left, right);
+            row.setPadding(new Insets(8, 12, 8, 12));
+            row.setSpacing(10);
+            row.setStyle("-fx-border-color: transparent transparent #e0e0e0 transparent; -fx-border-width: 0 0 1 0;");
+
+            if (entry.equals(currentPlayer)) {
+                row.setStyle(row.getStyle() + " -fx-background-color: linear-gradient(to right, #fff8dc, #ffd700);");
+            }
+
+            view.getItems().add(row);
+        }
+        return view;
     }
 
     // 기존 메소드 호환성 유지

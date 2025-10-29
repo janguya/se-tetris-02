@@ -346,7 +346,7 @@ public class Board implements GameInputCallback {
             gameLoop.stop();
         }
 
-        Stage stage = (Stage) root.getScene().getWindow();
+        Stage stage = (Stage) mainContainer.getScene().getWindow();
         Router router = new Router(stage);
         router.showStartMenu();
     }
@@ -443,8 +443,7 @@ public class Board implements GameInputCallback {
 
         // 현재 Stage 구해와서 GameOverScene 호출
         Stage stage = (Stage) root.getScene().getWindow();
-        Router router = new Router(stage);
-        router.showScoreboard();
+        com.example.gameover.GameOverScene.show(stage, scorePanel.getScore());
 
     }
 
