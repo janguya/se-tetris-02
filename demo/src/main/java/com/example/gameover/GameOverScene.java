@@ -8,6 +8,7 @@ import java.util.Optional;
 import com.example.Router;
 import com.example.settings.GameSettings;
 import com.example.settings.GameSettings.Difficulty;
+import com.example.utils.Logger;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -53,6 +54,8 @@ public class GameOverScene {
         if (LEADERBOARD == null) {
             boolean isItem = com.example.settings.GameSettings.getInstance().isItemModeEnabled();
             LEADERBOARD = ScoreManager.loadScores(isItem);
+            Logger.info("Leaderboard initialized (mode=" + (isItem ? "item" : "normal") + ") with "
+                    + LEADERBOARD.size() + " entries");
         }
     }
 
