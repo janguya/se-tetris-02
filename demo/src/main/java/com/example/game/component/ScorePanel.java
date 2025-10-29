@@ -257,7 +257,7 @@ public class ScorePanel {
         nextBlockGc.fillRect(x + cellSize - 4, y + 2, 2, cellSize - 4);
 
         // "L" 텍스트 그리기
-        nextBlockGc.setFill(Color.WHITE);
+        nextBlockGc.setFill(Color.BLACK);
         nextBlockGc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.5));
 
         // 텍스트 중앙 정렬을 위한 계산
@@ -287,9 +287,9 @@ public class ScorePanel {
         nextBlockGc.setFill(color.darker());
         nextBlockGc.fillRect(x + 2, y + cellSize - 4, cellSize - 4, 2);
         nextBlockGc.fillRect(x + cellSize - 4, y + 2, 2, cellSize - 4);
-
-        // "B" 텍스트 그리기 (흰색)
-        nextBlockGc.setFill(Color.WHITE);
+        
+        // "B" 텍스트 그리기 (검은색)
+        nextBlockGc.setFill(Color.BLACK);
         nextBlockGc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.5));
 
         // 텍스트 중앙 정렬을 위한 계산
