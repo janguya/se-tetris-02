@@ -386,8 +386,7 @@ public class Board implements GameInputCallback {
                 }
                 
                 // 애니메이션이 진행 중이면 애니메이션만 업데이트
-                if (animationFinished) {
-                     
+                if (animationFinished) {  
                     // 애니메이션 종료 후 실제 줄 삭제 실행
                     int linesCleared = gameLogic.executeLineClear(pendingLinesToClear);
                     if (linesCleared > 0) {
@@ -481,12 +480,13 @@ public class Board implements GameInputCallback {
         if (gameLoop != null) {
             gameLoop.stop();
         }
-
-        // 현재 Stage 구해와서 GameOverScene 호출
-        Stage stage = (Stage) root.getScene().getWindow();
+        // Platform.runLater로 감싸기!
+        javafx.application.Platform.runLater(() -> {
+        Stage stage = (Stage) mainContainer.getScene().getWindow();
+        
         com.example.gameover.GameOverScene.show(stage, scorePanel.getScore());
-
-    }
+    });
+}
 
     // 보드 그리기
     private void drawBoard() {

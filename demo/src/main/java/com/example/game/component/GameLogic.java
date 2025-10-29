@@ -71,7 +71,7 @@ public class GameLogic {
         currentBlock = getRandomBlock(); // 첫 블록 생성
         nextBlock = getRandomBlock(); // 다음 블록 생성
         x=3;
-        y=-1;
+        y=-(currentBlock.height() - 1);
         gameOver = false;
         placeCurrent(); // 현재 블록 보드에 놓기
         
@@ -224,7 +224,7 @@ public class GameLogic {
 
     // 2) 스폰 좌표 설정 (현재 x=3, y=0을 기본으로 사용하셨으므로 유지)
     x = 3;
-    y = -1;
+    y = -(currentBlock.height()); // 두 칸 짜리 블럭은 -1에서 스폰
 
     // 3) 스폰 가능? (경계/충돌 검사)
     if (!canMove(x, y, currentBlock)) {
@@ -380,7 +380,7 @@ public class GameLogic {
         
         int linesCleared = linesToClear.size();
     
-        // ⭐ 새 보드 생성 방식 - 삭제 대상이 아닌 줄만 복사
+        //새 보드 생성 방식 - 삭제 대상이 아닌 줄만 복사
         int[][] newBoard = new int[HEIGHT][WIDTH];
         String[][] newBlockTypes = new String[HEIGHT][WIDTH];
         
@@ -393,8 +393,6 @@ public class GameLogic {
                 System.arraycopy(board[oldRow], 0, newBoard[newRow], 0, WIDTH);
                 System.arraycopy(blockTypes[oldRow], 0, newBlockTypes[newRow], 0, WIDTH);
                 newRow--;
-            } else {
-                System.out.println(">> Skipping row " + oldRow + " (marked for deletion)");
             }
         }
         
@@ -425,7 +423,7 @@ public class GameLogic {
         for (int j = 0; j < currentBlock.height(); j++) {
             if (currentBlock.getShape(i, j) == 1) {
                 int boardY = y + j;
-                if (boardY == 0) {
+                if (boardY <= 0) {
                     atTop = true;
         
                 }
