@@ -214,7 +214,10 @@ public class GameOverScene {
         for (int i = 0; i < Math.min(scores.size(), MAX_SCORES); i++) {
             ScoreEntry entry = scores.get(i);
 
-            Label left = new Label(String.format("%2d. %s", i + 1, entry.getName()));
+            // 이름을 12글자로 제한 (초과 시 "..." 표시)
+            String displayName = truncateName(entry.getName(), 12);
+            Label left = new Label(
+                    String.format("%2d. %s - %s", i + 1, displayName, entry.getDifficulty().name().charAt(0)));
             left.getStyleClass().add("score-name");
 
             Label right = new Label(String.format("%d", entry.getScore()));
@@ -342,5 +345,16 @@ public class GameOverScene {
         public int hashCode() {
             return Objects.hash(name, score, isItemMode, difficulty);
         }
+    }
+
+    // 이름을 최대 길이로 제한하는 헬퍼 메서드
+    private static String truncateName(String name, int maxLength) {
+        if (name == null) {
+            return "";
+        }
+        if (name.length() <= maxLength) {
+            return name;
+        }
+        return name.substring(0, maxLength) + "...";
     }
 }
