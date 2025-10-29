@@ -8,7 +8,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.json.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import com.example.theme.ColorScheme;
 
@@ -65,10 +68,11 @@ public class GameSettings {
 
             // JSON 파일 읽기
             String content = new String(Files.readAllBytes(Paths.get(SETTINGS_PATH)));
-            JSONObject json = new JSONObject(content);
+            JsonObject json = JsonParser.parseString(content).getAsJsonObject();
 
             // 색상 테마 로드
-            String schemeName = json.optString("colorScheme", ColorScheme.NORMAL.name());
+            String schemeName = json.has("colorScheme") ? json.get("colorScheme").getAsString()
+                    : ColorScheme.NORMAL.name();
             try {
                 currentColorScheme = ColorScheme.valueOf(schemeName);
             } catch (IllegalArgumentException e) {
@@ -76,7 +80,8 @@ public class GameSettings {
             }
 
             // 창 크기 설정 로드
-            String windowSizeName = json.optString("windowSize", WindowSize.MEDIUM.name());
+            String windowSizeName = json.has("windowSize") ? json.get("windowSize").getAsString()
+                    : WindowSize.MEDIUM.name();
             try {
                 currentWindowSize = WindowSize.valueOf(windowSizeName);
             } catch (IllegalArgumentException e) {
@@ -84,7 +89,8 @@ public class GameSettings {
             }
 
             // 난이도 설정 로드
-            String difficultyName = json.optString("difficulty", Difficulty.NORMAL.name());
+            String difficultyName = json.has("difficulty") ? json.get("difficulty").getAsString()
+                    : Difficulty.NORMAL.name();
             try {
                 currentDifficulty = Difficulty.valueOf(difficultyName);
             } catch (IllegalArgumentException e) {
@@ -92,7 +98,7 @@ public class GameSettings {
             }
 
             // 아이템 모드 설정 로드
-            itemModeEnabled = json.optBoolean("itemModeEnabled", false);
+            itemModeEnabled = json.has("itemModeEnabled") && json.get("itemModeEnabled").getAsBoolean();
 
             // 커스텀 색상 로드
             loadCustomColorsFromJson(json);
@@ -119,18 +125,19 @@ public class GameSettings {
     }
 
     // 커스텀 색상 불러오기
-    private void loadCustomColorsFromJson(JSONObject json) {
+    private void loadCustomColorsFromJson(JsonObject json) {
         customColors = new HashMap<>();
         String[] blockTypes = { "block-i", "block-o", "block-j", "block-l", "block-s", "block-t", "block-z" };
 
-        JSONObject customColorsJson = json.optJSONObject("customColors");
+        JsonObject customColorsJson = json.has("customColors") ? json.getAsJsonObject("customColors") : null;
         if (customColorsJson == null) {
             loadDefaultCustomColors();
             return;
         }
 
         for (String blockType : blockTypes) {
-            String colorHex = customColorsJson.optString(blockType, "#ffffff");
+            String colorHex = customColorsJson.has(blockType) ? customColorsJson.get(blockType).getAsString()
+                    : "#ffffff";
             try {
                 customColors.put(blockType, Color.web(colorHex));
             } catch (IllegalArgumentException e) {
@@ -149,9 +156,9 @@ public class GameSettings {
     }
 
     // 키 바인딩 불러오기
-    private void loadKeyBindingsFromJson(JSONObject json) {
+    private void loadKeyBindingsFromJson(JsonObject json) {
         keyBindings = new HashMap<>();
-        JSONObject keyBindingsJson = json.optJSONObject("keyBindings");
+        JsonObject keyBindingsJson = json.has("keyBindings") ? json.getAsJsonObject("keyBindings") : null;
 
         if (keyBindingsJson == null) {
             loadDefaultKeyBindings();
@@ -159,12 +166,18 @@ public class GameSettings {
         }
 
         try {
-            keyBindings.put("MOVE_LEFT", KeyCode.valueOf(keyBindingsJson.optString("MOVE_LEFT", "LEFT")));
-            keyBindings.put("MOVE_RIGHT", KeyCode.valueOf(keyBindingsJson.optString("MOVE_RIGHT", "RIGHT")));
-            keyBindings.put("MOVE_DOWN", KeyCode.valueOf(keyBindingsJson.optString("MOVE_DOWN", "DOWN")));
-            keyBindings.put("ROTATE", KeyCode.valueOf(keyBindingsJson.optString("ROTATE", "UP")));
-            keyBindings.put("PAUSE", KeyCode.valueOf(keyBindingsJson.optString("PAUSE", "ESCAPE")));
-            keyBindings.put("HARD_DROP", KeyCode.valueOf(keyBindingsJson.optString("HARD_DROP", "SPACE")));
+            keyBindings.put("MOVE_LEFT", KeyCode.valueOf(
+                    keyBindingsJson.has("MOVE_LEFT") ? keyBindingsJson.get("MOVE_LEFT").getAsString() : "LEFT"));
+            keyBindings.put("MOVE_RIGHT", KeyCode.valueOf(
+                    keyBindingsJson.has("MOVE_RIGHT") ? keyBindingsJson.get("MOVE_RIGHT").getAsString() : "RIGHT"));
+            keyBindings.put("MOVE_DOWN", KeyCode.valueOf(
+                    keyBindingsJson.has("MOVE_DOWN") ? keyBindingsJson.get("MOVE_DOWN").getAsString() : "DOWN"));
+            keyBindings.put("ROTATE", KeyCode
+                    .valueOf(keyBindingsJson.has("ROTATE") ? keyBindingsJson.get("ROTATE").getAsString() : "UP"));
+            keyBindings.put("PAUSE", KeyCode
+                    .valueOf(keyBindingsJson.has("PAUSE") ? keyBindingsJson.get("PAUSE").getAsString() : "ESCAPE"));
+            keyBindings.put("HARD_DROP", KeyCode.valueOf(
+                    keyBindingsJson.has("HARD_DROP") ? keyBindingsJson.get("HARD_DROP").getAsString() : "SPACE"));
         } catch (Exception e) {
             System.err.println("Failed to load key bindings: " + e.getMessage());
             loadDefaultKeyBindings();
@@ -192,39 +205,40 @@ public class GameSettings {
             }
 
             // JSON 객체 생성
-            JSONObject json = new JSONObject();
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            JsonObject json = new JsonObject();
 
             // 기본 설정 저장
-            json.put("colorScheme", currentColorScheme.name());
-            json.put("windowSize", currentWindowSize.name());
-            json.put("difficulty", currentDifficulty.name());
-            json.put("itemModeEnabled", itemModeEnabled);
+            json.addProperty("colorScheme", currentColorScheme.name());
+            json.addProperty("windowSize", currentWindowSize.name());
+            json.addProperty("difficulty", currentDifficulty.name());
+            json.addProperty("itemModeEnabled", itemModeEnabled);
 
             // 커스텀 색상 저장
             if (currentColorScheme == ColorScheme.CUSTOM) {
-                JSONObject customColorsJson = new JSONObject();
+                JsonObject customColorsJson = new JsonObject();
                 for (Map.Entry<String, Color> entry : customColors.entrySet()) {
                     String hex = String.format("#%02x%02x%02x",
                             (int) (entry.getValue().getRed() * 255),
                             (int) (entry.getValue().getGreen() * 255),
                             (int) (entry.getValue().getBlue() * 255));
-                    customColorsJson.put(entry.getKey(), hex);
+                    customColorsJson.addProperty(entry.getKey(), hex);
                 }
-                json.put("customColors", customColorsJson);
+                json.add("customColors", customColorsJson);
             }
 
             // 키 바인딩 저장
-            JSONObject keyBindingsJson = new JSONObject();
-            keyBindingsJson.put("MOVE_LEFT", keyBindings.get("MOVE_LEFT").name());
-            keyBindingsJson.put("MOVE_RIGHT", keyBindings.get("MOVE_RIGHT").name());
-            keyBindingsJson.put("MOVE_DOWN", keyBindings.get("MOVE_DOWN").name());
-            keyBindingsJson.put("ROTATE", keyBindings.get("ROTATE").name());
-            keyBindingsJson.put("PAUSE", keyBindings.get("PAUSE").name());
-            keyBindingsJson.put("HARD_DROP", keyBindings.get("HARD_DROP").name());
-            json.put("keyBindings", keyBindingsJson);
+            JsonObject keyBindingsJson = new JsonObject();
+            keyBindingsJson.addProperty("MOVE_LEFT", keyBindings.get("MOVE_LEFT").name());
+            keyBindingsJson.addProperty("MOVE_RIGHT", keyBindings.get("MOVE_RIGHT").name());
+            keyBindingsJson.addProperty("MOVE_DOWN", keyBindings.get("MOVE_DOWN").name());
+            keyBindingsJson.addProperty("ROTATE", keyBindings.get("ROTATE").name());
+            keyBindingsJson.addProperty("PAUSE", keyBindings.get("PAUSE").name());
+            keyBindingsJson.addProperty("HARD_DROP", keyBindings.get("HARD_DROP").name());
+            json.add("keyBindings", keyBindingsJson);
 
             // 파일에 저장 (포맷팅된 JSON)
-            Files.write(Paths.get(SETTINGS_PATH), json.toString(2).getBytes());
+            Files.write(Paths.get(SETTINGS_PATH), gson.toJson(json).getBytes());
 
             System.out.println("✓ Settings saved to: " + SETTINGS_PATH);
 

@@ -6,8 +6,11 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.example.settings.GameSettings;
 
 //점수 데이터를 파일에 영구 저장하고 불러오는 매니저 클래스
@@ -45,10 +48,10 @@ public class ScoreManager {
 
             // JSON 파일 읽기
             String content = new String(Files.readAllBytes(Paths.get(SCORE_PATH)));
-            JSONObject root = new JSONObject(content);
+            JsonObject root = JsonParser.parseString(content).getAsJsonObject();
 
             String key = isItemMode ? "item" : "normal";
-            JSONArray jsonArray = root.optJSONArray(key);
+            JsonArray jsonArray = root.has(key) ? root.getAsJsonArray(key) : null;
 
             System.out.println("Debug: Loaded JSON content: " + content);
             System.out.println("Debug: Loaded JSON root: " + root);
@@ -60,12 +63,13 @@ public class ScoreManager {
             }
 
             // JSON을 ScoreEntry로 변환
-            for (int i = 0; i < jsonArray.length(); i++) {
-                JSONObject obj = jsonArray.getJSONObject(i);
-                String name = obj.optString("name", "Player");
-                int score = obj.optInt("score", 0);
-                boolean entryIsItemMode = obj.optBoolean("isItemMode", isItemMode);
-                String diffName = obj.optString("difficulty", GameSettings.Difficulty.NORMAL.name());
+            for (int i = 0; i < jsonArray.size(); i++) {
+                JsonObject obj = jsonArray.get(i).getAsJsonObject();
+                String name = obj.has("name") ? obj.get("name").getAsString() : "Player";
+                int score = obj.has("score") ? obj.get("score").getAsInt() : 0;
+                boolean entryIsItemMode = obj.has("isItemMode") && obj.get("isItemMode").getAsBoolean();
+                String diffName = obj.has("difficulty") ? obj.get("difficulty").getAsString()
+                        : GameSettings.Difficulty.NORMAL.name();
                 GameSettings.Difficulty difficulty = GameSettings.Difficulty.NORMAL;
                 try {
                     difficulty = GameSettings.Difficulty.valueOf(diffName);
@@ -102,16 +106,18 @@ public class ScoreManager {
                 appDir.mkdirs();
             }
 
-            JSONObject root = new JSONObject();
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            JsonObject root = new JsonObject();
+
             // 기존 파일이 있으면 로드해서 다른 모드 데이터를 보존
             File scoreFile = new File(SCORE_PATH);
             if (scoreFile.exists()) {
                 try {
                     String existing = new String(Files.readAllBytes(Paths.get(SCORE_PATH)));
-                    root = new JSONObject(existing);
+                    root = JsonParser.parseString(existing).getAsJsonObject();
                 } catch (Exception ex) {
                     // ignore and overwrite
-                    root = new JSONObject();
+                    root = new JsonObject();
                 }
             }
 
@@ -119,24 +125,24 @@ public class ScoreManager {
 
             // 제한: 상위 10개만 저장 (scores는 이미 정렬되어 있다고 가정하지만 안전을 위해 정렬)
             scores.sort((a, b) -> Integer.compare(b.getScore(), a.getScore()));
-            JSONArray jsonArray = new JSONArray();
+            JsonArray jsonArray = new JsonArray();
             int limit = Math.min(scores.size(), 10);
             for (int i = 0; i < limit; i++) {
                 GameOverScene.ScoreEntry entry = scores.get(i);
-                JSONObject obj = new JSONObject();
-                obj.put("name", entry.getName());
-                obj.put("score", entry.getScore());
-                obj.put("isItemMode", entry.isItemMode());
-                obj.put("difficulty", entry.getDifficulty() == null ? GameSettings.Difficulty.NORMAL.name()
+                JsonObject obj = new JsonObject();
+                obj.addProperty("name", entry.getName());
+                obj.addProperty("score", entry.getScore());
+                obj.addProperty("isItemMode", entry.isItemMode());
+                obj.addProperty("difficulty", entry.getDifficulty() == null ? GameSettings.Difficulty.NORMAL.name()
                         : entry.getDifficulty().name());
-                jsonArray.put(obj);
+                jsonArray.add(obj);
             }
 
             // 다른 키는 보존
-            root.put(key, jsonArray);
+            root.add(key, jsonArray);
 
-            // 파일에 쓰기 (들여쓰기 2칸으로 포맷)
-            Files.write(Paths.get(SCORE_PATH), root.toString(2).getBytes());
+            // 파일에 쓰기 (들여쓰기 포맷)
+            Files.write(Paths.get(SCORE_PATH), gson.toJson(root).getBytes());
 
             System.out.println("✓ Saved " + limit + " scores (mode=" + key + ") to: " + SCORE_PATH);
 
@@ -179,10 +185,11 @@ public class ScoreManager {
                 }
                 // Also write an empty root with both mode keys to ensure consistent file shape
                 try {
-                    JSONObject empty = new JSONObject();
-                    empty.put("normal", new JSONArray());
-                    empty.put("item", new JSONArray());
-                    Files.write(Paths.get(SCORE_PATH), empty.toString(2).getBytes());
+                    Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                    JsonObject empty = new JsonObject();
+                    empty.add("normal", new JsonArray());
+                    empty.add("item", new JsonArray());
+                    Files.write(Paths.get(SCORE_PATH), gson.toJson(empty).getBytes());
                 } catch (Exception ex) {
                     // If writing fails, it's non-fatal; file was deleted already
                 }
