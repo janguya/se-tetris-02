@@ -133,19 +133,27 @@ public class GameLogic {
 
     // 블록 아래로 이동
     public boolean moveDown() {
+        // weightedBlock이 이미 접촉한 상태인지 먼저 확인
+        boolean isWeightAfterTouch = false;
+        if (currentBlock instanceof weightedBlock) {
+            weightedBlock weight = (weightedBlock) currentBlock;
+            isWeightAfterTouch = weight.hasTouched();
+        }
+        
         // 현재 블록 지우기
         eraseCurrent();
         
-        // weightedBlock인 경우 특별 처리: 지나가는 블록 삭제하고 바닥까지 떨어짐
-        if (currentBlock instanceof weightedBlock) {
-            // 다음 위치(y+1)의 블록들을 미리 삭제 (무게추가 지나갈 자리)
+        // 무게추가 접촉 후라면, 아래 블록을 부수고 강제로 내려감
+        if (isWeightAfterTouch) {
+            weightedBlock weight = (weightedBlock) currentBlock;
+            
+            // 다음 위치의 블록들 파괴
             for (int i = 0; i < currentBlock.width(); i++) {
                 for (int j = 0; j < currentBlock.height(); j++) {
                     if (currentBlock.getShape(i, j) == 1) {
                         int col = x + i;
-                        int row = y + j + 1;  // 다음 위치 확인
+                        int row = y + j + 1;  // 다음 위치
                         
-                        // 다음 위치의 블록 제거
                         if (col >= 0 && col < WIDTH && 
                             row >= 0 && row < HEIGHT) {
                             if (board[row][col] == 1) {
@@ -157,17 +165,17 @@ public class GameLogic {
                 }
             }
             
-            // 블록을 삭제한 후에는 항상 이동 가능해짐
-            // 바닥에 닿을 때까지 계속 이동
-            if (y + currentBlock.height() < HEIGHT) {
-                y++;
-                placeCurrent();
-                return true;
-            } else {
-                // 바닥에 도착
+            // 바닥에 닿았는지 확인
+            if (y + currentBlock.height() >= HEIGHT) {
+                // 바닥 도달 - 무게추를 board에 고정
                 placeCurrent();
                 return false;
             }
+            
+            // 계속 내려감
+            y++;
+            placeCurrent();
+            return true;
         }
         
         // 일반 블록 처리
@@ -177,6 +185,42 @@ public class GameLogic {
             placeCurrent(); // 이동 후 다시 놓기
             return true;
         } else { // 이동 불가하면 제자리
+            // 무게추라면 첫 접촉 처리
+            if (currentBlock instanceof weightedBlock) {
+                weightedBlock weight = (weightedBlock) currentBlock;
+                weight.setTouched(true);
+                System.out.println(">>> WeightedBlock: First touch! Marking as touched.");
+                
+                // 다음 위치의 블록들 파괴
+                for (int i = 0; i < currentBlock.width(); i++) {
+                    for (int j = 0; j < currentBlock.height(); j++) {
+                        if (currentBlock.getShape(i, j) == 1) {
+                            int col = x + i;
+                            int row = y + j + 1;  // 다음 위치
+                            
+                            if (col >= 0 && col < WIDTH && 
+                                row >= 0 && row < HEIGHT) {
+                                if (board[row][col] == 1) {
+                                    board[row][col] = 0;
+                                    blockTypes[row][col] = null;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // 바닥 체크
+                if (y + currentBlock.height() >= HEIGHT) {
+                    placeCurrent();
+                    return false;
+                }
+                
+                // 계속 내려감
+                y++;
+                placeCurrent();
+                return true;  // 계속 진행
+            }
+            
             // SandBlock이면 중력 효과 적용 (고정하지 않고 떨어뜨림)
             if (currentBlock instanceof SandBlock) {
                 System.out.println(">>> SandBlock landed! Applying gravity effect...");
@@ -201,6 +245,15 @@ public class GameLogic {
 
     // 블록 좌우 이동
     public void moveLeft() {
+        // weightedBlock이 접촉 후이고 이동 불가능하면 무시
+        if (currentBlock instanceof weightedBlock) {
+            weightedBlock weight = (weightedBlock) currentBlock;
+            if (weight.hasTouched() && !weight.canMove()) {
+                System.out.println(">>> moveLeft: BLOCKED - weightedBlock cannot move after touch");
+                return;
+            }
+        }
+        
         eraseCurrent();
         if (canMove(x - 1, y, currentBlock)) {
             x--;
@@ -209,6 +262,15 @@ public class GameLogic {
     }
 
     public void moveRight() {
+        // weightedBlock이 접촉 후이고 이동 불가능하면 무시
+        if (currentBlock instanceof weightedBlock) {
+            weightedBlock weight = (weightedBlock) currentBlock;
+            if (weight.hasTouched() && !weight.canMove()) {
+                System.out.println(">>> moveRight: BLOCKED - weightedBlock cannot move after touch");
+                return;
+            }
+        }
+        
         eraseCurrent();
         if (canMove(x + 1, y, currentBlock)) {
             x++;
