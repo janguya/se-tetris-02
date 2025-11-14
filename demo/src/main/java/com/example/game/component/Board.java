@@ -445,8 +445,10 @@ public class Board implements GameInputCallback {
         boolean moved = gameLogic.moveDown();
 
         if (moved) {
-            // 블록이 성공적으로 아래로 이동했을 때 점수 증가
-            scorePanel.addScore(1);
+            // 속도 레벨에 따른 점수 계산
+            int speedLevel = gameLogic.getSpeedLevel();
+            int pointsToAdd = speedLevel; // 레벨과 동일한 점수
+            scorePanel.addScore(pointsToAdd);
         } else {
             // 줄 삭제 체크 - 애니메이션 시작
             List<Integer> fullLines = gameLogic.findFullLines();
