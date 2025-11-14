@@ -24,30 +24,6 @@ public enum ColorScheme {
         return displayName;
     }
     
-    /**
-     * displayName으로 ColorScheme 찾기
-     */
-    public static ColorScheme fromDisplayName(String displayName) {
-        for (ColorScheme scheme : ColorScheme.values()) {
-            if (scheme.displayName.equals(displayName)) {
-                return scheme;
-            }
-        }
-        return NORMAL; // 기본값
-    }
-    
-    /**
-     * 문자열 이름으로 ColorScheme 찾기 (대소문자 무시)
-     */
-    public static ColorScheme fromString(String name) {
-        try {
-            return ColorScheme.valueOf(name.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            // displayName으로도 시도
-            return fromDisplayName(name);
-        }
-    }
-    
     public Map<String, Color> getColorMap() {
         Map<String, Color> colors = new HashMap<>();
         
@@ -126,9 +102,6 @@ public enum ColorScheme {
         
         // Default color for filled empty cells in animation
         colors.put("block-default", Color.LIGHTGRAY); 
-        
-        // Attack block color (대전 모드용)
-        colors.put("attack-block", Color.GRAY);
         
         return colors;
     }

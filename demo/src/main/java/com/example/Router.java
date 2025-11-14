@@ -3,8 +3,6 @@ package com.example;
 import java.util.List;
 
 import com.example.game.component.Board;
-import com.example.game.component.VersusBoard;
-import com.example.game.component.VersusGameModeDialog;
 import com.example.gameover.GameOverScene;
 import com.example.gameover.ScoreManager;
 import com.example.settings.GameSettings;
@@ -106,11 +104,6 @@ public class Router {
             case "ITEM_MODE":
                 toggleItemMode();
                 break;
-            case "VERSUS_GAME":
-                showVersusGame();
-                break;
-            case "P2P_VERSUS_MODE":
-                break;
             case "SETTINGS":
                 showSettings();
                 break;
@@ -154,71 +147,6 @@ public class Router {
 
         stage.show();
         gameBoard.getRoot().requestFocus();
-    }
-
-    // 대전 모드
-    public void showVersusGame() {
-        // 대전 모드 선택 다이얼로그 표시
-        VersusGameModeDialog.show(stage, new VersusGameModeDialog.ModeSelectionCallback() {
-            @Override
-            public void onModeSelected(VersusGameModeDialog.VersusMode mode) {
-                startVersusGame(mode);
-            }
-            
-            @Override
-            public void onCancel() {
-                // 시작 메뉴로 돌아가기
-                showStartMenu();
-            }
-        });
-    }
-
-    /**
-     * 대전 게임 시작
-     */
-    private void startVersusGame(VersusGameModeDialog.VersusMode mode) {
-        VersusBoard versusBoard = new VersusBoard(mode, new VersusBoard.VersusGameCallback() {
-            @Override
-            public void onPlayerWin(int winnerPlayer, int player1Score, int player2Score) {
-                // 승리 메시지 출력 후 시작 메뉴로
-                System.out.println("=== 대전 모드 게임 종료 ===");
-                System.out.println("승자: Player " + winnerPlayer);
-                System.out.println("Player 1 점수: " + player1Score);
-                System.out.println("Player 2 점수: " + player2Score);
-                
-                // 대전 모드는 스코어보드에 기록하지 않음
-                showStartMenu();
-            }
-            
-            @Override
-            public void onGameEnd() {
-                // 게임 종료 시 시작 메뉴로
-                showStartMenu();
-            }
-        });
-        
-        // 대전 모드 Scene 생성
-        Scene gameScene = new Scene(versusBoard.getRoot(), currentWidth()*2, currentHeight()*1.2);
-        try {
-            gameScene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
-        } catch (Exception e) {
-            // ignore missing stylesheet
-        }
-        
-        stage.setScene(gameScene);
-        stage.setResizable(false);
-        stage.sizeToScene();
-        
-        // 저장된 위치가 있으면 사용, 없으면 중앙 정렬
-        if (savedX != null && savedY != null) {
-            stage.setX(savedX);
-            stage.setY(savedY);
-        } else {
-            stage.centerOnScreen();
-        }
-        
-        stage.show();
-        versusBoard.getRoot().requestFocus(); // 키 입력을 위해 포커스 설정
     }
 
     // 매개변수 없는 showSettings (메뉴에서 호출)
@@ -278,8 +206,6 @@ public class Router {
         StartMenuView startMenu = new StartMenuView()
                 .addMenuItem("GAME", "게임 시작")
                 .addMenuItem("ITEM_MODE", itemModeLabel)
-                .addMenuItem("VERSUS_GAME", "대전 모드")
-                .addMenuItem("P2P_VERSUS_MODE", "P2P 대전 모드")
                 .addMenuItem("SETTINGS", "설정")
                 .addMenuItem("SCOREBOARD", "스코어보드")
                 .addMenuItem("EXIT", "종료")

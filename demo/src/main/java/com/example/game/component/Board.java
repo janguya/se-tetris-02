@@ -24,30 +24,31 @@ import javafx.stage.Stage;
 public class Board implements GameInputCallback {
 
     // 동적 셀 크기 (화면 크기에 따라 조정됨)
-    protected int cellSize;
-    protected int boardWidth;
-    protected int boardHeight;
+    private int cellSize;
+    private int boardWidth;
+    private int boardHeight;
 
-    protected StackPane mainContainer; // 메인 컨테이너 (오버레이 포함)
-    protected BorderPane root; // 게임 보드 레이아웃
-    protected Canvas canvas;
-    protected GraphicsContext gc;
-    protected GameLogic gameLogic;
-    protected ScorePanel scorePanel;
-    protected GameSettings gameSettings;
-    protected MenuOverlay menuOverlay; // 메뉴 오버레이 추가
-    protected GameInputHandler inputHandler; // 입력 핸들러 추가
+    private StackPane mainContainer; // 메인 컨테이너 (오버레이 포함)
+    private BorderPane root; // 게임 보드 레이아웃
+    private Canvas canvas;
+    private GraphicsContext gc;
+    private GameLogic gameLogic;
+    private ScorePanel scorePanel;
+    private GameSettings gameSettings;
+    private MenuOverlay menuOverlay; // 메뉴 오버레이 추가
+    private GameInputHandler inputHandler; // 입력 핸들러 추가
 
-    protected AnimationTimer gameLoop; // 게임 루프 타이머
-    protected long lastUpdate = 0; // 블록 마지막 업데이트 시간
+    private AnimationTimer gameLoop; // 게임 루프 타이머
+    private long lastUpdate = 0; // 블록 마지막 업데이트 시간
 
-    protected boolean isPaused = false; // 게임 일시정지 상태
-    protected boolean isGameOver = false; // 게임 오버 상태
-    protected final long baseDropInterval = 1_000_000_000L; // 1초 (기본 속도)
-    protected Animation lineAnimation; // 애니메이션 객체 추가
-    protected List<Integer> pendingLinesToClear; // 삭제 대기 중인 줄들
-    protected int[][] pendingExplosionCells; // 폭발 대기 중인 셀들 (BombBlock용)
-    protected boolean isExplosionAnimation = false; // 폭발 애니메이션 여부
+    private boolean isPaused = false; // 게임 일시정지 상태
+    private boolean isGameOver = false; // 게임 오버 상태
+
+    private final long baseDropInterval = 1_000_000_000L; // 1초 (기본 속도)
+    private Animation lineAnimation; // 애니메이션 객체 추가
+    private List<Integer> pendingLinesToClear; // 삭제 대기 중인 줄들
+    private int[][] pendingExplosionCells; // 폭발 대기 중인 셀들 (BombBlock용)
+    private boolean isExplosionAnimation = false; // 폭발 애니메이션 여부
 
     public Board() {
         // 컴포넌츠 초기화
@@ -60,17 +61,17 @@ public class Board implements GameInputCallback {
         pendingLinesToClear = new ArrayList<>();
         pendingExplosionCells = null;
 
-        // // 동적 크기 계산
-        // calculateDynamicSizes();
+        // 동적 크기 계산
+        calculateDynamicSizes();
 
-        // // UI 초기화
-        // initializeUI();
-        // // 키 입력 처리 설정
-        // setupKeyHandling();
-        // // 게임 루프 시작
-        // startGameLoop();
-        // // 초기 보드 그리기
-        // drawBoard();
+        // UI 초기화
+        initializeUI();
+        // 키 입력 처리 설정
+        setupKeyHandling();
+        // 게임 루프 시작
+        startGameLoop();
+        // 초기 보드 그리기
+        drawBoard();
 
         // 화면 크기 변경 리스너 등록
         gameSettings.addWindowSizeChangeListener(this::onWindowSizeChanged);
@@ -173,7 +174,7 @@ public class Board implements GameInputCallback {
     }
 
     // 동적 크기 계산
-    protected void calculateDynamicSizes() {
+    private void calculateDynamicSizes() {
         int windowWidth = gameSettings.getWindowWidth();
         int windowHeight = gameSettings.getWindowHeight();
 
@@ -193,14 +194,14 @@ public class Board implements GameInputCallback {
     }
 
     // 화면 크기 변경 콜백
-    protected void onWindowSizeChanged() {
+    private void onWindowSizeChanged() {
         calculateDynamicSizes();
         updateCanvasSize();
         drawBoard();
     }
 
     // 캔버스 크기 업데이트
-    protected void updateCanvasSize() {
+    private void updateCanvasSize() {
         if (canvas != null) {
             canvas.setWidth(boardWidth);
             canvas.setHeight(boardHeight);
@@ -208,7 +209,7 @@ public class Board implements GameInputCallback {
     }
 
     // UI 초기화
-    protected void initializeUI() {
+    private void initializeUI() {
         // 메인 컨테이너 생성 (오버레이를 위한 StackPane)
         mainContainer = new StackPane();
 
@@ -231,7 +232,7 @@ public class Board implements GameInputCallback {
     }
 
     // 키 입력 처리 설정
-    protected void setupKeyHandling() {
+    private void setupKeyHandling() {
         mainContainer.setFocusTraversable(true);
         mainContainer.setOnKeyPressed(event -> {
             // 입력 핸들러에게 위임
@@ -384,7 +385,7 @@ public class Board implements GameInputCallback {
         stage.close();
     }
 
-    protected void startGameLoop() {
+    private void startGameLoop() {
         if (gameLoop != null) {
             gameLoop.stop();
         }
@@ -504,7 +505,7 @@ public class Board implements GameInputCallback {
     }
 
     // 블록 아래로 이동 처리
-    protected void handleMoveDown() {
+    private void handleMoveDown() {
         Block currentBlock = gameLogic.getCurrentBlock();
         boolean isLItemBlock = currentBlock instanceof LItem;
         boolean isBombBlock = currentBlock instanceof BombBlock;
@@ -608,7 +609,7 @@ public class Board implements GameInputCallback {
 }
 
     // 보드 그리기
-    protected void drawBoard() {
+    private void drawBoard() {
         Map<String, Color> currentColors = gameSettings.getCurrentColors();
 
         // 배경 그리기
@@ -658,7 +659,7 @@ public class Board implements GameInputCallback {
     }
 
     // 놓여진 블록 그리기
-    protected void drawPlacedBlocks(Map<String, Color> colorMap) {
+    private void drawPlacedBlocks(Map<String, Color> colorMap) {
         // 보드 상태 가져오기
         int[][] board = gameLogic.getBoard();
         String[][] blockTypes = gameLogic.getBlockTypes();
@@ -743,7 +744,7 @@ public class Board implements GameInputCallback {
     }
 
     // 개별 셀 그리기
-    protected void drawCell(double x, double y, Color color) {
+    private void drawCell(double x, double y, Color color) {
         // 메인 셀
         gc.setFill(color);
         gc.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
@@ -876,7 +877,7 @@ public class Board implements GameInputCallback {
     }
 
     // 하드 드롭 (블록을 즉시 바닥까지 떨어뜨리기)
-    protected void hardDrop() {
+    private void hardDrop() {
         if (!isGameActive()) {
             return;
         }
@@ -980,7 +981,7 @@ public class Board implements GameInputCallback {
     }
 
     // L-item 줄의 빈 셀을 임시로 채우기 (애니메이션용)
-    protected void fillEmptyCellsInLine(int row) {
+    private void fillEmptyCellsInLine(int row) {
         if (row < 0 || row >= GameLogic.HEIGHT) {
             return;
         }
@@ -998,7 +999,7 @@ public class Board implements GameInputCallback {
     }
     
     // BombBlock 폭발 영역의 빈 셀을 임시로 채우기 (애니메이션용)
-    protected void fillExplosionCells(int[][] explosionCells) {
+    private void fillExplosionCells(int[][] explosionCells) {
         int[][] board = gameLogic.getBoard();
         String[][] blockTypes = gameLogic.getBlockTypes();
         
