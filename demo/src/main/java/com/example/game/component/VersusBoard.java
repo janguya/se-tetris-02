@@ -42,10 +42,12 @@ public class VersusBoard {
     // 플레이어 1 (왼쪽) - WASD 조작
     private PlayerBoard player1Board;
     private ScorePanel player1ScorePanel;
+    private AttackQueueDisplay player1AttackDisplay;
     
     // 플레이어 2 (오른쪽) - 방향키 조작
     private PlayerBoard player2Board;
     private ScorePanel player2ScorePanel;
+    private AttackQueueDisplay player2AttackDisplay;
     
     // 게임 상태
     private boolean gameActive = true;
@@ -129,7 +131,7 @@ public class VersusBoard {
         // 플레이어 보드 컨테이너
         BorderPane playerContainer = new BorderPane();
         playerContainer.getStyleClass().add("versus-player-container");
-        playerContainer.setMaxWidth(500);
+        playerContainer.setMaxWidth(600);
         
         // 플레이어 정보 헤더 (상단)
         VBox playerHeader = new VBox(8);
@@ -156,13 +158,21 @@ public class VersusBoard {
             player1Board = new PlayerBoard(1, this::onLinesCleared, itemMode);
             player1Board.initializeUI();
             player1ScorePanel = player1Board.scorePanel;
+            player1AttackDisplay = new AttackQueueDisplay("Player 1");
             
-            // 중앙: 캔버스, 오른쪽: 점수판
+            // 레이아웃: 중앙: 캔버스, 오른쪽: 점수판 + 공격표시
+            VBox rightPanel = new VBox(15);
+            rightPanel.setAlignment(Pos.TOP_CENTER);
+            rightPanel.getChildren().addAll(
+                player1ScorePanel.getPanel(),
+                player1AttackDisplay.getContainer()
+            );
+            
             playerContainer.setCenter(player1Board.getCanvas());
-            playerContainer.setRight(player1ScorePanel.getPanel());
+            playerContainer.setRight(rightPanel);
             
             player1ScorePanel.getPanel().getStyleClass().add("side-panel");
-            BorderPane.setMargin(player1ScorePanel.getPanel(), new Insets(0, 0, 0, 15));
+            BorderPane.setMargin(rightPanel, new Insets(0, 0, 0, 15));
             
             // 캔버스에 그림자 효과
             player1Board.getCanvas().setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 15, 0, 0, 0);");
@@ -171,13 +181,21 @@ public class VersusBoard {
             player2Board = new PlayerBoard(2, this::onLinesCleared, itemMode);
             player2Board.initializeUI();
             player2ScorePanel = player2Board.scorePanel;
+            player2AttackDisplay = new AttackQueueDisplay("Player 2");
             
-            // 왼쪽: 점수판, 중앙: 캔버스
-            playerContainer.setLeft(player2ScorePanel.getPanel());
+            // 레이아웃: 왼쪽: 점수판 + 공격표시, 중앙: 캔버스
+            VBox leftPanel = new VBox(15);
+            leftPanel.setAlignment(Pos.TOP_CENTER);
+            leftPanel.getChildren().addAll(
+                player2ScorePanel.getPanel(),
+                player2AttackDisplay.getContainer()
+            );
+            
+            playerContainer.setLeft(leftPanel);
             playerContainer.setCenter(player2Board.getCanvas());
             
             player2ScorePanel.getPanel().getStyleClass().add("side-panel");
-            BorderPane.setMargin(player2ScorePanel.getPanel(), new Insets(0, 15, 0, 0));
+            BorderPane.setMargin(leftPanel, new Insets(0, 15, 0, 0));
             
             // 캔버스에 그림자 효과
             player2Board.getCanvas().setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 15, 0, 0, 0);");
@@ -413,14 +431,14 @@ public class VersusBoard {
      */
     private void processAttacks() {
         // Player 1에게 들어온 공격 처리
-        if (!player1AttackQueue.isEmpty() && player1Board.canReceiveAttack()) {
+        if (!player1AttackQueue.isEmpty()) {
             AttackData attack = player1AttackQueue.poll();
             player1Board.receiveAttackLines(attack.lines);
             System.out.println("Player 1 received " + attack.count + " attack lines");
         }
         
         // Player 2에게 들어온 공격 처리
-        if (!player2AttackQueue.isEmpty() && player2Board.canReceiveAttack()) {
+        if (!player2AttackQueue.isEmpty()) {
             AttackData attack = player2AttackQueue.poll();
             player2Board.receiveAttackLines(attack.lines);
             System.out.println("Player 2 received " + attack.count + " attack lines");
@@ -534,9 +552,15 @@ public class VersusBoard {
         
         AttackData attack = new AttackData(clearedLines, linesCleared);
         if (playerNumber == 1) {
+            // Player 1이 공격 → Player 2가 받음
             player2AttackQueue.offer(attack);
+            player2AttackDisplay.addAttackLines(clearedLines);
+            System.out.println("Player 1 sent " + linesCleared + " attack lines to Player 2");
         } else {
+            // Player 2가 공격 → Player 1이 받음
             player1AttackQueue.offer(attack);
+            player1AttackDisplay.addAttackLines(clearedLines);
+            System.out.println("Player 2 sent " + linesCleared + " attack lines to Player 1");
         }
     }
     
@@ -555,6 +579,8 @@ public class VersusBoard {
         
         player1AttackQueue.clear();
         player2AttackQueue.clear();
+        player1AttackDisplay.clear();
+        player2AttackDisplay.clear();
         
         gameStartTime = System.currentTimeMillis();
         startGameLoop();

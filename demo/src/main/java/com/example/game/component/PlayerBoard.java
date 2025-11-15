@@ -27,7 +27,6 @@ public class PlayerBoard extends Board {
     
     // 공격받은 줄 관리
     private Queue<String[]> pendingAttackLines;
-    private boolean blockLanded = false;
     
     public PlayerBoard(int playerNumber, LineClearCallback callback, boolean itemMode) {
         super();
@@ -76,12 +75,6 @@ public class PlayerBoard extends Board {
         // 블록 자동 낙하
         handleMoveDown();
         
-        // 공격받은 줄 추가 (블록이 착지했을 때)
-        if (blockLanded && !pendingAttackLines.isEmpty()) {
-            addPendingAttackLines();
-            blockLanded = false;
-        }
-        
         drawBoard();
     }
     
@@ -100,6 +93,11 @@ public class PlayerBoard extends Board {
         if (gameLogic.isBlockAtTop()) {
             isGameOver = true;
             return;
+        }
+        
+        // 공격받은 줄 추가 (다음 블록 생성 전에)
+        if (!pendingAttackLines.isEmpty()) {
+            addPendingAttackLines();
         }
         
         // 다음 블록 생성
@@ -153,7 +151,6 @@ public class PlayerBoard extends Board {
         boolean moved = gameLogic.moveDown();
         
         if (!moved) {
-            blockLanded = true;
             handleBlockLanded(isLItemBlock, isBombBlock);
         }
     }
@@ -210,6 +207,11 @@ public class PlayerBoard extends Board {
         if (gameLogic.isBlockAtTop()) {
             isGameOver = true;
             return;
+        }
+        
+        // 공격받은 줄 추가 (다음 블록 생성 전에)
+        if (!pendingAttackLines.isEmpty()) {
+            addPendingAttackLines();
         }
         
         // 다음 블록 생성
@@ -277,14 +279,8 @@ public class PlayerBoard extends Board {
     }
     
     /**
-     * 공격을 받을 수 있는 상태인지 확인
-     */
-    public boolean canReceiveAttack() {
-        return !lineAnimation.isActive() && blockLanded;
-    }
-    
-    /**
-     * 대기 중인 공격 줄을 보드에 추가
+     * 대기 중인 공격 줄을 보드 하단에 추가
+     * 다음 블록 생성 전에 호출됨
      */
     private void addPendingAttackLines() {
         int[][] board = gameLogic.getBoard();
@@ -340,7 +336,59 @@ public class PlayerBoard extends Board {
     protected void drawPlacedBlocks(Map<String, Color> colorMap) {
         // 공격받은 블록용 회색 추가
         colorMap.put("attack-block", Color.GRAY);
-        super.drawPlacedBlocks(colorMap);
+        
+        // 보드 상태 가져오기
+        int[][] board = gameLogic.getBoard();
+        String[][] blockTypes = gameLogic.getBlockTypes();
+
+        // 놓여진 블록 그리기
+        for (int row = 0; row < GameLogic.HEIGHT; row++) {
+            for (int col = 0; col < GameLogic.WIDTH; col++) {
+                if (board[row][col] == 1) {
+                    // 블록 색상 결정
+                    String cssClass = blockTypes[row][col];
+                    // cssClass에 해당하는 색상을 가져오고, 없으면 기본 색상 사용
+                    Color blockColor = colorMap.getOrDefault(cssClass, colorMap.get("block-default"));
+                    
+                    // Attack 블록인지 확인 (회색, 대전 모드 전용)
+                    if ("attack-block".equals(cssClass)) {
+                        drawAttackCell(col * cellSize, row * cellSize, blockColor);
+                    }
+                    // Sand 블록인지 확인하여 특별한 스타일로 그리기
+                    else if ("item-sand".equals(cssClass)) {
+                        drawSandCell(col * cellSize, row * cellSize, blockColor);
+                    } else {
+                        // 일반 셀 그리기
+                        drawCell(col * cellSize, row * cellSize, blockColor);
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * 공격 블록 셀 그리기 (회색, 대전 모드 전용)
+     */
+    private void drawAttackCell(double x, double y, Color color) {
+        // 메인 셀 (회색)
+        gc.setFill(color);
+        gc.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+
+        // 가벼운 하이라이트
+        gc.setFill(color.brighter());
+        gc.fillRect(x + 2, y + 2, cellSize - 4, 2);
+        gc.fillRect(x + 2, y + 2, 2, cellSize - 4);
+
+        // 가벼운 그림자
+        gc.setFill(color.darker());
+        gc.fillRect(x + 2, y + cellSize - 4, cellSize - 4, 2);
+        gc.fillRect(x + cellSize - 4, y + 2, 2, cellSize - 4);
+        
+        // 공격 블록 표시를 위한 대각선 패턴
+        gc.setStroke(color.darker().darker());
+        gc.setLineWidth(1);
+        gc.strokeLine(x + 3, y + 3, x + cellSize - 3, y + cellSize - 3);
+        gc.strokeLine(x + cellSize - 3, y + 3, x + 3, y + cellSize - 3);
     }
     
     // 수동 조작 메서드들
@@ -408,7 +456,6 @@ public class PlayerBoard extends Board {
         gameLogic.resetGame();
         pendingAttackLines.clear();
         pendingLinesToClear.clear();
-        blockLanded = false;
         isGameOver = false;
         isExplosionAnimation = false;
         pendingExplosionCells = null;
