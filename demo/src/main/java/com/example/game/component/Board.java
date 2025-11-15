@@ -824,7 +824,7 @@ public class Board implements GameInputCallback {
     }
     
     // Sand 셀 그리기 (점박이 패턴으로 모래 질감 표현)
-    private void drawSandCell(double x, double y, Color color) {
+    protected void drawSandCell(double x, double y, Color color) {
         // 메인 셀 (Sand 색상 - 흰색)
         gc.setFill(color);
         gc.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
