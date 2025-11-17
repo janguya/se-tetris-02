@@ -36,36 +36,38 @@ public class Router {
     }
 
     private int currentWidth() {
-        if (overrideWidth != null) return overrideWidth;
+        if (overrideWidth != null)
+            return overrideWidth;
         return GameSettings.getInstance().getWindowWidth();
     }
 
     private int currentHeight() {
-        if (overrideHeight != null) return overrideHeight;
+        if (overrideHeight != null)
+            return overrideHeight;
         return GameSettings.getInstance().getWindowHeight();
     }
-    
+
     // 설정 변경 콜백 생성
     private Runnable createSettingsCallback() {
         return () -> {
             System.out.println("Settings changed - clearing override and updating size");
-            
+
             // 현재 창 위치 저장 (화면이 표시되어 있다면)
             if (stage.isShowing()) {
                 savedX = stage.getX();
                 savedY = stage.getY();
             }
-            
+
             // override 값 제거하여 GameSettings 값 사용
             this.overrideWidth = null;
             this.overrideHeight = null;
-            
-            // 크기 업데이트
-            updateStageSize();
+
+            // 크기 업데이트 후 시작 메뉴로 돌아가기
+            showStartMenu();
         };
     }
-    
-    // 스테이지 크기 업데이트 
+
+    // 스테이지 크기 업데이트
     private void updateStageSize() {
         System.out.println("Updating stage size to: " + currentWidth() + "x" + currentHeight());
 
@@ -93,7 +95,8 @@ public class Router {
     }
 
     public void route(String menuId) {
-        if (menuId == null) return;
+        if (menuId == null)
+            return;
         switch (menuId) {
             case "GAME":
                 showGame();
@@ -114,7 +117,7 @@ public class Router {
                 // unknown
         }
     }
-    
+
     private void toggleItemMode() {
         GameSettings settings = GameSettings.getInstance();
         settings.setItemModeEnabled(!settings.isItemModeEnabled());
@@ -133,7 +136,7 @@ public class Router {
         stage.setScene(gameScene);
         stage.setResizable(false);
         stage.sizeToScene();
-        
+
         // 저장된 위치가 있으면 사용, 없으면 중앙 정렬
         if (savedX != null && savedY != null) {
             stage.setX(savedX);
@@ -141,7 +144,7 @@ public class Router {
         } else {
             stage.centerOnScreen();
         }
-        
+
         stage.show();
         gameBoard.getRoot().requestFocus();
     }
@@ -161,30 +164,30 @@ public class Router {
                 additionalCallback.run(); // 추가 콜백 (Board의 onSettingsChanged)
             }
         };
-        
+
         SettingsDialog settingsDialog = new SettingsDialog(stage, combinedCallback);
         settingsDialog.show();
     }
 
-        public void showScoreboard() {
+    public void showScoreboard() {
         System.out.println("\n=== Router.showScoreboard() ===");
-        
+
         // ⭐ JSON 파일에서 실제 점수 불러오기 ⭐
         List<GameOverScene.ScoreEntry> scores = ScoreManager.loadScores();
-        
+
         System.out.println("Loaded " + scores.size() + " scores from file");
-        
+
         // 점수가 없으면 안내 메시지용 더미 데이터 추가
         if (scores.isEmpty()) {
             System.out.println("No scores found, showing empty scoreboard");
         }
-        
+
         // 현재 플레이어는 null (스코어보드 보기만 하는 경우)
         Scene scoreScene = GameOverScene.create(stage, scores, null, currentWidth(), currentHeight());
         stage.setScene(scoreScene);
         stage.setResizable(false);
         stage.sizeToScene();
-        
+
         // 저장된 위치가 있으면 사용, 없으면 중앙 정렬
         if (savedX != null && savedY != null) {
             stage.setX(savedX);
@@ -192,22 +195,22 @@ public class Router {
         } else {
             stage.centerOnScreen();
         }
-        
+
         stage.show();
     }
 
     public void showStartMenu() {
         GameSettings settings = GameSettings.getInstance();
         String itemModeLabel = settings.isItemModeEnabled() ? "아이템 모드: ON" : "아이템 모드: OFF";
-        
+
         StartMenuView startMenu = new StartMenuView()
-            .addMenuItem("GAME", "게임 시작")
-            .addMenuItem("ITEM_MODE", itemModeLabel)
-            .addMenuItem("SETTINGS", "설정")
-            .addMenuItem("SCOREBOARD", "스코어보드")
-            .addMenuItem("EXIT", "종료")
-            .setOnMenuSelect(this::route)
-            .build();
+                .addMenuItem("GAME", "게임 시작")
+                .addMenuItem("ITEM_MODE", itemModeLabel)
+                .addMenuItem("SETTINGS", "설정")
+                .addMenuItem("SCOREBOARD", "스코어보드")
+                .addMenuItem("EXIT", "종료")
+                .setOnMenuSelect(this::route)
+                .build();
 
         Scene scene = new Scene(startMenu.getRoot(), currentWidth(), currentHeight());
         try {
@@ -219,7 +222,7 @@ public class Router {
         stage.setScene(scene);
         stage.setResizable(false);
         stage.sizeToScene();
-        
+
         // 저장된 위치가 있으면 사용, 없으면 중앙 정렬
         if (savedX != null && savedY != null) {
             stage.setX(savedX);
@@ -227,7 +230,7 @@ public class Router {
         } else {
             stage.centerOnScreen();
         }
-        
+
         stage.show();
         startMenu.requestFocus();
     }
