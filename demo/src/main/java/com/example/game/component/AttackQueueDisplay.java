@@ -104,6 +104,33 @@ public class AttackQueueDisplay {
     }
     
     /**
+     * 실제 대기 중인 공격 줄 개수와 동기화
+     * PlayerBoard의 실제 큐 크기와 AttackDisplay의 표시를 동기화함
+     */
+    public void syncWithActualQueue(int actualQueueSize) {
+        // 현재 표시된 크기와 실제 크기가 다르면 조정
+        int currentSize = attackQueue.size();
+        
+        if (actualQueueSize < currentSize) {
+            // 실제 큐가 작으면 Display에서 제거
+            while (attackQueue.size() > actualQueueSize) {
+                attackQueue.poll();
+            }
+        } else if (actualQueueSize > currentSize) {
+            // 실제 큐가 크면 Display에 더미 줄 추가 (모두 attack-block)
+            while (attackQueue.size() < actualQueueSize) {
+                String[] dummyLine = new String[PREVIEW_WIDTH];
+                for (int i = 0; i < PREVIEW_WIDTH; i++) {
+                    dummyLine[i] = "attack-block";
+                }
+                attackQueue.offer(dummyLine);
+            }
+        }
+        
+        updateDisplay();
+    }
+    
+    /**
      * 대기열 비우기
      */
     public void clear() {

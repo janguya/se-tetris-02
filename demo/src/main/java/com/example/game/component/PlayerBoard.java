@@ -210,7 +210,7 @@ public class PlayerBoard extends Board {
         // 게임 오버 체크
         if (gameLogic.isBlockAtTop()) {
             isGameOver = true;
-            System.out.println(">>> Player " + playerNumber + " Game Over!");
+            Logger.info(">>> Player " + playerNumber + " Game Over!");
             return;
         }
         
@@ -233,7 +233,13 @@ public class PlayerBoard extends Board {
         int[][] board = gameLogic.getBoard();
         String[][] blockTypes = gameLogic.getBlockTypes();
         
-        for (int lineNum : lineNumbers) {
+        // 줄 번호를 정렬하여 위에서 아래 순서 보장 (작은 번호가 위, 큰 번호가 아래)
+        List<Integer> sortedLines = new ArrayList<>(lineNumbers);
+        sortedLines.sort(Integer::compareTo);
+        
+        Logger.info("[Player " + playerNumber + "] Cleared lines for attack (sorted): " + sortedLines);
+        
+        for (int lineNum : sortedLines) {
             String[] line = new String[GameLogic.WIDTH];
             for (int col = 0; col < GameLogic.WIDTH; col++) {
                 if (board[lineNum][col] == 1) {
@@ -283,6 +289,14 @@ public class PlayerBoard extends Board {
         for (String[] line : attackLines) {
             pendingAttackLines.offer(line);
         }
+        Logger.info("[Player " + playerNumber + "] Received " + attackLines.size() + " attack lines. Queue size: " + pendingAttackLines.size());
+    }
+    
+    /**
+     * 대기 중인 공격 줄 개수 반환
+     */
+    public int getPendingAttackCount() {
+        return pendingAttackLines.size();
     }
     
     /**
@@ -294,19 +308,34 @@ public class PlayerBoard extends Board {
         String[][] blockTypes = gameLogic.getBlockTypes();
         
         int linesToAdd = pendingAttackLines.size();
+        Logger.info("[Player " + playerNumber + "] Adding " + linesToAdd + " attack lines to board");
         
         // 기존 블록들을 위로 밀어올리기
-        for (int row = linesToAdd; row < GameLogic.HEIGHT; row++) {
+        for (int row = 0; row < GameLogic.HEIGHT - linesToAdd; row++) {
             for (int col = 0; col < GameLogic.WIDTH; col++) {
-                board[row - linesToAdd][col] = board[row][col];
-                blockTypes[row - linesToAdd][col] = blockTypes[row][col];
+                int sourceRow = row + linesToAdd;
+                board[row][col] = board[sourceRow][col];
+                blockTypes[row][col] = blockTypes[sourceRow][col];
             }
         }
         
-        // 아래쪽에 공격받은 줄 추가
-        int targetRow = GameLogic.HEIGHT - linesToAdd;
-        while (!pendingAttackLines.isEmpty() && targetRow < GameLogic.HEIGHT) {
-            String[] attackLine = pendingAttackLines.poll();
+        // 큐에서 poll한 줄들을 임시 리스트에 저장
+        List<String[]> tempLines = new ArrayList<>();
+        while (!pendingAttackLines.isEmpty()) {
+            tempLines.add(pendingAttackLines.poll());
+        }
+        
+        Logger.info("[Player " + playerNumber + "] Received attack lines count: " + tempLines.size());
+        
+        // 보드 하단에 추가 (tempLines[0]이 맨 위에, tempLines[n-1]이 맨 아래에)
+        // 예: tempLines = [line18, line19] -> line18이 보드 18번에, line19가 19번에
+        int startRow = GameLogic.HEIGHT - tempLines.size();
+        for (int i = 0; i < tempLines.size(); i++) {
+            int targetRow = startRow + i;
+            String[] attackLine = tempLines.get(i);
+            
+            Logger.info("[Player " + playerNumber + "] Adding attack line " + i + " to row " + targetRow);
+            
             for (int col = 0; col < GameLogic.WIDTH; col++) {
                 if (attackLine[col] != null) {
                     board[targetRow][col] = 1;
@@ -316,8 +345,8 @@ public class PlayerBoard extends Board {
                     blockTypes[targetRow][col] = null;
                 }
             }
-            targetRow++;
         }
+        
     }
     
     /**

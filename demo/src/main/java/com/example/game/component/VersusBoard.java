@@ -7,6 +7,7 @@ import java.util.Queue;
 import com.example.Router;
 import com.example.game.component.MenuOverlay.MenuCallback;
 import com.example.settings.GameSettings;
+import com.example.utils.Logger;
 
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
@@ -388,6 +389,9 @@ public class VersusBoard {
                 // 공격 처리
                 processAttacks();
                 
+                // AttackDisplay 업데이트 (공격 줄이 실제로 추가된 후 반영)
+                updateAttackDisplays();
+                
                 // 게임 종료 조건 체크
                 checkGameEnd();
             }
@@ -434,14 +438,31 @@ public class VersusBoard {
         if (!player1AttackQueue.isEmpty()) {
             AttackData attack = player1AttackQueue.poll();
             player1Board.receiveAttackLines(attack.lines);
-            System.out.println("Player 1 received " + attack.count + " attack lines");
+            Logger.info("Player 1 received " + attack.count + " attack lines");
         }
         
         // Player 2에게 들어온 공격 처리
         if (!player2AttackQueue.isEmpty()) {
             AttackData attack = player2AttackQueue.poll();
             player2Board.receiveAttackLines(attack.lines);
-            System.out.println("Player 2 received " + attack.count + " attack lines");
+            Logger.info("Player 2 received " + attack.count + " attack lines");
+        }
+    }
+    
+    /**
+     * AttackDisplay 업데이트 (실제 대기 중인 공격 줄 개수와 동기화)
+     */
+    private void updateAttackDisplays() {
+        // Player 1의 대기 중인 공격 줄 개수와 Display 동기화
+        int player1Pending = player1Board.getPendingAttackCount();
+        if (player1AttackDisplay.getQueueSize() != player1Pending) {
+            player1AttackDisplay.syncWithActualQueue(player1Pending);
+        }
+        
+        // Player 2의 대기 중인 공격 줄 개수와 Display 동기화
+        int player2Pending = player2Board.getPendingAttackCount();
+        if (player2AttackDisplay.getQueueSize() != player2Pending) {
+            player2AttackDisplay.syncWithActualQueue(player2Pending);
         }
     }
     
@@ -555,12 +576,12 @@ public class VersusBoard {
             // Player 1이 공격 → Player 2가 받음
             player2AttackQueue.offer(attack);
             player2AttackDisplay.addAttackLines(clearedLines);
-            System.out.println("Player 1 sent " + linesCleared + " attack lines to Player 2");
+            Logger.info("Player 1 sent " + linesCleared + " attack lines to Player 2");
         } else {
             // Player 2가 공격 → Player 1이 받음
             player1AttackQueue.offer(attack);
             player1AttackDisplay.addAttackLines(clearedLines);
-            System.out.println("Player 2 sent " + linesCleared + " attack lines to Player 1");
+            Logger.info("Player 2 sent " + linesCleared + " attack lines to Player 1");
         }
     }
     
