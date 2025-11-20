@@ -881,6 +881,8 @@ public class Board implements GameInputCallback {
             return;
         }
 
+        System.out.println(">>> Hard drop initiated");
+
         Block currentBlock = gameLogic.getCurrentBlock();
         boolean isLItemBlock = currentBlock instanceof LItem;
         boolean isBombBlock = currentBlock instanceof BombBlock;
@@ -963,11 +965,11 @@ public class Board implements GameInputCallback {
             return;
         }
 
-        boolean spawned = gameLogic.spawnNextPiece();
-        if (!spawned && !isGameOver) {
-            isGameOver = true;
-            gameOver();
-        }
+        // boolean spawned = gameLogic.spawnNextPiece();
+        // if (!spawned && !isGameOver) {
+        //     isGameOver = true;
+        //     gameOver();
+        // }
     }
 
     // 리소스 정리 (게임이 종료될 때 호출)

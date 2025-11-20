@@ -9,6 +9,7 @@ import java.util.Queue;
 import com.example.game.blocks.Block;
 import com.example.game.items.BombBlock;
 import com.example.game.items.LItem;
+import com.example.utils.Logger;
 
 import javafx.scene.paint.Color;
 
@@ -188,10 +189,13 @@ public class PlayerBoard extends Board {
                 linesToAnimate.add(lItemRow);
             }
         }
+        Logger.info("머지?");
         
         if (!linesToAnimate.isEmpty()) {
+            Logger.info(">>> Player %d cleared lines: %s", playerNumber, linesToAnimate.toString());
             // 2줄 이상이면 상대방에게 공격
             if (linesToAnimate.size() >= 2) {
+                Logger.info(">>> Player %d is attacking with %d lines", playerNumber, linesToAnimate.size());
                 List<String[]> attackLines = getClearedLinesForAttack(linesToAnimate);
                 callback.onLinesCleared(playerNumber, linesToAnimate.size(), attackLines);
             }
@@ -206,6 +210,7 @@ public class PlayerBoard extends Board {
         // 게임 오버 체크
         if (gameLogic.isBlockAtTop()) {
             isGameOver = true;
+            System.out.println(">>> Player " + playerNumber + " Game Over!");
             return;
         }
         
@@ -243,6 +248,8 @@ public class PlayerBoard extends Board {
             }
             result.add(line);
         }
+
+        Logger.info(">>> Player %d cleared lines for attack: %d lines", playerNumber, result.size());
         
         return result;
     }
@@ -423,7 +430,14 @@ public class PlayerBoard extends Board {
     @Override
     public void onHardDrop() {
         if (lineAnimation.isActive()) return;
+
+        Block currentBlock = gameLogic.getCurrentBlock();
+        boolean isLItemBlock = currentBlock instanceof LItem;
+        boolean isBombBlock = currentBlock instanceof BombBlock;
+
         hardDrop();
+
+        handleBlockLanded(isLItemBlock, isBombBlock);
         drawBoard();
     }
     
