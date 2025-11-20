@@ -1051,4 +1051,8 @@ public class Board implements GameInputCallback {
         gc.fillText(instructionText, instructionX, instructionY);
     }
 
+    public boolean getIsAnimationActive() {
+        return lineAnimation.isActive();
+    }
+    
 }

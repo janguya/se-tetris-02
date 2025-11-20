@@ -2,6 +2,7 @@ package com.example.game.ai;
 
 import com.example.game.blocks.Block;
 import com.example.game.component.GameLogic;
+import com.example.utils.Logger;
 
 /**
  * 테트리스 AI - 휴리스틱 알고리즘을 사용하여 최적의 수를 찾음
@@ -27,7 +28,7 @@ public class TetrisAI {
         Move bestMove = null;
         double bestScore = Double.NEGATIVE_INFINITY;
         int validMoves = 0;
-        
+
         // 블록의 원래 상태를 저장하기 위해 초기 형태 기록
         int initialWidth = currentBlock.width();
         int initialHeight = currentBlock.height();
@@ -48,13 +49,13 @@ public class TetrisAI {
                 }
                 
                 validMoves++;
-                
+
                 // 보드 상태 시뮬레이션
                 int[][] simulatedBoard = simulateMove(boardWithoutCurrent, currentBlock, x, finalY);
-                
+
                 // 이 수의 점수 평가
                 double score = evaluateBoard(simulatedBoard);
-                
+
                 if (score > bestScore) {
                     bestScore = score;
                     bestMove = new Move(x, rotation, finalY, score);
@@ -68,39 +69,19 @@ public class TetrisAI {
         // 블록이 원래 상태로 돌아왔는지 확인
         // 4번 회전하면 원래대로 돌아와야 함
         if (currentBlock.width() != initialWidth || currentBlock.height() != initialHeight) {
-            System.err.println("[WARNING] Block rotation did not return to original state!");
-            System.err.println("Initial: " + initialWidth + "x" + initialHeight + 
-                             ", Final: " + currentBlock.width() + "x" + currentBlock.height());
+                Logger.info("[WARNING] Block rotation did not return to original state!");
+                Logger.info("Initial: %dx%d, Final: %dx%d", initialWidth, initialHeight,
+                    currentBlock.width(), currentBlock.height());
         }
         
         // 디버그 로그
         if (bestMove != null) {
-            System.out.println("AI found " + validMoves + " valid moves, best: " + bestMove);
-            
-            // 10번째 블록마다 보드 상태 출력
-            if (System.currentTimeMillis() % 10 == 0) {
-                System.out.println("=== Current Board State ===");
-                printBoard(gameLogic.getBoard());
-            }
+            Logger.info("AI found %d valid moves, best: %s", validMoves, bestMove);
         } else {
-            System.out.println("AI found no valid moves!");
+            Logger.info("AI found no valid moves!");
         }
         
         return bestMove;
-    }
-    
-    /**
-     * 보드 상태 출력 (디버그용)
-     */
-    private static void printBoard(int[][] board) {
-        for (int row = 0; row < Math.min(10, GameLogic.HEIGHT); row++) {
-            System.out.print("Row " + String.format("%2d", row) + ": ");
-            for (int col = 0; col < GameLogic.WIDTH; col++) {
-                System.out.print(board[row][col] == 1 ? "■" : "□");
-            }
-            System.out.println();
-        }
-        System.out.println("===========================");
     }
     
     /**
@@ -232,8 +213,9 @@ public class TetrisAI {
         
         // 디버그: 줄 삭제가 가능한 경우 로그 출력
         if (completeLines > 0) {
-            System.out.println("[AI] Found move that clears " + completeLines + " lines! Score: " + score);
-            System.out.println("    Height: " + aggregateHeight + ", Holes: " + holes + ", Bumpiness: " + bumpiness);
+                Logger.info("[AI] Found move that clears %d lines! Score: %.2f", completeLines, score);
+                Logger.info("    Height: %d, Holes: %d, Bumpiness: %d",
+                    aggregateHeight, holes, bumpiness);
         }
         
         return score;

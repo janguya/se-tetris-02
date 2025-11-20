@@ -3,6 +3,7 @@ package com.example.game.ai;
 import com.example.game.ai.TetrisAI.Move;
 import com.example.game.blocks.Block;
 import com.example.game.component.PlayerBoard;
+import com.example.utils.Logger;
 
 /**
  * AI 플레이어 - 사람처럼 블록을 조작하는 AI
@@ -31,6 +32,7 @@ public class AIPlayer {
         ROTATING,    // 목표 회전까지 회전 중
         MOVING,      // 목표 x 위치로 이동 중
         DROPPING,    // 하드 드롭 준비
+        WAITING_ANIMATION, // 라인 삭제 애니메이션 종료 대기
         IDLE         // 다음 블록 대기
     }
     
@@ -109,8 +111,16 @@ public class AIPlayer {
                 // 잠시 대기 후 하드 드롭
                 if (currentTime - lastActionTime >= DROP_DELAY) {
                     board.onHardDrop();
-                    state = AIState.IDLE;
                     currentMove = null;
+                    state = AIState.WAITING_ANIMATION;
+                }
+                break;
+
+            case WAITING_ANIMATION:
+                // 라인 삭제 애니메이션이 끝날 때까지 대기
+                if (!board.getIsAnimationActive()) {
+                    state = AIState.IDLE;
+                    lastActionTime = currentTime;
                 }
                 break;
         }
@@ -134,13 +144,13 @@ public class AIPlayer {
         currentMove = TetrisAI.findBestMove(board.getGameLogic());
         
         if (currentMove != null) {
-            System.out.println("[AI] Best move: " + currentMove);
+            Logger.info("[AI] Best move: %s", currentMove);
             
             // 블록이 원래 상태로 돌아왔는지 확인
             if (block.width() != initialWidth || block.height() != initialHeight) {
-                System.err.println("[ERROR] Block state changed after findBestMove!");
-                System.err.println("Expected: " + initialWidth + "x" + initialHeight + 
-                                 ", Got: " + block.width() + "x" + block.height());
+                Logger.error("[ERROR] Block state changed after findBestMove!");
+                Logger.error(String.format("Expected: %dx%d, Got: %dx%d", initialWidth, initialHeight,
+                                 block.width(), block.height()));
                 // 블록을 원래 상태로 복구 시도
                 while (block.width() != initialWidth || block.height() != initialHeight) {
                     block.rotate();
