@@ -198,7 +198,7 @@ public class Router {
         });
         
         // 대전 모드 Scene 생성
-        Scene gameScene = new Scene(versusBoard.getRoot(), currentWidth()*2, currentHeight()*1.2);
+        Scene gameScene = new Scene(versusBoard.getRoot(), currentWidth()*2, currentHeight()*1.3); // TODO : 크기 조정
         try {
             gameScene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         } catch (Exception e) {
