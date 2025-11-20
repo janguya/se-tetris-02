@@ -189,7 +189,6 @@ public class PlayerBoard extends Board {
                 linesToAnimate.add(lItemRow);
             }
         }
-        Logger.info("머지?");
         
         if (!linesToAnimate.isEmpty()) {
             Logger.info(">>> Player %d cleared lines: %s", playerNumber, linesToAnimate.toString());
@@ -490,6 +489,17 @@ public class PlayerBoard extends Board {
     
     public long getDropInterval() {
         return gameLogic.getDropInterval(baseDropInterval);
+    }
+    
+    /**
+     * AI가 사용할 수 있는 getter 메서드들
+     */
+    public GameLogic getGameLogic() {
+        return gameLogic;
+    }
+    
+    public Block getCurrentBlock() {
+        return gameLogic.getCurrentBlock();
     }
     
     /**

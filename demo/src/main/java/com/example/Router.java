@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.example.game.component.Board;
 import com.example.game.component.VersusBoard;
+import com.example.game.component.VersusAIBoard;
 import com.example.game.component.VersusGameModeDialog;
 import com.example.gameover.GameOverScene;
 import com.example.gameover.ScoreManager;
@@ -108,6 +109,9 @@ public class Router {
                 break;
             case "VERSUS_GAME":
                 showVersusGame();
+                break;
+            case "AI_VERSUS_GAME":
+                showVersusAIGame();
                 break;
             case "P2P_VERSUS_MODE":
                 break;
@@ -221,6 +225,69 @@ public class Router {
         versusBoard.getRoot().requestFocus(); // 키 입력을 위해 포커스 설정
     }
 
+    /**
+     * AI 대전 모드
+     */
+    public void showVersusAIGame() {
+        // 대전 모드 선택 다이얼로그 표시
+        VersusGameModeDialog.show(stage, new VersusGameModeDialog.ModeSelectionCallback() {
+            @Override
+            public void onModeSelected(VersusGameModeDialog.VersusMode mode) {
+                startVersusAIGame(mode);
+            }
+            
+            @Override
+            public void onCancel() {
+                // 시작 메뉴로 돌아가기
+                showStartMenu();
+            }
+        });
+    }
+
+    /**
+     * AI 대전 게임 시작
+     */
+    private void startVersusAIGame(VersusGameModeDialog.VersusMode mode) {
+        VersusAIBoard versusAIBoard = new VersusAIBoard(mode, new VersusAIBoard.VersusGameCallback() {
+            @Override
+            public void onPlayerWin(int winnerPlayer, int player1Score, int player2Score) {
+                System.out.println("=== AI 대전 모드 게임 종료 ===");
+                System.out.println("승자: " + (winnerPlayer == 1 ? "Player" : "AI"));
+                System.out.println("Player 점수: " + player1Score);
+                System.out.println("AI 점수: " + player2Score);
+                
+                showStartMenu();
+            }
+            
+            @Override
+            public void onGameEnd() {
+                showStartMenu();
+            }
+        });
+        
+        // AI 대전 모드 Scene 생성
+        Scene gameScene = new Scene(versusAIBoard.getRoot(), currentWidth()*2, currentHeight()*1.3);
+        try {
+            gameScene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
+        } catch (Exception e) {
+            // ignore missing stylesheet
+        }
+        
+        stage.setScene(gameScene);
+        stage.setResizable(false);
+        stage.sizeToScene();
+        
+        if (savedX != null && savedY != null) {
+            stage.setX(savedX);
+            stage.setY(savedY);
+        } else {
+            stage.centerOnScreen();
+        }
+        
+        stage.show();
+        versusAIBoard.getRoot().requestFocus();
+    }
+
     // 매개변수 없는 showSettings (메뉴에서 호출)
     public void showSettings() {
         SettingsDialog settingsDialog = new SettingsDialog(stage, createSettingsCallback());
@@ -279,6 +346,7 @@ public class Router {
                 .addMenuItem("GAME", "게임 시작")
                 .addMenuItem("ITEM_MODE", itemModeLabel)
                 .addMenuItem("VERSUS_GAME", "대전 모드")
+                .addMenuItem("AI_VERSUS_GAME", "AI 대전 모드")
                 .addMenuItem("P2P_VERSUS_MODE", "P2P 대전 모드")
                 .addMenuItem("SETTINGS", "설정")
                 .addMenuItem("SCOREBOARD", "스코어보드")
