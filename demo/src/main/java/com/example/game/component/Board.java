@@ -824,7 +824,7 @@ public class Board implements GameInputCallback {
     }
     
     // Sand 셀 그리기 (점박이 패턴으로 모래 질감 표현)
-    private void drawSandCell(double x, double y, Color color) {
+    protected void drawSandCell(double x, double y, Color color) {
         // 메인 셀 (Sand 색상 - 흰색)
         gc.setFill(color);
         gc.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
@@ -880,6 +880,8 @@ public class Board implements GameInputCallback {
         if (!isGameActive()) {
             return;
         }
+
+        System.out.println(">>> Hard drop initiated");
 
         Block currentBlock = gameLogic.getCurrentBlock();
         boolean isLItemBlock = currentBlock instanceof LItem;
@@ -963,11 +965,11 @@ public class Board implements GameInputCallback {
             return;
         }
 
-        boolean spawned = gameLogic.spawnNextPiece();
-        if (!spawned && !isGameOver) {
-            isGameOver = true;
-            gameOver();
-        }
+        // boolean spawned = gameLogic.spawnNextPiece();
+        // if (!spawned && !isGameOver) {
+        //     isGameOver = true;
+        //     gameOver();
+        // }
     }
 
     // 리소스 정리 (게임이 종료될 때 호출)
@@ -1049,4 +1051,8 @@ public class Board implements GameInputCallback {
         gc.fillText(instructionText, instructionX, instructionY);
     }
 
+    public boolean getIsAnimationActive() {
+        return lineAnimation.isActive();
+    }
+    
 }

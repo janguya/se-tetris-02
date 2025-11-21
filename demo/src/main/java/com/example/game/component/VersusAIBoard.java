@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Queue;
 
 import com.example.Router;
+import com.example.game.ai.AIPlayer;
 import com.example.game.component.MenuOverlay.MenuCallback;
 import com.example.settings.GameSettings;
-import com.example.utils.Logger;
 
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Insets;
@@ -23,7 +23,11 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
-public class VersusBoard {
+/**
+ * AI 대전 모드 보드
+ * Player 1(사람) vs AI(Player 2)
+ */
+public class VersusAIBoard {
     
     public interface VersusGameCallback {
         void onPlayerWin(int winnerPlayer, int player1Score, int player2Score);
@@ -40,15 +44,16 @@ public class VersusBoard {
     private HBox gameArea;
     private MenuOverlay menuOverlay;
     
-    // 플레이어 1 (왼쪽) - WASD 조작
+    // 플레이어 1 (왼쪽) - 사람 (WASD 또는 방향키)
     private PlayerBoard player1Board;
     private ScorePanel player1ScorePanel;
     private AttackQueueDisplay player1AttackDisplay;
     
-    // 플레이어 2 (오른쪽) - 방향키 조작
+    // 플레이어 2 (오른쪽) - AI
     private PlayerBoard player2Board;
     private ScorePanel player2ScorePanel;
     private AttackQueueDisplay player2AttackDisplay;
+    private AIPlayer aiPlayer;
     
     // 게임 상태
     private boolean gameActive = true;
@@ -77,13 +82,12 @@ public class VersusBoard {
         }
     }
     
-    public VersusBoard(VersusGameModeDialog.VersusMode mode, VersusGameCallback callback) {
+    public VersusAIBoard(VersusGameModeDialog.VersusMode mode, VersusGameCallback callback) {
         this.gameMode = mode;
         this.callback = callback;
         this.gameSettings = GameSettings.getInstance();
         this.menuOverlay = new MenuOverlay();
         
-        // 초기화 순서 수정: UI -> 키 핸들링 -> 게임 시작
         initializeUI();
         setupKeyHandling();
         startGame();
@@ -98,49 +102,46 @@ public class VersusBoard {
         root.getStyleClass().add("versus-root");
         root.setPadding(new Insets(30));
         
-        // 상단 정보 (모드, 타이머 등)
+        // 상단 정보
         VBox topInfo = createTopInfo();
         root.setTop(topInfo);
         BorderPane.setMargin(topInfo, new Insets(0, 0, 20, 0));
         
-        // 게임 영역 (중앙) - 두 보드를 가로로 배치
+        // 게임 영역
         gameArea = new HBox(40);
         gameArea.setAlignment(Pos.CENTER);
         gameArea.setPadding(new Insets(10));
         
-        // 플레이어 1 영역 (왼쪽)
-        BorderPane player1Container = createPlayerBoard(1, "WASD + Space");
+        // 플레이어 1 영역 (사람)
+        BorderPane player1Container = createPlayerBoard(1, "Player (Arrow Keys)");
         
-        // 플레이어 2 영역 (오른쪽)
-        BorderPane player2Container = createPlayerBoard(2, "Arrow Keys + Enter");
+        // 플레이어 2 영역 (AI)
+        BorderPane player2Container = createPlayerBoard(2, "AI");
         
-        // 게임 영역에 두 플레이어 보드 추가
         gameArea.getChildren().addAll(player1Container, player2Container);
         HBox.setHgrow(player1Container, Priority.ALWAYS);
         HBox.setHgrow(player2Container, Priority.ALWAYS);
         
         root.setCenter(gameArea);
         
-        // 메인 컨테이너에 게임 보드와 오버레이 추가
         mainContainer.getChildren().addAll(root, menuOverlay.getOverlay());
     }
-
+    
     /**
      * 개별 플레이어 보드 생성
      */
     private BorderPane createPlayerBoard(int playerNumber, String controls) {
-        // 플레이어 보드 컨테이너
         BorderPane playerContainer = new BorderPane();
         playerContainer.getStyleClass().add("versus-player-container");
         playerContainer.setMaxWidth(600);
         
-        // 플레이어 정보 헤더 (상단)
+        // 플레이어 정보 헤더
         VBox playerHeader = new VBox(8);
         playerHeader.setAlignment(Pos.CENTER);
         playerHeader.setPadding(new Insets(15));
         playerHeader.getStyleClass().add("versus-player-header");
         
-        Label playerLabel = new Label("Player " + playerNumber);
+        Label playerLabel = new Label(playerNumber == 1 ? "You" : "AI");
         playerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
         playerLabel.setStyle("-fx-text-fill: " + (playerNumber == 1 ? "#00d4ff" : "#ff6b6b") + ";");
         
@@ -154,14 +155,13 @@ public class VersusBoard {
         // 아이템 모드 여부
         boolean itemMode = (gameMode == VersusGameModeDialog.VersusMode.ITEM);
         
-        // 게임 보드 생성 및 초기화
+        // 게임 보드 생성
         if (playerNumber == 1) {
             player1Board = new PlayerBoard(1, this::onLinesCleared, itemMode);
             player1Board.initializeUI();
             player1ScorePanel = player1Board.scorePanel;
             player1AttackDisplay = new AttackQueueDisplay("Player 1");
             
-            // 레이아웃: 중앙: 캔버스, 오른쪽: 점수판 + 공격표시
             VBox rightPanel = new VBox(15);
             rightPanel.setAlignment(Pos.TOP_CENTER);
             rightPanel.getChildren().addAll(
@@ -174,8 +174,6 @@ public class VersusBoard {
             
             player1ScorePanel.getPanel().getStyleClass().add("side-panel");
             BorderPane.setMargin(rightPanel, new Insets(0, 0, 0, 15));
-            
-            // 캔버스에 그림자 효과
             player1Board.getCanvas().setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 15, 0, 0, 0);");
             
         } else {
@@ -184,7 +182,9 @@ public class VersusBoard {
             player2ScorePanel = player2Board.scorePanel;
             player2AttackDisplay = new AttackQueueDisplay("Player 2");
             
-            // 레이아웃: 왼쪽: 점수판 + 공격표시, 중앙: 캔버스
+            // AI 플레이어 생성
+            aiPlayer = new AIPlayer(player2Board);
+            
             VBox leftPanel = new VBox(15);
             leftPanel.setAlignment(Pos.TOP_CENTER);
             leftPanel.getChildren().addAll(
@@ -197,14 +197,12 @@ public class VersusBoard {
             
             player2ScorePanel.getPanel().getStyleClass().add("side-panel");
             BorderPane.setMargin(leftPanel, new Insets(0, 15, 0, 0));
-            
-            // 캔버스에 그림자 효과
             player2Board.getCanvas().setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 15, 0, 0, 0);");
         }
         
         return playerContainer;
     }
-
+    
     /**
      * 상단 정보 영역 생성
      */
@@ -214,8 +212,7 @@ public class VersusBoard {
         topInfo.setPadding(new Insets(10));
         topInfo.getStyleClass().add("versus-top-info");
         
-        // 대전 모드 타이틀
-        Label modeLabel = new Label("⚔ " + gameMode.getDisplayName() + " ⚔");
+        Label modeLabel = new Label("⚔ VS AI - " + gameMode.getDisplayName() + " ⚔");
         modeLabel.setFont(Font.font("Arial", FontWeight.BOLD, 32));
         modeLabel.setStyle("-fx-text-fill: white;" +
                            "-fx-effect: dropshadow(gaussian, rgba(0,212,255,0.5), 10, 0, 0, 0);");
@@ -231,7 +228,6 @@ public class VersusBoard {
             topInfo.getChildren().add(timerLabel);
         }
         
-        // 게임 설명
         Label infoLabel = new Label("2줄 이상 삭제하면 상대방을 공격!");
         infoLabel.setFont(Font.font("Arial", FontWeight.NORMAL, 14));
         infoLabel.setStyle("-fx-text-fill: #bbbbbb;");
@@ -241,7 +237,7 @@ public class VersusBoard {
     }
     
     /**
-     * 키 입력 처리 설정
+     * 키 입력 처리 설정 (사람 플레이어만)
      */
     private void setupKeyHandling() {
         mainContainer.setFocusTraversable(true);
@@ -250,41 +246,22 @@ public class VersusBoard {
             
             KeyCode code = event.getCode();
             
-            // Player 1 controls (WASD + Space)
+            // Player 1 controls (방향키)
             switch (code) {
-                case A:
+                case LEFT:
                     player1Board.onMoveLeft();
                     break;
-                case D:
+                case RIGHT:
                     player1Board.onMoveRight();
                     break;
-                case S:
+                case DOWN:
                     player1Board.onMoveDown();
                     break;
-                case W:
+                case UP:
                     player1Board.onRotate();
                     break;
                 case SPACE:
                     player1Board.onHardDrop();
-                    break;
-            }
-            
-            // Player 2 controls (Arrow keys + Enter)
-            switch (code) {
-                case LEFT:
-                    player2Board.onMoveLeft();
-                    break;
-                case RIGHT:
-                    player2Board.onMoveRight();
-                    break;
-                case DOWN:
-                    player2Board.onMoveDown();
-                    break;
-                case UP:
-                    player2Board.onRotate();
-                    break;
-                case ENTER:
-                    player2Board.onHardDrop();
                     break;
             }
             
@@ -380,7 +357,10 @@ public class VersusBoard {
                     lastUpdate1 = now;
                 }
                 
-                // 플레이어 2 업데이트
+                // AI 업데이트
+                aiPlayer.update();
+                
+                // 플레이어 2 (AI) 업데이트
                 if (now - lastUpdate2 >= player2Board.getDropInterval()) {
                     player2Board.update();
                     lastUpdate2 = now;
@@ -389,7 +369,7 @@ public class VersusBoard {
                 // 공격 처리
                 processAttacks();
                 
-                // AttackDisplay 업데이트 (공격 줄이 실제로 추가된 후 반영)
+                // AttackDisplay 업데이트
                 updateAttackDisplays();
                 
                 // 게임 종료 조건 체크
@@ -403,7 +383,7 @@ public class VersusBoard {
     }
     
     /**
-     * 타이머 업데이트 (시간제한 모드)
+     * 타이머 업데이트
      */
     private void updateTimer() {
         if (timerLabel == null) return;
@@ -420,7 +400,6 @@ public class VersusBoard {
         long seconds = (remaining % 60000) / 1000;
         timerLabel.setText(String.format("⏱ %02d:%02d", minutes, seconds));
         
-        // 30초 미만일 때 경고 스타일 적용
         if (remaining < 30000) {
             timerLabel.setStyle("-fx-text-fill: #ff6b6b;" +
                                "-fx-effect: dropshadow(gaussian, rgba(255,107,107,0.8), 15, 0, 0, 0);");
@@ -434,32 +413,26 @@ public class VersusBoard {
      * 공격 처리
      */
     private void processAttacks() {
-        // Player 1에게 들어온 공격 처리
         if (!player1AttackQueue.isEmpty()) {
             AttackData attack = player1AttackQueue.poll();
             player1Board.receiveAttackLines(attack.lines);
-            Logger.info("Player 1 received " + attack.count + " attack lines");
         }
         
-        // Player 2에게 들어온 공격 처리
         if (!player2AttackQueue.isEmpty()) {
             AttackData attack = player2AttackQueue.poll();
             player2Board.receiveAttackLines(attack.lines);
-            Logger.info("Player 2 received " + attack.count + " attack lines");
         }
     }
     
     /**
-     * AttackDisplay 업데이트 (실제 대기 중인 공격 줄 개수와 동기화)
+     * AttackDisplay 업데이트
      */
     private void updateAttackDisplays() {
-        // Player 1의 대기 중인 공격 줄 개수와 Display 동기화
         int player1Pending = player1Board.getPendingAttackCount();
         if (player1AttackDisplay.getQueueSize() != player1Pending) {
             player1AttackDisplay.syncWithActualQueue(player1Pending);
         }
         
-        // Player 2의 대기 중인 공격 줄 개수와 Display 동기화
         int player2Pending = player2Board.getPendingAttackCount();
         if (player2AttackDisplay.getQueueSize() != player2Pending) {
             player2AttackDisplay.syncWithActualQueue(player2Pending);
@@ -523,7 +496,8 @@ public class VersusBoard {
         victoryBox.getStyleClass().add("versus-result-panel");
         victoryBox.setMaxWidth(500);
         
-        Label winnerLabel = new Label("Player " + winner + " Wins!");
+        String winnerText = winner == 1 ? "You Win!" : "AI Wins!";
+        Label winnerLabel = new Label(winnerText);
         winnerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 48));
         winnerLabel.setStyle("-fx-text-fill: " + (winner == 1 ? "#00d4ff" : "#ff6b6b") + ";" +
                             "-fx-effect: dropshadow(gaussian, " + 
@@ -533,11 +507,11 @@ public class VersusBoard {
         VBox scoresBox = new VBox(10);
         scoresBox.setAlignment(Pos.CENTER);
         
-        Label player1ScoreLabel = new Label("Player 1: " + player1Board.getScore());
+        Label player1ScoreLabel = new Label("You: " + player1Board.getScore());
         player1ScoreLabel.setFont(Font.font("Courier New", FontWeight.BOLD, 24));
         player1ScoreLabel.setStyle("-fx-text-fill: #00d4ff;");
         
-        Label player2ScoreLabel = new Label("Player 2: " + player2Board.getScore());
+        Label player2ScoreLabel = new Label("AI: " + player2Board.getScore());
         player2ScoreLabel.setFont(Font.font("Courier New", FontWeight.BOLD, 24));
         player2ScoreLabel.setStyle("-fx-text-fill: #ff6b6b;");
         
@@ -566,22 +540,18 @@ public class VersusBoard {
     }
     
     /**
-     * 라인 클리어 콜백 (공격 시스템)
+     * 라인 클리어 콜백
      */
     private void onLinesCleared(int playerNumber, int linesCleared, List<String[]> clearedLines) {
         if (linesCleared < 2) return;
         
         AttackData attack = new AttackData(clearedLines, linesCleared);
         if (playerNumber == 1) {
-            // Player 1이 공격 → Player 2가 받음
             player2AttackQueue.offer(attack);
             player2AttackDisplay.addAttackLines(clearedLines);
-            Logger.info("Player 1 sent " + linesCleared + " attack lines to Player 2");
         } else {
-            // Player 2가 공격 → Player 1이 받음
             player1AttackQueue.offer(attack);
             player1AttackDisplay.addAttackLines(clearedLines);
-            Logger.info("Player 2 sent " + linesCleared + " attack lines to Player 1");
         }
     }
     
@@ -602,6 +572,8 @@ public class VersusBoard {
         player2AttackQueue.clear();
         player1AttackDisplay.clear();
         player2AttackDisplay.clear();
+        
+        aiPlayer.reset();
         
         gameStartTime = System.currentTimeMillis();
         startGameLoop();
@@ -628,14 +600,6 @@ public class VersusBoard {
     public void cleanup() {
         if (gameLoop != null) {
             gameLoop.stop();
-        }
-        
-        if (player1Board != null) {
-            // PlayerBoard는 cleanup 메서드가 없으므로 제거
-        }
-        
-        if (player2Board != null) {
-            // PlayerBoard는 cleanup 메서드가 없으므로 제거
         }
     }
 }

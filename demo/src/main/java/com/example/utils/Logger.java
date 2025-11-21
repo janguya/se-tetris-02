@@ -7,7 +7,7 @@ package com.example.utils;
 public class Logger {
 
     // 개발 모드 플래그 - false로 설정하면 INFO 로그가 비활성화됩니다
-    private static final boolean DEBUG_MODE = false;
+    private static final boolean DEBUG_MODE = true;
 
     // INFO 레벨 로그 (일반 정보 - 개발 모드에서만 출력)
     public static void info(String message) {

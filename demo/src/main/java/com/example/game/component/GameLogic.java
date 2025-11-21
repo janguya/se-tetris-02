@@ -16,6 +16,7 @@ import com.example.game.items.ItemManager;
 import com.example.game.items.SandBlock;
 import com.example.game.items.weightedBlock;
 import com.example.settings.GameSettings;
+import com.example.utils.Logger;
 
 public class GameLogic {
 
@@ -189,7 +190,7 @@ public class GameLogic {
             if (currentBlock instanceof weightedBlock) {
                 weightedBlock weight = (weightedBlock) currentBlock;
                 weight.setTouched(true);
-                System.out.println(">>> WeightedBlock: First touch! Marking as touched.");
+                Logger.info(">>> WeightedBlock: First touch! Marking as touched.");
                 
                 // 다음 위치의 블록들 파괴
                 for (int i = 0; i < currentBlock.width(); i++) {
@@ -223,7 +224,7 @@ public class GameLogic {
             
             // SandBlock이면 중력 효과 적용 (고정하지 않고 떨어뜨림)
             if (currentBlock instanceof SandBlock) {
-                System.out.println(">>> SandBlock landed! Applying gravity effect...");
+                Logger.info(">>> SandBlock landed! Applying gravity effect...");
                 SandBlock sandBlock = (SandBlock) currentBlock;
                 sandBlock.applyGravity(board, blockTypes, y, x);
                 // SandBlock은 고정하지 않음 - 바로 다음 블록으로
@@ -236,7 +237,7 @@ public class GameLogic {
             
             // 아이템 블록 착지 디버깅
             if (currentBlock.isItemBlock()) {
-                System.out.println(">>> Item block landed: " + currentBlock.getClass().getSimpleName() + " at (" + x + ", " + y + ")");
+                Logger.info(">>> Item block landed: " + currentBlock.getClass().getSimpleName() + " at (" + x + ", " + y + ")");
             }
             
             return false;
@@ -249,7 +250,7 @@ public class GameLogic {
         if (currentBlock instanceof weightedBlock) {
             weightedBlock weight = (weightedBlock) currentBlock;
             if (weight.hasTouched() && !weight.canMove()) {
-                System.out.println(">>> moveLeft: BLOCKED - weightedBlock cannot move after touch");
+                Logger.info(">>> moveLeft: BLOCKED - weightedBlock cannot move after touch");
                 return;
             }
         }
@@ -266,7 +267,7 @@ public class GameLogic {
         if (currentBlock instanceof weightedBlock) {
             weightedBlock weight = (weightedBlock) currentBlock;
             if (weight.hasTouched() && !weight.canMove()) {
-                System.out.println(">>> moveRight: BLOCKED - weightedBlock cannot move after touch");
+                Logger.info(">>> moveRight: BLOCKED - weightedBlock cannot move after touch");
                 return;
             }
         }
@@ -412,7 +413,7 @@ public class GameLogic {
             return false;
         }
         
-        System.out.println(">>> Clearing single line at row " + row);
+        Logger.info(">>> Clearing single line at row " + row);
         
         // 해당 줄 위의 모든 줄을 한 칸씩 내리기
         for (int moveRow = row; moveRow > 0; moveRow--) {
@@ -531,7 +532,7 @@ public class GameLogic {
         
         //디버깅용 출력
         if (speedLevel != oldSpeedLevel) {
-            System.out.println("Speed level increased to: " + speedLevel + " (was: " + oldSpeedLevel + ")");
+            Logger.info("Speed level increased to: " + speedLevel + " (was: " + oldSpeedLevel + ")");
         }
     }
 
@@ -602,12 +603,12 @@ public class GameLogic {
 
     // 디버깅용 메서드
     public void printSpeedInfo() {
-        System.out.println("=== Speed Info ===");
-        System.out.println("Blocks spawned: " + totalBlocksSpawned);
-        System.out.println("Lines cleared: " + totalLinesCleared);
-        System.out.println("Speed level: " + speedLevel);
-        System.out.println("Speed multiplier: " + String.format("%.2f", getSpeedMultiplier()));
-        System.out.println("==================");
+        Logger.info("=== Speed Info ===");
+        Logger.info("Blocks spawned: " + totalBlocksSpawned);
+        Logger.info("Lines cleared: " + totalLinesCleared);
+        Logger.info("Speed level: " + speedLevel);
+        Logger.info("Speed multiplier: " + String.format("%.2f", getSpeedMultiplier()));
+        Logger.info("==================");
     }
     
     // 아이템 매니저 getter
