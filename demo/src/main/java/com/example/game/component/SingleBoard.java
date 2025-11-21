@@ -39,7 +39,7 @@ public class SingleBoard extends Board {
         // 동적 크기 계산
         calculateDynamicSizes();
         
-        // UI 초기화
+        // UI 초기화ghk
         initializeUI();
         
         // 상단 정보 추가
