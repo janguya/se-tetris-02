@@ -1,7 +1,5 @@
 package com.example.game.component;
 
-import com.example.settings.GameSettings.Difficulty;
-
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -12,7 +10,6 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
-import javafx.stage.Stage;
 
 public class MenuOverlay {
     
@@ -62,8 +59,8 @@ public class MenuOverlay {
         showMenu(MenuType.PAUSE_MENU, callback, null);
     }
     
-    public void showGameOverMenu(MenuCallback callback, int finalScore, boolean isItemMode, Difficulty difficulty) {
-        showMenu(MenuType.GAME_OVER_MENU, callback, finalScore, isItemMode, difficulty);
+    public void showGameOverMenu(MenuCallback callback, int finalScore) {
+        showMenu(MenuType.GAME_OVER_MENU, callback, finalScore);
     }
     
     public void showSettingsMenu(MenuCallback callback) {
@@ -71,10 +68,6 @@ public class MenuOverlay {
     }
     
     private void showMenu(MenuType menuType, MenuCallback callback, Integer finalScore) {
-        showMenu(menuType, callback, finalScore, false, null);
-    }
-
-    private void showMenu(MenuType menuType, MenuCallback callback, Integer finalScore, boolean isItemMode, Difficulty difficulty) {
         menuContainer.getChildren().clear();
         
         // 타이틀
@@ -138,9 +131,9 @@ public class MenuOverlay {
             callback.onResume();
         });
         
-        // Button settingsBtn = createMenuButton("Settings", () -> {
-        //     callback.onSettings();
-        // });
+        Button settingsBtn = createMenuButton("Settings", () -> {
+            callback.onSettings();
+        });
         
         Button restartBtn = createMenuButton("Restart", () -> {
             hide();
@@ -152,13 +145,7 @@ public class MenuOverlay {
             callback.onMainMenu();
         });
         
-        Button exitBtn = createMenuButton("Exit", () -> {
-            Stage stage = (Stage) menuContainer.getScene().getWindow();
-            stage.close();
-            callback.onExit();
-        });
-
-        menuContainer.getChildren().addAll(resumeBtn, restartBtn, mainMenuBtn, exitBtn);
+        menuContainer.getChildren().addAll(resumeBtn, settingsBtn, restartBtn, mainMenuBtn);
     }
     
     private void addGameOverMenuButtons(MenuCallback callback) {
@@ -205,14 +192,9 @@ public class MenuOverlay {
         button.setOnAction(e -> action.run());
         
         // 호버 효과
-        if(text != "Exit") {
-            button.setOnMouseEntered(e -> button.setStyle("-fx-background-color: #3bb78f; -fx-text-fill: white;"));
-            button.setOnMouseExited(e -> button.setStyle(""));
-        } else {
-            button.getStyleClass().add("game-over-button-quit");
-            button.setOnMouseExited(e -> button.setStyle(""));
-        }
-
+        button.setOnMouseEntered(e -> button.setStyle("-fx-background-color: #3bb78f; -fx-text-fill: white;"));
+        button.setOnMouseExited(e -> button.setStyle(""));
+        
         return button;
     }
     

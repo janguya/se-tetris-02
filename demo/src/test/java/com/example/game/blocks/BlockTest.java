@@ -9,10 +9,10 @@ class BlockTest {
     @DisplayName("모든 블록 타입 생성 테스트")
     void testAllBlockTypes() {
         Block[] blocks = {
-                new IBlock(), new OBlock(), new TBlock(),
-                new SBlock(), new ZBlock(), new JBlock(), new LBlock()
+            new IBlock(), new OBlock(), new TBlock(),
+            new SBlock(), new ZBlock(), new JBlock(), new LBlock()
         };
-
+        
         for (Block block : blocks) {
             assertNotNull(block, "블록이 null이면 안됩니다");
             assertNotNull(block.getCssClass(), "CSS 클래스가 null이면 안됩니다");

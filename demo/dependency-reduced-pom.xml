@@ -193,7 +193,7 @@
     <maven.compiler.target>17</maven.compiler.target>
     <maven.compiler.source>17</maven.compiler.source>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <javafx.version>17.0.2</javafx.version>
+    <javafx.version>17.0.17</javafx.version>
     <junit.version>5.10.3</junit.version>
   </properties>
 </project>

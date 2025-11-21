@@ -67,21 +67,6 @@ public class Animation {
      */
     public void draw(GraphicsContext gc, List<Integer> lines, String[][] blockTypes, 
                      Map<String, Color> colorMap, int cellSize, int boardWidth) {
-        draw(gc, lines, blockTypes, colorMap, cellSize, boardWidth, false);
-    }
-    
-    /**
-     * 줄 삭제 애니메이션 그리기 (색상 선택 가능)
-     * @param gc GraphicsContext
-     * @param lines 삭제될 줄 번호 리스트
-     * @param blockTypes 블록 타입 배열
-     * @param colorMap 색상 맵
-     * @param cellSize 셀 크기
-     * @param boardWidth 보드 너비 (셀 개수)
-     * @param useCyanColor true면 하늘색, false면 노란색
-     */
-    public void draw(GraphicsContext gc, List<Integer> lines, String[][] blockTypes, 
-                     Map<String, Color> colorMap, int cellSize, int boardWidth, boolean useCyanColor) {
         if (!isActive || lines == null || lines.isEmpty()) {
             return;
         }
@@ -89,14 +74,7 @@ public class Animation {
         for (int row : lines) {
             for (int col = 0; col < boardWidth; col++) {
                 String cssClass = blockTypes[row][col];
-                Color blockColor;
-                
-                // null 체크: cssClass가 null이면 기본 색상 사용
-                if (cssClass == null) {
-                    blockColor = colorMap.getOrDefault("block-default", Color.GRAY);
-                } else {
-                    blockColor = colorMap.getOrDefault(cssClass, colorMap.get("block-default"));
-                }
+                Color blockColor = colorMap.getOrDefault(cssClass, colorMap.get("block-default"));
                 
                 double x = col * cellSize;
                 double y = row * cellSize;
@@ -104,7 +82,7 @@ public class Animation {
                 // 애니메이션 페이즈에 따른 효과
                 if (animationPhase % 2 == 1) {
                     // 홀수 페이즈: 강렬한 흰색 플래시
-                    drawFlashEffect(gc, x, y, cellSize, useCyanColor);
+                    drawFlashEffect(gc, x, y, cellSize);
                 } else {
                     // 짝수 페이즈: 약간 밝게
                     drawBrightEffect(gc, x, y, cellSize, blockColor);
@@ -113,49 +91,7 @@ public class Animation {
             
             // 줄 전체에 빛나는 효과 (홀수 페이즈)
             if (animationPhase % 2 == 1) {
-                drawLineHighlight(gc, row, cellSize, boardWidth, useCyanColor);
-            }
-        }
-    }
-    
-    /**
-     * 폭발 애니메이션 그리기 (개별 셀 애니메이션)
-     * @param gc GraphicsContext
-     * @param explosionCells 폭발할 셀 좌표 [[row, col], ...]
-     * @param blockTypes 블록 타입 배열
-     * @param colorMap 색상 맵
-     * @param cellSize 셀 크기
-     */
-    public void drawExplosion(GraphicsContext gc, int[][] explosionCells, String[][] blockTypes, 
-                              Map<String, Color> colorMap, int cellSize) {
-        if (!isActive || explosionCells == null || explosionCells.length == 0) {
-            return;
-        }
-        
-        for (int[] cell : explosionCells) {
-            int row = cell[0];
-            int col = cell[1];
-            
-            String cssClass = blockTypes[row][col];
-            Color blockColor;
-            
-            // null 체크: cssClass가 null이면 기본 색상 사용
-            if (cssClass == null) {
-                blockColor = colorMap.getOrDefault("block-default", Color.GRAY);
-            } else {
-                blockColor = colorMap.getOrDefault(cssClass, colorMap.get("block-default"));
-            }
-            
-            double x = col * cellSize;
-            double y = row * cellSize;
-            
-            // 애니메이션 페이즈에 따른 효과 (하늘색 사용)
-            if (animationPhase % 2 == 1) {
-                // 홀수 페이즈: 강렬한 하늘색 플래시
-                drawFlashEffect(gc, x, y, cellSize, true);
-            } else {
-                // 짝수 페이즈: 약간 밝게
-                drawBrightEffect(gc, x, y, cellSize, blockColor);
+                drawLineHighlight(gc, row, cellSize, boardWidth);
             }
         }
     }
@@ -164,21 +100,12 @@ public class Animation {
      * 플래시 효과 그리기 (강렬한 흰색)
      */
     private void drawFlashEffect(GraphicsContext gc, double x, double y, int cellSize) {
-        drawFlashEffect(gc, x, y, cellSize, false);
-    }
-    
-    /**
-     * 플래시 효과 그리기 (색상 선택 가능)
-     * @param useCyanColor true면 하늘색, false면 노란색
-     */
-    private void drawFlashEffect(GraphicsContext gc, double x, double y, int cellSize, boolean useCyanColor) {
         // 흰색 셀
         gc.setFill(Color.WHITE);
         gc.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
         
-        // 강렬한 색상 빛 오버레이 (노란색 or 하늘색)
-        Color overlayColor = useCyanColor ? Color.CYAN : Color.YELLOW;
-        gc.setFill(overlayColor.deriveColor(0, 1, 1, 0.6));
+        // 강렬한 노란 빛 오버레이
+        gc.setFill(Color.YELLOW.deriveColor(0, 1, 1, 0.6));
         gc.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
         
         // 하이라이트 효과
@@ -191,11 +118,6 @@ public class Animation {
      * 밝게 빛나는 효과 그리기
      */
     private void drawBrightEffect(GraphicsContext gc, double x, double y, int cellSize, Color baseColor) {
-        // null 체크: baseColor가 null이면 기본 회색 사용
-        if (baseColor == null) {
-            baseColor = Color.GRAY;
-        }
-        
         Color brightColor = baseColor.brighter();
         
         // 메인 셀
@@ -217,16 +139,7 @@ public class Animation {
      * 줄 전체 하이라이트 효과
      */
     private void drawLineHighlight(GraphicsContext gc, int row, int cellSize, int boardWidth) {
-        drawLineHighlight(gc, row, cellSize, boardWidth, false);
-    }
-    
-    /**
-     * 줄 전체 하이라이트 효과 (색상 선택 가능)
-     * @param useCyanColor true면 하늘색, false면 노란색
-     */
-    private void drawLineHighlight(GraphicsContext gc, int row, int cellSize, int boardWidth, boolean useCyanColor) {
-        Color highlightColor = useCyanColor ? Color.CYAN : Color.GOLD;
-        gc.setFill(highlightColor.deriveColor(0, 1, 1, 0.3));
+        gc.setFill(Color.GOLD.deriveColor(0, 1, 1, 0.3));
         gc.fillRect(0, row * cellSize, boardWidth * cellSize, cellSize);
     }
     
