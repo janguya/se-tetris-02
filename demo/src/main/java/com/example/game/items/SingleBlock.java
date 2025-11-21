@@ -11,7 +11,7 @@ public class SingleBlock extends ItemBlock {
         shape = new int[][] {
             {1}
         };
-        cssClass = "item";
+        cssClass = "item-single";
     }
     
     /**

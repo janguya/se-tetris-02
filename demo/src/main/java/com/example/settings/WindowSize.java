@@ -1,7 +1,7 @@
 package com.example.settings;
 
 public enum WindowSize {
-    SMALL("작은 화면", 440, 600),
+    SMALL("작은 화면", 400, 520),
     MEDIUM("중간 화면", 480, 640),
     LARGE("큰 화면", 560, 720),
     EXTRA_LARGE("매우 큰 화면", 640, 800);
