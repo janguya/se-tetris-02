@@ -5,6 +5,7 @@ import java.util.List;
 import com.example.game.component.SingleBoard;
 import com.example.game.component.VersusBoard;
 import com.example.game.component.VersusGameModeDialog;
+import com.example.game.component.Board;
 import com.example.gameover.GameOverScene;
 import com.example.gameover.ScoreManager;
 import com.example.settings.GameSettings;
@@ -105,11 +106,6 @@ public class Router {
                 break;
             case "ITEM_MODE":
                 toggleItemMode();
-                break;
-            case "VERSUS_GAME":
-                showVersusGame();
-                break;
-            case "P2P_VERSUS_MODE":
                 break;
             case "SETTINGS":
                 showSettings();
@@ -294,8 +290,6 @@ public void showGame() {
         StartMenuView startMenu = new StartMenuView()
                 .addMenuItem("GAME", "게임 시작")
                 .addMenuItem("ITEM_MODE", itemModeLabel)
-                .addMenuItem("VERSUS_GAME", "대전 모드")
-                .addMenuItem("P2P_VERSUS_MODE", "P2P 대전 모드")
                 .addMenuItem("SETTINGS", "설정")
                 .addMenuItem("SCOREBOARD", "스코어보드")
                 .addMenuItem("EXIT", "종료")

@@ -75,7 +75,7 @@ public class GameSettings {
             String schemeName = json.has("colorScheme") ? json.get("colorScheme").getAsString()
                     : ColorScheme.NORMAL.name();
             try {
-                currentColorScheme = ColorScheme.fromDisplayName(schemeName);
+                currentColorScheme = ColorScheme.valueOf(schemeName);
             } catch (IllegalArgumentException e) {
                 currentColorScheme = ColorScheme.NORMAL;
             }
