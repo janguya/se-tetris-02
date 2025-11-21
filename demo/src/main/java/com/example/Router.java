@@ -2,6 +2,9 @@ package com.example;
 
 import java.util.List;
 
+import com.example.game.component.SingleBoard;
+import com.example.game.component.VersusBoard;
+import com.example.game.component.VersusGameModeDialog;
 import com.example.game.component.Board;
 import com.example.gameover.GameOverScene;
 import com.example.gameover.ScoreManager;
@@ -125,18 +128,99 @@ public class Router {
         showStartMenu();
     }
 
-    public void showGame() {
-        Board gameBoard = new Board();
-        Scene gameScene = new Scene(gameBoard.getRoot(), currentWidth(), currentHeight());
+public void showGame() {
+    SingleBoard gameBoard = new SingleBoard(new SingleBoard.SingleGameCallback() {
+        @Override
+        public void onGameOver(int score, int linesCleared) {
+            System.out.println("=== 게임 종료 ===");
+            System.out.println("최종 점수: " + score);
+            System.out.println("삭제한 줄: " + linesCleared);
+            // GameOverScene이 이미 표시되므로 여기서는 로그만 출력
+        }
+        
+        @Override
+        public void onGameEnd() {
+            // 게임 종료 시 시작 메뉴로 (GameOverScene에서 메인 메뉴 버튼 클릭 시)
+            showStartMenu();
+        }
+    });
+    
+    Scene gameScene = new Scene(gameBoard.getRoot(), currentWidth(), currentHeight());
+    try {
+        gameScene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
+    } catch (Exception e) {
+        // ignore missing stylesheet
+    }
+    
+    stage.setScene(gameScene);
+    stage.setResizable(false);
+    stage.sizeToScene();
+
+    // 저장된 위치가 있으면 사용, 없으면 중앙 정렬
+    if (savedX != null && savedY != null) {
+        stage.setX(savedX);
+        stage.setY(savedY);
+    } else {
+        stage.centerOnScreen();
+    }
+
+    stage.show();
+    gameBoard.getRoot().requestFocus();
+}
+
+    // 대전 모드
+    public void showVersusGame() {
+        // 대전 모드 선택 다이얼로그 표시
+        VersusGameModeDialog.show(stage, new VersusGameModeDialog.ModeSelectionCallback() {
+            @Override
+            public void onModeSelected(VersusGameModeDialog.VersusMode mode) {
+                startVersusGame(mode);
+            }
+            
+            @Override
+            public void onCancel() {
+                // 시작 메뉴로 돌아가기
+                showStartMenu();
+            }
+        });
+    }
+
+    /**
+     * 대전 게임 시작
+     */
+    private void startVersusGame(VersusGameModeDialog.VersusMode mode) {
+        VersusBoard versusBoard = new VersusBoard(mode, new VersusBoard.VersusGameCallback() {
+            @Override
+            public void onPlayerWin(int winnerPlayer, int player1Score, int player2Score) {
+                // 승리 메시지 출력 후 시작 메뉴로
+                System.out.println("=== 대전 모드 게임 종료 ===");
+                System.out.println("승자: Player " + winnerPlayer);
+                System.out.println("Player 1 점수: " + player1Score);
+                System.out.println("Player 2 점수: " + player2Score);
+                
+                // 대전 모드는 스코어보드에 기록하지 않음
+                showStartMenu();
+            }
+            
+            @Override
+            public void onGameEnd() {
+                // 게임 종료 시 시작 메뉴로
+                showStartMenu();
+            }
+        });
+        
+        // 대전 모드 Scene 생성
+        Scene gameScene = new Scene(versusBoard.getRoot(), currentWidth()*2, currentHeight()*1.2);
         try {
             gameScene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         } catch (Exception e) {
             // ignore missing stylesheet
         }
+        
         stage.setScene(gameScene);
         stage.setResizable(false);
         stage.sizeToScene();
-
+        
         // 저장된 위치가 있으면 사용, 없으면 중앙 정렬
         if (savedX != null && savedY != null) {
             stage.setX(savedX);
@@ -144,9 +228,9 @@ public class Router {
         } else {
             stage.centerOnScreen();
         }
-
+        
         stage.show();
-        gameBoard.getRoot().requestFocus();
+        versusBoard.getRoot().requestFocus(); // 키 입력을 위해 포커스 설정
     }
 
     // 매개변수 없는 showSettings (메뉴에서 호출)
