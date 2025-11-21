@@ -595,7 +595,7 @@ public class Board implements GameInputCallback {
         }
     }
 
-    private void gameOver() {
+    protected void gameOver() {
         if (gameLoop != null) {
             gameLoop.stop();
         }

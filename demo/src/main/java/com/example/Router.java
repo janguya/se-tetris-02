@@ -2,7 +2,7 @@ package com.example;
 
 import java.util.List;
 
-import com.example.game.component.Board;
+import com.example.game.component.SingleBoard;
 import com.example.game.component.VersusBoard;
 import com.example.game.component.VersusGameModeDialog;
 import com.example.gameover.GameOverScene;
@@ -132,29 +132,45 @@ public class Router {
         showStartMenu();
     }
 
-    public void showGame() {
-        Board gameBoard = new Board();
-        Scene gameScene = new Scene(gameBoard.getRoot(), currentWidth(), currentHeight());
-        try {
-            gameScene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
-        } catch (Exception e) {
-            // ignore missing stylesheet
+public void showGame() {
+    SingleBoard gameBoard = new SingleBoard(new SingleBoard.SingleGameCallback() {
+        @Override
+        public void onGameOver(int score, int linesCleared) {
+            System.out.println("=== 게임 종료 ===");
+            System.out.println("최종 점수: " + score);
+            System.out.println("삭제한 줄: " + linesCleared);
+            // GameOverScene이 이미 표시되므로 여기서는 로그만 출력
         }
-        stage.setScene(gameScene);
-        stage.setResizable(false);
-        stage.sizeToScene();
-
-        // 저장된 위치가 있으면 사용, 없으면 중앙 정렬
-        if (savedX != null && savedY != null) {
-            stage.setX(savedX);
-            stage.setY(savedY);
-        } else {
-            stage.centerOnScreen();
+        
+        @Override
+        public void onGameEnd() {
+            // 게임 종료 시 시작 메뉴로 (GameOverScene에서 메인 메뉴 버튼 클릭 시)
+            showStartMenu();
         }
-
-        stage.show();
-        gameBoard.getRoot().requestFocus();
+    });
+    
+    Scene gameScene = new Scene(gameBoard.getRoot(), currentWidth(), currentHeight());
+    try {
+        gameScene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
+    } catch (Exception e) {
+        // ignore missing stylesheet
     }
+    
+    stage.setScene(gameScene);
+    stage.setResizable(false);
+    stage.sizeToScene();
+
+    // 저장된 위치가 있으면 사용, 없으면 중앙 정렬
+    if (savedX != null && savedY != null) {
+        stage.setX(savedX);
+        stage.setY(savedY);
+    } else {
+        stage.centerOnScreen();
+    }
+
+    stage.show();
+    gameBoard.getRoot().requestFocus();
+}
 
     // 대전 모드
     public void showVersusGame() {
