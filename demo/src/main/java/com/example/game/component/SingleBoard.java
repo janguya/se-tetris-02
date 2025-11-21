@@ -57,33 +57,53 @@ public class SingleBoard extends Board {
         drawBoard();
     }
     
-    /**
-     * 상단 정보 영역 생성
-     */
-    private VBox createTopInfo() {
-        VBox topInfo = new VBox(10);
-        topInfo.setAlignment(Pos.CENTER);
-        topInfo.setPadding(new Insets(10));
-        topInfo.getStyleClass().add("game-top-info");
-        
-        // 난이도 표시
-        String difficulty = gameSettings.getDifficulty().toString();
-        Label difficultyLabel = new Label("난이도: " + difficulty);
-        difficultyLabel.setFont(Font.font("Arial", FontWeight.NORMAL, 14));
-        difficultyLabel.setStyle("-fx-text-fill: #bbbbbb;");
-        topInfo.getChildren().add(difficultyLabel);
-        
-        // 아이템 모드 표시
-        if (gameSettings.isItemModeEnabled()) {
-            Label itemLabel = new Label("🎁 아이템 모드");
-            itemLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-            itemLabel.setStyle("-fx-text-fill: #ffeb3b;");
-            topInfo.getChildren().add(itemLabel);
-        }
-        
-        return topInfo;
+
+/**
+ * 상단 정보 영역 생성
+ */
+private VBox createTopInfo() {
+    VBox topInfo = new VBox(0);
+    topInfo.setAlignment(Pos.CENTER);
+    topInfo.setPadding(new Insets(0));
+    topInfo.getStyleClass().add("game-top-info");
+    
+    // 가로로 배치할 컨테이너
+    javafx.scene.layout.HBox infoContainer = new javafx.scene.layout.HBox(15);
+    infoContainer.setAlignment(Pos.CENTER);
+    topInfo.getChildren().add(infoContainer);
+    
+    // 난이도 표시
+    String difficulty = gameSettings.getDifficulty().toString();
+    Label difficultyLabel = new Label("⚡ " + difficulty);
+    difficultyLabel.setFont(Font.font("Arial", FontWeight.BOLD, 16));
+    difficultyLabel.getStyleClass().add("difficulty-label");
+    
+    // 난이도별 색상 적용
+    switch (gameSettings.getDifficulty()) {
+        case EASY:
+            difficultyLabel.setStyle("-fx-text-fill: #00ff88;"); // 녹색
+            break;
+        case NORMAL:
+            difficultyLabel.setStyle("-fx-text-fill: #ffeb3b;"); // 노란색
+            break;
+        case HARD:
+            difficultyLabel.setStyle("-fx-text-fill: #ff9800;"); // 주황색
+            break;
     }
     
+    infoContainer.getChildren().add(difficultyLabel);
+    
+    // 아이템 모드 표시
+    if (gameSettings.isItemModeEnabled()) {
+        Label itemLabel = new Label("🎁 ITEM MODE");
+        itemLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        itemLabel.getStyleClass().add("item-mode-label");
+        infoContainer.getChildren().add(itemLabel);
+    }
+
+
+    return topInfo;
+}
     /**
      * 게임 오버 처리 오버라이드
      */
