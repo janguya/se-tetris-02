@@ -636,3 +636,96 @@
 .item-mode-label {
     -fx-animation: item-mode-pulse 2s infinite ease-in-out;
 }
+/* ===== Exit Button Styles ===== */
+.exit-button {
+    -fx-background-color: rgba(255, 107, 107, 0.8);
+    -fx-text-fill: white;
+    -fx-font-family: "Arial";
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-min-width: 70px;
+    -fx-min-height: 32px;
+    -fx-max-width: 70px;
+    -fx-max-height: 32px;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-color: rgba(255, 255, 255, 0.3);
+    -fx-border-width: 2px;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(255, 107, 107, 0.5), 8, 0, 0, 0);
+    -fx-padding: 5 10;
+}
+
+.exit-button:hover {
+    -fx-background-color: rgba(255, 50, 50, 0.95);
+    -fx-text-fill: white;
+    -fx-border-color: rgba(255, 255, 255, 0.6);
+    -fx-effect: dropshadow(gaussian, rgba(255, 50, 50, 0.8), 12, 0, 0, 0);
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+.exit-button:pressed {
+    -fx-background-color: rgba(200, 30, 30, 1.0);
+    -fx-border-color: rgba(255, 255, 255, 0.8);
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+    -fx-effect: dropshadow(gaussian, rgba(200, 30, 30, 0.9), 10, 0, 0, 0);
+}
+/* ===== Exit Confirmation Dialog ===== */
+.exit-dialog {
+    -fx-background-color: #1a1a2e;
+}
+
+.exit-dialog .header-panel {
+    -fx-background-color: #16213e;
+}
+
+.exit-dialog .header-panel .label {
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.exit-dialog .content {
+    -fx-background-color: #1a1a2e;
+    -fx-padding: 20;
+}
+
+.exit-dialog .content .label {
+    -fx-text-fill: #bbbbbb;
+    -fx-font-size: 14px;
+}
+
+.exit-dialog .button-bar .button {
+    -fx-background-color: #16213e;
+    -fx-text-fill: white;
+    -fx-border-color: #3bb78f;
+    -fx-border-width: 2;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-min-width: 80px;
+    -fx-padding: 8 20;
+}
+
+.exit-dialog .button-bar .button:hover {
+    -fx-background-color: #3bb78f;
+    -fx-border-color: #00ff88;
+}
+
+.exit-dialog .button-bar .button:pressed {
+    -fx-background-color: #2a9d8f;
+}
+
+/* 종료 버튼 특별 스타일 */
+.exit-dialog .button-bar .button:first-child {
+    -fx-border-color: #ff6b6b;
+}
+
+.exit-dialog .button-bar .button:first-child:hover {
+    -fx-background-color: #ff6b6b;
+    -fx-border-color: #ff4444;
+}
