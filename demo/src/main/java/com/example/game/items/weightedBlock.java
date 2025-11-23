@@ -18,7 +18,7 @@ public class weightedBlock extends ItemBlock {
             {0, 1, 1, 0},
             {1, 1, 1, 1}
         };
-        cssClass = "item-weight";
+        cssClass = "item";
     }
     
     /**
@@ -72,5 +72,40 @@ public class weightedBlock extends ItemBlock {
     
     public boolean hasActivated() {
         return hasActivated;
+    }
+    
+    private boolean hasTouched = false; // 블록이나 바닥에 닿았는지 여부
+    
+    /**
+     * 닿음 상태 설정
+     */
+    public void setTouched(boolean touched) {
+        this.hasTouched = touched;
+        if (touched) {
+            System.out.println(">>> WeightedBlock: setTouched(true) - Cannot move horizontally anymore!");
+        }
+    }
+    
+    /**
+     * 닿음 상태 확인
+     */
+    public boolean hasTouched() {
+        return hasTouched;
+    }
+    
+    /**
+     * 닿은 후 좌우 이동 불가 확인
+     * @return 이동 가능 여부
+     */
+    public boolean canMove() {
+        return !hasTouched;
+    }
+    
+    /**
+     * 무게 블록은 회전 불가
+     */
+    @Override
+    public void rotate() {
+        // 무게 블록은 회전하지 않음
     }
 }

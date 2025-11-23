@@ -24,29 +24,30 @@ import javafx.stage.Stage;
 public class Board implements GameInputCallback {
 
     // 동적 셀 크기 (화면 크기에 따라 조정됨)
-    private int cellSize;
-    private int boardWidth;
-    private int boardHeight;
+    protected int cellSize;
+    protected int boardWidth;
+    protected int boardHeight;
 
-    private StackPane mainContainer; // 메인 컨테이너 (오버레이 포함)
-    private BorderPane root; // 게임 보드 레이아웃
-    private Canvas canvas;
-    private GraphicsContext gc;
-    private GameLogic gameLogic;
-    private ScorePanel scorePanel;
-    private GameSettings gameSettings;
-    private MenuOverlay menuOverlay; // 메뉴 오버레이 추가
-    private GameInputHandler inputHandler; // 입력 핸들러 추가
+    protected StackPane mainContainer; // 메인 컨테이너 (오버레이 포함)
+    protected BorderPane root; // 게임 보드 레이아웃
+    protected Canvas canvas;
+    protected GraphicsContext gc;
+    protected GameLogic gameLogic;
+    protected ScorePanel scorePanel;
+    protected GameSettings gameSettings;
+    protected MenuOverlay menuOverlay; // 메뉴 오버레이 추가
+    protected GameInputHandler inputHandler; // 입력 핸들러 추가
 
-    private AnimationTimer gameLoop; // 게임 루프 타이머
-    private long lastUpdate = 0; // 블록 마지막 업데이트 시간
+    protected AnimationTimer gameLoop; // 게임 루프 타이머
+    protected long lastUpdate = 0; // 블록 마지막 업데이트 시간
 
-    private boolean isPaused = false; // 게임 일시정지 상태
-    private boolean isGameOver = false; // 게임 오버 상태
-
-    private final long baseDropInterval = 1_000_000_000L; // 1초 (기본 속도)
-    private Animation lineAnimation; // 애니메이션 객체 추가
-    private List<Integer> pendingLinesToClear; // 삭제 대기 중인 줄들
+    protected boolean isPaused = false; // 게임 일시정지 상태
+    protected boolean isGameOver = false; // 게임 오버 상태
+    protected final long baseDropInterval = 1_000_000_000L; // 1초 (기본 속도)
+    protected Animation lineAnimation; // 애니메이션 객체 추가
+    protected List<Integer> pendingLinesToClear; // 삭제 대기 중인 줄들
+    protected int[][] pendingExplosionCells; // 폭발 대기 중인 셀들 (BombBlock용)
+    protected boolean isExplosionAnimation = false; // 폭발 애니메이션 여부
 
     public Board() {
         // 컴포넌츠 초기화
@@ -57,18 +58,19 @@ public class Board implements GameInputCallback {
         inputHandler = new GameInputHandler(this); // 입력 핸들러 초기화
         lineAnimation = new Animation(); // 애니메이션 초기화
         pendingLinesToClear = new ArrayList<>();
+        pendingExplosionCells = null;
 
-        // 동적 크기 계산
-        calculateDynamicSizes();
+        // // 동적 크기 계산
+        // calculateDynamicSizes();
 
-        // UI 초기화
-        initializeUI();
-        // 키 입력 처리 설정
-        setupKeyHandling();
-        // 게임 루프 시작
-        startGameLoop();
-        // 초기 보드 그리기
-        drawBoard();
+        // // UI 초기화
+        // initializeUI();
+        // // 키 입력 처리 설정
+        // setupKeyHandling();
+        // // 게임 루프 시작
+        // startGameLoop();
+        // // 초기 보드 그리기
+        // drawBoard();
 
         // 화면 크기 변경 리스너 등록
         gameSettings.addWindowSizeChangeListener(this::onWindowSizeChanged);
@@ -77,30 +79,45 @@ public class Board implements GameInputCallback {
     // GameInputCallback 구현
     @Override
     public void onMoveLeft() {
+        if (lineAnimation.isActive()) {
+            return; // 애니메이션 중에는 입력 무시
+        }
         gameLogic.moveLeft();
         drawBoard();
     }
 
     @Override
     public void onMoveRight() {
+        if (lineAnimation.isActive()) {
+            return; // 애니메이션 중에는 입력 무시
+        }
         gameLogic.moveRight();
         drawBoard();
     }
 
     @Override
     public void onMoveDown() {
+        if (lineAnimation.isActive()) {
+            return; // 애니메이션 중에는 입력 무시
+        }
         handleMoveDown();
         drawBoard();
     }
 
     @Override
     public void onRotate() {
+        if (lineAnimation.isActive()) {
+            return; // 애니메이션 중에는 입력 무시
+        }
         gameLogic.rotateBlock();
         drawBoard();
     }
 
     @Override
     public void onHardDrop() {
+        if (lineAnimation.isActive()) {
+            return; // 애니메이션 중에는 입력 무시
+        }
         hardDrop();
         drawBoard();
     }
@@ -110,7 +127,7 @@ public class Board implements GameInputCallback {
         togglePause();
     }
 
-// togglePause() 메서드 추가
+    // togglePause() 메서드 추가
     private void togglePause() {
         if (isPaused || menuOverlay.isVisible()) {
             // 현재 일시정지 상태 또는 메뉴가 열려있음 → 재개
@@ -156,7 +173,7 @@ public class Board implements GameInputCallback {
     }
 
     // 동적 크기 계산
-    private void calculateDynamicSizes() {
+    protected void calculateDynamicSizes() {
         int windowWidth = gameSettings.getWindowWidth();
         int windowHeight = gameSettings.getWindowHeight();
 
@@ -176,14 +193,14 @@ public class Board implements GameInputCallback {
     }
 
     // 화면 크기 변경 콜백
-    private void onWindowSizeChanged() {
+    protected void onWindowSizeChanged() {
         calculateDynamicSizes();
         updateCanvasSize();
         drawBoard();
     }
 
     // 캔버스 크기 업데이트
-    private void updateCanvasSize() {
+    protected void updateCanvasSize() {
         if (canvas != null) {
             canvas.setWidth(boardWidth);
             canvas.setHeight(boardHeight);
@@ -191,7 +208,7 @@ public class Board implements GameInputCallback {
     }
 
     // UI 초기화
-    private void initializeUI() {
+    protected void initializeUI() {
         // 메인 컨테이너 생성 (오버레이를 위한 StackPane)
         mainContainer = new StackPane();
 
@@ -214,7 +231,7 @@ public class Board implements GameInputCallback {
     }
 
     // 키 입력 처리 설정
-    private void setupKeyHandling() {
+    protected void setupKeyHandling() {
         mainContainer.setFocusTraversable(true);
         mainContainer.setOnKeyPressed(event -> {
             // 입력 핸들러에게 위임
@@ -309,7 +326,7 @@ public class Board implements GameInputCallback {
             public void onExit() {
                 exitGame();
             }
-        }, scorePanel.getScore());
+        }, scorePanel.getScore(), gameSettings.isItemModeEnabled(), gameSettings.getDifficulty());
     }
 
     // 설정 메뉴 표시
@@ -367,7 +384,7 @@ public class Board implements GameInputCallback {
         stage.close();
     }
 
-    private void startGameLoop() {
+    protected void startGameLoop() {
         if (gameLoop != null) {
             gameLoop.stop();
         }
@@ -387,13 +404,59 @@ public class Board implements GameInputCallback {
                 
                 // 애니메이션이 진행 중이면 애니메이션만 업데이트
                 if (animationFinished) {  
-                    // 애니메이션 종료 후 실제 줄 삭제 실행
-                    int linesCleared = gameLogic.executeLineClear(pendingLinesToClear);
-                    if (linesCleared > 0) {
-                        scorePanel.calculateLineScore(linesCleared);
-                        updateSpeedDisplay();
+                    if (isExplosionAnimation && pendingExplosionCells != null) {
+                        // 폭발 애니메이션 완료 - 실제 폭발 실행
+                        System.out.println(">>> BombBlock: Explosion animation finished, executing explosion");
+                        
+                        // 폭발 영역의 블록 삭제
+                        int[][] board = gameLogic.getBoard();
+                        String[][] blockTypes = gameLogic.getBlockTypes();
+                        
+                        int destroyedCount = 0;
+                        for (int[] cell : pendingExplosionCells) {
+                            int row = cell[0];
+                            int col = cell[1];
+                            if (board[row][col] == 1) {
+                                board[row][col] = 0;
+                                blockTypes[row][col] = null;
+                                destroyedCount++;
+                            }
+                        }
+                        
+                        System.out.println(">>> BombBlock: Destroyed " + destroyedCount + " blocks");
+                        scorePanel.addScoreWithDifficulty(destroyedCount * 10); // 파괴된 블록당 10점
+                        
+                        // 폭발 후 줄 삭제 체크
+                        List<Integer> fullLines = gameLogic.findFullLines();
+                        if (!fullLines.isEmpty()) {
+                            gameLogic.executeLineClear(fullLines);
+                            scorePanel.calculateLineScore(fullLines.size());
+                            updateSpeedDisplay();
+                        }
+                        
+                        pendingExplosionCells = null;
+                        isExplosionAnimation = false;
+                    } else {
+                        // 일반 줄 삭제 애니메이션 완료
+                        // L-item 줄은 이미 점수를 받았으므로, 꽉 찬 줄만 점수 계산
+                        List<Integer> fullLines = gameLogic.findFullLines();
+                        List<Integer> fullLinesInPending = new ArrayList<>();
+                        for (Integer line : pendingLinesToClear) {
+                            if (fullLines.contains(line)) {
+                                fullLinesInPending.add(line);
+                            }
+                        }
+                        
+                        // 모든 줄 삭제 실행 (L-item 줄 + 꽉 찬 줄)
+                        gameLogic.executeLineClear(pendingLinesToClear);
+                        
+                        // 꽉 찬 줄에 대해서만 추가 점수
+                        if (fullLinesInPending.size() > 0) {
+                            scorePanel.calculateLineScore(fullLinesInPending.size());
+                            updateSpeedDisplay();
+                        }
+                        pendingLinesToClear.clear();
                     }
-                    pendingLinesToClear.clear();
                         
                     // 블록이 맨 위에 닿았는지 확인
                     if (gameLogic.isBlockAtTop()) {
@@ -441,7 +504,12 @@ public class Board implements GameInputCallback {
     }
 
     // 블록 아래로 이동 처리
-    private void handleMoveDown() {
+    protected void handleMoveDown() {
+        Block currentBlock = gameLogic.getCurrentBlock();
+        boolean isLItemBlock = currentBlock instanceof LItem;
+        boolean isBombBlock = currentBlock instanceof BombBlock;
+        int lItemRow = -1;
+        
         boolean moved = gameLogic.moveDown();
 
         if (moved) {
@@ -450,10 +518,61 @@ public class Board implements GameInputCallback {
             int pointsToAdd = speedLevel; // 레벨과 동일한 점수
             scorePanel.addScore(pointsToAdd);
         } else {
-            // 줄 삭제 체크 - 애니메이션 시작
+            // BombBlock이 착지했을 경우 폭발 애니메이션
+            if (isBombBlock) {
+                BombBlock bombBlock = (BombBlock) currentBlock;
+                int[][] explosionCells = bombBlock.getExplosionCells(
+                    gameLogic.getCurrentY(), 
+                    gameLogic.getCurrentX(),
+                    GameLogic.HEIGHT,
+                    GameLogic.WIDTH
+                );
+                
+                // 폭발 영역의 빈 셀을 임시로 채워서 애니메이션이 제대로 작동하도록 함
+                fillExplosionCells(explosionCells);
+                
+                // 폭발 애니메이션 시작
+                pendingExplosionCells = explosionCells;
+                isExplosionAnimation = true;
+                lineAnimation.start();
+                System.out.println(">>> BombBlock: Starting explosion animation with " + explosionCells.length + " cells");
+                return; // 애니메이션이 끝날 때까지 대기
+            }
+            
+            // 줄 삭제 체크 - 먼저 꽉 찬 줄 찾기 (L-item 줄 채우기 전에)
             List<Integer> fullLines = gameLogic.findFullLines();
-            if (!fullLines.isEmpty()) {
-                pendingLinesToClear = fullLines;
+            
+            // L-item이 착지했을 경우 L 줄을 애니메이션 대상에 추가
+            if (isLItemBlock) {
+                LItem lItem = (LItem) currentBlock;
+                lItemRow = lItem.getLMarkerAbsoluteRow(gameLogic.getCurrentY());
+                System.out.println(">>> L-item landed at row: " + lItemRow);
+                
+                // L-item 줄의 빈 셀을 임시로 채워서 애니메이션이 제대로 작동하도록 함
+                fillEmptyCellsInLine(lItemRow);
+            }
+            
+            List<Integer> linesToAnimate = new ArrayList<>();
+            
+            // L-item 줄 추가
+            if (lItemRow >= 0) {
+                linesToAnimate.add(lItemRow);
+                System.out.println(">>> Adding L-item row to animate: " + lItemRow);
+                scorePanel.addScoreWithDifficulty(100); // L-item 줄 삭제 점수 (난이도 배율 적용)
+            }
+            
+            // 꽉 찬 줄 추가 (L-item 줄과 중복 제거)
+            for (Integer line : fullLines) {
+                if (!linesToAnimate.contains(line)) {
+                    linesToAnimate.add(line);
+                    System.out.println(">>> Adding full line to animate: " + line);
+                }
+            }
+            
+            // 애니메이션 시작
+            if (!linesToAnimate.isEmpty()) {
+                pendingLinesToClear = linesToAnimate;
+                isExplosionAnimation = false;
                 lineAnimation.start();
                 return; // 애니메이션이 끝날 때까지 대기
             }
@@ -478,7 +597,7 @@ public class Board implements GameInputCallback {
         }
     }
 
-    private void gameOver() {
+    protected void gameOver() {
         if (gameLoop != null) {
             gameLoop.stop();
         }
@@ -491,7 +610,7 @@ public class Board implements GameInputCallback {
 }
 
     // 보드 그리기
-    private void drawBoard() {
+    protected void drawBoard() {
         Map<String, Color> currentColors = gameSettings.getCurrentColors();
 
         // 배경 그리기
@@ -503,8 +622,15 @@ public class Board implements GameInputCallback {
 
         // 애니메이션이 진행 중이면 애니메이션 그리기
         if (lineAnimation.isActive()) {
-            lineAnimation.draw(gc, pendingLinesToClear, gameLogic.getBlockTypes(), 
-                         currentColors, cellSize, GameLogic.WIDTH);
+            if (isExplosionAnimation && pendingExplosionCells != null) {
+                // 폭발 애니메이션 (하늘색)
+                lineAnimation.drawExplosion(gc, pendingExplosionCells, gameLogic.getBlockTypes(), 
+                                          currentColors, cellSize);
+            } else {
+                // 일반 줄 삭제 애니메이션 (노란색)
+                lineAnimation.draw(gc, pendingLinesToClear, gameLogic.getBlockTypes(), 
+                             currentColors, cellSize, GameLogic.WIDTH);
+            }
         }else{
             drawCurrentBlock(currentColors);
         }
@@ -534,7 +660,7 @@ public class Board implements GameInputCallback {
     }
 
     // 놓여진 블록 그리기
-    private void drawPlacedBlocks(Map<String, Color> colorMap) {
+    protected void drawPlacedBlocks(Map<String, Color> colorMap) {
         // 보드 상태 가져오기
         int[][] board = gameLogic.getBoard();
         String[][] blockTypes = gameLogic.getBlockTypes();
@@ -547,8 +673,14 @@ public class Board implements GameInputCallback {
                     String cssClass = blockTypes[row][col];
                     // cssClass에 해당하는 색상을 가져오고, 없으면 기본 색상 사용
                     Color blockColor = colorMap.getOrDefault(cssClass, colorMap.get("block-default"));
-                    // 셀 그리기
-                    drawCell(col * cellSize, row * cellSize, blockColor);
+                    
+                    // Sand 블록인지 확인하여 특별한 스타일로 그리기
+                    if ("item-sand".equals(cssClass)) {
+                        drawSandCell(col * cellSize, row * cellSize, blockColor);
+                    } else {
+                        // 일반 셀 그리기
+                        drawCell(col * cellSize, row * cellSize, blockColor);
+                    }
                 }
             }
         }
@@ -566,14 +698,17 @@ public class Board implements GameInputCallback {
         Color blockColor = colorMap.get(currentBlock.getCssClass());
         int currentX = gameLogic.getCurrentX();
         int currentY = gameLogic.getCurrentY();
-        
+
         // LItem인지 확인
         boolean isLItem = currentBlock instanceof LItem;
         LItem lItem = isLItem ? (LItem) currentBlock : null;
-        
+
         // BombBlock인지 확인
         boolean isBombBlock = currentBlock instanceof BombBlock;
         BombBlock bombBlock = isBombBlock ? (BombBlock) currentBlock : null;
+        
+        // SandBlock인지 확인
+        boolean isSandBlock = currentBlock instanceof com.example.game.items.SandBlock;
 
         // 현재 블록 그리기
         for (int i = 0; i < currentBlock.width(); i++) {
@@ -582,7 +717,7 @@ public class Board implements GameInputCallback {
                     // 셀 위치 계산
                     int drawX = (currentX + i) * cellSize;
                     int drawY = (currentY + j) * cellSize;
-                    
+
                     // L 마커가 있는 셀인지 확인
                     if (isLItem && lItem.hasLMarker(j, i)) {
                         // L 마커 셀은 특별한 색상으로 그리고 "L" 텍스트 추가
@@ -595,7 +730,12 @@ public class Board implements GameInputCallback {
                         Color bMarkerColor = colorMap.get("item-bmarker");
                         drawBMarkerCell(drawX, drawY, bMarkerColor);
                     }
-                    else {
+                    // Sand 블록인지 확인
+                    else if (isSandBlock) {
+                        // Sand 블록은 점박이 패턴으로 그리기
+                        Color sandColor = colorMap.get("item-sand");
+                        drawSandCell(drawX, drawY, sandColor);
+                    } else {
                         // 일반 셀 그리기
                         drawCell(drawX, drawY, blockColor);
                     }
@@ -605,7 +745,7 @@ public class Board implements GameInputCallback {
     }
 
     // 개별 셀 그리기
-    private void drawCell(double x, double y, Color color) {
+    protected void drawCell(double x, double y, Color color) {
         // 메인 셀
         gc.setFill(color);
         gc.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
@@ -620,7 +760,7 @@ public class Board implements GameInputCallback {
         gc.fillRect(x + 2, y + cellSize - 5, cellSize - 4, 3);
         gc.fillRect(x + cellSize - 5, y + 2, 3, cellSize - 4);
     }
-    
+
     // L 마커 셀 그리기 (특별한 스타일)
     private void drawLMarkerCell(double x, double y, Color color) {
         // 메인 셀 (L 마커 색상)
@@ -636,23 +776,23 @@ public class Board implements GameInputCallback {
         gc.setFill(color.darker());
         gc.fillRect(x + 2, y + cellSize - 5, cellSize - 4, 3);
         gc.fillRect(x + cellSize - 5, y + 2, 3, cellSize - 4);
-        
+
         // "L" 텍스트 그리기
-        gc.setFill(Color.WHITE);
+        gc.setFill(Color.BLACK);
         gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.6));
-        
+
         // 텍스트 중앙 정렬을 위한 계산
         javafx.scene.text.Text tempText = new javafx.scene.text.Text("L");
         tempText.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.6));
         double textWidth = tempText.getBoundsInLocal().getWidth();
         double textHeight = tempText.getBoundsInLocal().getHeight();
-        
+
         double textX = x + (cellSize - textWidth) / 2;
         double textY = y + (cellSize + textHeight) / 2 - 2;
-        
+
         gc.fillText("L", textX, textY);
     }
-    
+
     // B 마커 셀 그리기 (폭탄 마커)
     private void drawBMarkerCell(double x, double y, Color color) {
         // 메인 셀 (B 마커 색상 - 검은색)
@@ -669,20 +809,50 @@ public class Board implements GameInputCallback {
         gc.fillRect(x + 2, y + cellSize - 5, cellSize - 4, 3);
         gc.fillRect(x + cellSize - 5, y + 2, 3, cellSize - 4);
         
-        // "B" 텍스트 그리기 (흰색)
-        gc.setFill(Color.WHITE);
+        // "B" 텍스트 그리기 (검은색)
+        gc.setFill(Color.BLACK);
         gc.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.6));
-        
+
         // 텍스트 중앙 정렬을 위한 계산
         javafx.scene.text.Text tempText = new javafx.scene.text.Text("B");
         tempText.setFont(javafx.scene.text.Font.font("Arial", javafx.scene.text.FontWeight.BOLD, cellSize * 0.6));
         double textWidth = tempText.getBoundsInLocal().getWidth();
         double textHeight = tempText.getBoundsInLocal().getHeight();
-        
+
         double textX = x + (cellSize - textWidth) / 2;
         double textY = y + (cellSize + textHeight) / 2 - 2;
-        
+
         gc.fillText("B", textX, textY);
+    }
+    
+    // Sand 셀 그리기 (점박이 패턴으로 모래 질감 표현)
+    protected void drawSandCell(double x, double y, Color color) {
+        // 메인 셀 (Sand 색상 - 흰색)
+        gc.setFill(color);
+        gc.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+
+        // 하이라이트 효과
+        gc.setFill(color.brighter());
+        gc.fillRect(x + 2, y + 2, cellSize - 4, 3);
+        gc.fillRect(x + 2, y + 2, 3, cellSize - 4);
+
+        // 그림자 효과
+        gc.setFill(color.darker());
+        gc.fillRect(x + 2, y + cellSize - 5, cellSize - 4, 3);
+        gc.fillRect(x + cellSize - 5, y + 2, 3, cellSize - 4);
+        
+        // 점박이 패턴 그리기 (모래 질감)
+        gc.setFill(Color.web("#8B7355")); // 갈색 (모래색)
+        double dotSize = Math.max(2, cellSize * 0.15); // 점 크기
+        
+        // 규칙적인 점 패턴 (4x4 그리드로 촘촘하게)
+        for (int row = 0; row < 4; row++) {
+            for (int col = 0; col < 4; col++) {
+                double dotX = x + cellSize * 0.15 + col * cellSize * 0.23;
+                double dotY = y + cellSize * 0.15 + row * cellSize * 0.23;
+                gc.fillOval(dotX, dotY, dotSize, dotSize);
+            }
+        }
     }
 
     // 메인 컨테이너 반환 (오버레이 포함)
@@ -708,10 +878,16 @@ public class Board implements GameInputCallback {
     }
 
     // 하드 드롭 (블록을 즉시 바닥까지 떨어뜨리기)
-    private void hardDrop() {
+    protected void hardDrop() {
         if (!isGameActive()) {
             return;
         }
+
+        System.out.println(">>> Hard drop initiated");
+
+        Block currentBlock = gameLogic.getCurrentBlock();
+        boolean isLItemBlock = currentBlock instanceof LItem;
+        boolean isBombBlock = currentBlock instanceof BombBlock;
 
         boolean dropped = false;
         while (gameLogic.moveDown()) {
@@ -723,13 +899,65 @@ public class Board implements GameInputCallback {
             return;
         }
 
-        // 줄 삭제 체크 - 애니메이션 시작
+        // BombBlock이 착지했을 경우 폭발 애니메이션
+        if (isBombBlock) {
+            BombBlock bombBlock = (BombBlock) currentBlock;
+            int[][] explosionCells = bombBlock.getExplosionCells(
+                gameLogic.getCurrentY(), 
+                gameLogic.getCurrentX(),
+                GameLogic.HEIGHT,
+                GameLogic.WIDTH
+            );
+            
+            // 폭발 영역의 빈 셀을 임시로 채워서 애니메이션이 제대로 작동하도록 함
+            fillExplosionCells(explosionCells);
+            
+            // 폭발 애니메이션 시작
+            pendingExplosionCells = explosionCells;
+            isExplosionAnimation = true;
+            lineAnimation.start();
+            System.out.println(">>> BombBlock: Starting explosion animation (hard drop) with " + explosionCells.length + " cells");
+            return; // 애니메이션이 끝날 때까지 대기
+        }
+
+        // 줄 삭제 체크 - 먼저 꽉 찬 줄 찾기 (L-item 줄 채우기 전에)
         List<Integer> fullLines = gameLogic.findFullLines();
-        if (!fullLines.isEmpty()) {
-            pendingLinesToClear = fullLines;
+        
+        // L-item이 착지했을 경우 L 줄을 애니메이션 대상에 추가
+        int lItemRow = -1;
+        if (isLItemBlock) {
+            LItem lItem = (LItem) currentBlock;
+            lItemRow = lItem.getLMarkerAbsoluteRow(gameLogic.getCurrentY());
+            System.out.println(">>> L-item hard-dropped at row: " + lItemRow);
+            
+            // L-item 줄의 빈 셀을 임시로 채워서 애니메이션이 제대로 작동하도록 함
+            fillEmptyCellsInLine(lItemRow);
+        }
+
+        List<Integer> linesToAnimate = new ArrayList<>();
+        
+        // L-item 줄 추가
+        if (lItemRow >= 0) {
+            linesToAnimate.add(lItemRow);
+            System.out.println(">>> Adding L-item row to animate: " + lItemRow);
+            scorePanel.addScoreWithDifficulty(100); // L-item 줄 삭제 점수 (난이도 배율 적용)
+        }
+        
+        // 꽉 찬 줄 추가 (L-item 줄과 중복 제거)
+        for (Integer line : fullLines) {
+            if (!linesToAnimate.contains(line)) {
+                linesToAnimate.add(line);
+                System.out.println(">>> Adding full line to animate: " + line);
+            }
+        }
+        
+        // 애니메이션 시작
+        if (!linesToAnimate.isEmpty()) {
+            pendingLinesToClear = linesToAnimate;
+            isExplosionAnimation = false;
             lineAnimation.start();
             return; // 애니메이션이 끝날 때까지 대기
-            }
+        }
 
         if (gameLogic.isBlockAtTop()) {
             if (!isGameOver) {
@@ -739,11 +967,11 @@ public class Board implements GameInputCallback {
             return;
         }
 
-        boolean spawned = gameLogic.spawnNextPiece();
-        if (!spawned && !isGameOver) {
-            isGameOver = true;
-            gameOver();
-        }
+        // boolean spawned = gameLogic.spawnNextPiece();
+        // if (!spawned && !isGameOver) {
+        //     isGameOver = true;
+        //     gameOver();
+        // }
     }
 
     // 리소스 정리 (게임이 종료될 때 호출)
@@ -755,6 +983,41 @@ public class Board implements GameInputCallback {
         scorePanel.cleanup();
     }
 
+    // L-item 줄의 빈 셀을 임시로 채우기 (애니메이션용)
+    protected void fillEmptyCellsInLine(int row) {
+        if (row < 0 || row >= GameLogic.HEIGHT) {
+            return;
+        }
+        
+        int[][] board = gameLogic.getBoard();
+        String[][] blockTypes = gameLogic.getBlockTypes();
+        
+        for (int col = 0; col < GameLogic.WIDTH; col++) {
+            if (board[row][col] == 0) {
+                // 빈 셀을 임시로 채움 (애니메이션에만 사용)
+                board[row][col] = 1;
+                blockTypes[row][col] = "block-default"; // 기본 블록 타입
+            }
+        }
+    }
+    
+    // BombBlock 폭발 영역의 빈 셀을 임시로 채우기 (애니메이션용)
+    protected void fillExplosionCells(int[][] explosionCells) {
+        int[][] board = gameLogic.getBoard();
+        String[][] blockTypes = gameLogic.getBlockTypes();
+        
+        for (int[] cell : explosionCells) {
+            int row = cell[0];
+            int col = cell[1];
+            
+            if (board[row][col] == 0) {
+                // 빈 셀을 임시로 채움 (애니메이션에만 사용)
+                board[row][col] = 1;
+                blockTypes[row][col] = "block-default"; // 기본 블록 타입
+            }
+        }
+    }
+    
     // 일시정지 오버레이 그리기
     private void drawPauseOverlay() {
         // 반투명 배경
@@ -790,4 +1053,8 @@ public class Board implements GameInputCallback {
         gc.fillText(instructionText, instructionX, instructionY);
     }
 
+    public boolean getIsAnimationActive() {
+        return lineAnimation.isActive();
+    }
+    
 }
