@@ -10,6 +10,7 @@ module com.example.tetris {
     opens com.example.game.component to javafx.fxml;
 
     requires com.google.gson;
+    requires org.json;
 
     exports com.example;
     exports com.example.startmenu;
@@ -18,4 +19,5 @@ module com.example.tetris {
     exports com.example.game.blocks;
     exports com.example.game.component;
     exports com.example.theme;
+    exports com.example.network;
 }
