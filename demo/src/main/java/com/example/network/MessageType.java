@@ -17,6 +17,7 @@ public enum MessageType {
     
     // 게임 시작/종료
     GAME_START,             // 게임 시작
+    PLAYER_READY,
     GAME_READY,             // 준비 완료
     GAME_OVER,              // 게임 종료
     GAME_PAUSE,             // 일시정지

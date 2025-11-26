@@ -453,19 +453,26 @@ public void showGame() {
 
     // 온라인 대전 게임 모드 선택
     private void selectOnlineGameMode(NetworkManager networkManager, boolean isServer) {
-        VersusGameModeDialog.show(stage, new VersusGameModeDialog.ModeSelectionCallback() {
-            @Override
-            public void onModeSelected(VersusGameModeDialog.VersusMode mode) {
-                startOnlineVersusGame(networkManager, mode, isServer);
-            }
+        if (isServer) {
+            VersusGameModeDialog.show(stage, new VersusGameModeDialog.ModeSelectionCallback() {
+           
+                @Override
+                public void onModeSelected(VersusGameModeDialog.VersusMode mode) {
+                    startOnlineVersusGame(networkManager, mode, isServer);
+                }
         
-            @Override
-            public void onCancel() {
-                // 취소 - 연결 종료 후 메뉴로
-                networkManager.shutdown();
-                showStartMenu();
-            }
-        });
+                @Override
+                public void onCancel() {
+                    // 취소 - 연결 종료 후 메뉴로
+                    networkManager.shutdown();
+                    showStartMenu();
+                }
+            });
+        } else {
+        // 클라이언트는 서버의 모드 선택 대기
+        // null로 시작 (OnlineVersusBoard에서 GAME_START 메시지 받으면 모드 설정)
+        startOnlineVersusGame(networkManager, null, isServer);
+        }
     }
 
     // 온라인 대전 게임 시작
