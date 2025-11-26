@@ -39,6 +39,8 @@ public class VersusBoard {
     private BorderPane root;
     private HBox gameArea;
     private MenuOverlay menuOverlay;
+    private VersusGameOverScene gameOverScene;
+    private Stage stage;
     
     // 플레이어 1 (왼쪽) - WASD 조작
     private PlayerBoard player1Board;
@@ -77,14 +79,16 @@ public class VersusBoard {
         }
     }
     
-    public VersusBoard(VersusGameModeDialog.VersusMode mode, VersusGameCallback callback) {
+    public VersusBoard(Stage stage, VersusGameModeDialog.VersusMode mode, VersusGameCallback callback) {
+        this.stage = stage;
         this.gameMode = mode;
         this.callback = callback;
         this.gameSettings = GameSettings.getInstance();
         this.menuOverlay = new MenuOverlay();
         
-        // 초기화 순서 수정: UI -> 키 핸들링 -> 게임 시작
+        // 초기화 순서 수정: UI -> gameOverScene 생성 -> 키 핸들링 -> 게임 시작
         initializeUI();
+        this.gameOverScene = new VersusGameOverScene(stage, mainContainer, this::restartGame);
         setupKeyHandling();
         startGame();
     }
@@ -121,7 +125,7 @@ public class VersusBoard {
         
         root.setCenter(gameArea);
         
-        // 메인 컨테이너에 게임 보드와 오버레이 추가
+        // 메인 컨테이너에 게임 보드와 메뉴 오버레이 추가
         mainContainer.getChildren().addAll(root, menuOverlay.getOverlay());
     }
 
@@ -474,100 +478,67 @@ public class VersusBoard {
      * 게임 종료 조건 체크
      */
     private void checkGameEnd() {
+        if (!gameActive) return; // 이미 종료된 경우 중복 처리 방지
+        
         boolean player1Lost = player1Board.isGameOver();
         boolean player2Lost = player2Board.isGameOver();
         
         if (player1Lost && player2Lost) {
-            endGameByScore();
+            Logger.info("[VersusBoard] Both players lost - DRAW");
+            endGameDraw();
         } else if (player1Lost) {
-            endGame(2);
+            Logger.info("[VersusBoard] Player 1 lost - Player 2 WINS");
+            endGame(VersusGameOverScene.GameResult.PLAYER2_WIN);
         } else if (player2Lost) {
-            endGame(1);
+            Logger.info("[VersusBoard] Player 2 lost - Player 1 WINS");
+            endGame(VersusGameOverScene.GameResult.PLAYER1_WIN);
         }
     }
     
     private void endGameByTime() {
+        if (!gameActive) return;
+        
+        Logger.info("[VersusBoard] Time limit reached");
         int player1Score = player1Board.getScore();
         int player2Score = player2Board.getScore();
         
         if (player1Score > player2Score) {
-            endGame(1);
+            endGame(VersusGameOverScene.GameResult.PLAYER1_WIN);
         } else if (player2Score > player1Score) {
-            endGame(2);
+            endGame(VersusGameOverScene.GameResult.PLAYER2_WIN);
         } else {
-            endGameByScore();
+            endGameDraw();
         }
     }
     
-    private void endGameByScore() {
-        int player1Score = player1Board.getScore();
-        int player2Score = player2Board.getScore();
-        
-        int winner = player1Score >= player2Score ? 1 : 2;
-        endGame(winner);
+    private void endGameDraw() {
+        endGame(VersusGameOverScene.GameResult.DRAW);
     }
     
-    private void endGame(int winner) {
+    private void endGame(VersusGameOverScene.GameResult result) {
+        if (!gameActive) return; // 중복 호출 방지
+        
         gameActive = false;
         if (gameLoop != null) {
             gameLoop.stop();
         }
         
-        showVictoryMessage(winner);
-        callback.onPlayerWin(winner, player1Board.getScore(), player2Board.getScore());
-    }
-    
-    /**
-     * 승리 메시지 표시
-     */
-    private void showVictoryMessage(int winner) {
-        VBox victoryBox = new VBox(30);
-        victoryBox.setAlignment(Pos.CENTER);
-        victoryBox.setPadding(new Insets(50));
-        victoryBox.getStyleClass().add("versus-result-panel");
-        victoryBox.setMaxWidth(500);
+        Logger.info("[VersusBoard] endGame called with result: " + result);
         
-        Label winnerLabel = new Label("Player " + winner + " Wins!");
-        winnerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 48));
-        winnerLabel.setStyle("-fx-text-fill: " + (winner == 1 ? "#00d4ff" : "#ff6b6b") + ";" +
-                            "-fx-effect: dropshadow(gaussian, " + 
-                            (winner == 1 ? "rgba(0,212,255,0.8)" : "rgba(255,107,107,0.8)") + 
-                            ", 20, 0, 0, 0);");
+        int player1Score = player1Board.getScore();
+        int player2Score = player2Board.getScore();
         
-        VBox scoresBox = new VBox(10);
-        scoresBox.setAlignment(Pos.CENTER);
-        
-        Label player1ScoreLabel = new Label("Player 1: " + player1Board.getScore());
-        player1ScoreLabel.setFont(Font.font("Courier New", FontWeight.BOLD, 24));
-        player1ScoreLabel.setStyle("-fx-text-fill: #00d4ff;");
-        
-        Label player2ScoreLabel = new Label("Player 2: " + player2Board.getScore());
-        player2ScoreLabel.setFont(Font.font("Courier New", FontWeight.BOLD, 24));
-        player2ScoreLabel.setStyle("-fx-text-fill: #ff6b6b;");
-        
-        scoresBox.getChildren().addAll(player1ScoreLabel, player2ScoreLabel);
-        
-        HBox buttonsBox = new HBox(20);
-        buttonsBox.setAlignment(Pos.CENTER);
-        
-        javafx.scene.control.Button restartButton = new javafx.scene.control.Button("다시 하기");
-        restartButton.getStyleClass().add("versus-button");
-        restartButton.setPrefWidth(150);
-        restartButton.setOnAction(e -> {
-            mainContainer.getChildren().remove(victoryBox);
-            restartGame();
+        // UI 스레드에서 게임 오버 화면 표시
+        javafx.application.Platform.runLater(() -> {
+            Logger.info("[VersusBoard] Showing game over scene");
+            gameOverScene.show(result, player1Score, player2Score);
         });
         
-        javafx.scene.control.Button menuButton = new javafx.scene.control.Button("메인 메뉴");
-        menuButton.getStyleClass().add("versus-button");
-        menuButton.setPrefWidth(150);
-        menuButton.setOnAction(e -> goToMainMenu());
-        
-        buttonsBox.getChildren().addAll(restartButton, menuButton);
-        victoryBox.getChildren().addAll(winnerLabel, scoresBox, buttonsBox);
-        
-        mainContainer.getChildren().add(victoryBox);
+        // 콜백 호출을 제거 - 종료 화면의 버튼에서만 메뉴로 이동
+        // callback.onPlayerWin(winner, player1Score, player2Score);
     }
+    
+
     
     /**
      * 라인 클리어 콜백 (공격 시스템)
@@ -596,6 +567,7 @@ public class VersusBoard {
         gameActive = true;
         isPaused = false;
         menuOverlay.hide();
+        gameOverScene.hide();
         
         player1Board.restart();
         player2Board.restart();
