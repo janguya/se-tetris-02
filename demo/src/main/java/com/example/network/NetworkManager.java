@@ -58,6 +58,12 @@ public class NetworkManager {
 
         System.out.println("NetworkManager created for player: " + localId);
         System.out.println("Configuration: " + config);
+
+        // JVM 종료 시 자동으로 리소스 정리
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("JVM shutting down - cleaning up NetworkManager...");
+            shutdown();
+        }));
     }
 
     // ============== 서버 모드 (호스트) ==============

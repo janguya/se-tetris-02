@@ -24,6 +24,7 @@ public class Router {
     private Integer overrideHeight = null;
     private Double savedX = null; // 창 위치 저장
     private Double savedY = null;
+    private OnlineVersusBoard currentOnlineBoard = null; // 현재 온라인 게임 보드 추적
 
     public Router(Stage stage) {
         this.stage = stage;
@@ -33,6 +34,23 @@ public class Router {
         this.stage = stage;
         this.overrideWidth = width;
         this.overrideHeight = height;
+    }
+
+    // x로 창 껐을 때 정리 작업
+    private void setupGlobalCloseHandler() {
+        stage.setOnCloseRequest(event -> {
+            System.out.println("Window close requested - cleaning up...");
+            
+            // 온라인 게임 보드가 활성화되어 있으면 정리
+            if (currentOnlineBoard != null) {
+                System.out.println("Cleaning up OnlineVersusBoard...");
+                currentOnlineBoard.cleanup();
+                currentOnlineBoard = null;
+            }
+            
+            // 기본 종료 허용
+            System.out.println("Window closing...");
+        });
     }
 
     public void setSize(Integer width, Integer height) {
@@ -359,6 +377,14 @@ public void showGame() {
     }
 
     public void showStartMenu() {
+
+        // 온라인 게임 보드가 있으면 정리
+        if (currentOnlineBoard != null) {
+            System.out.println("Cleaning up OnlineVersusBoard before showing menu...");
+            currentOnlineBoard.cleanup();
+            currentOnlineBoard = null;
+    }
+
         GameSettings settings = GameSettings.getInstance();
         String itemModeLabel = settings.isItemModeEnabled() ? "아이템 모드: ON" : "아이템 모드: OFF";
 
@@ -446,9 +472,16 @@ public void showGame() {
     private void startOnlineVersusGame(NetworkManager networkManager, 
                                   VersusGameModeDialog.VersusMode mode, 
                                   boolean isServer) {
-        OnlineVersusBoard onlineBoard = new OnlineVersusBoard(mode, networkManager, isServer);
+
+        // 이전 온라인 보드가 있으면 정리
+        if (currentOnlineBoard != null) {
+            currentOnlineBoard.cleanup();
+        }
+        
+        // 새 온라인 보드 생성 및 추적
+        currentOnlineBoard = new OnlineVersusBoard(mode, networkManager, isServer);
     
-        Scene gameScene = new Scene(onlineBoard.getRoot(), currentWidth()*2, currentHeight()*1.3);
+        Scene gameScene = new Scene(currentOnlineBoard.getRoot(), currentWidth()*2, currentHeight()*1.3);
         try {
             gameScene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         } catch (Exception e) {
@@ -468,10 +501,10 @@ public void showGame() {
     
         // 창 닫을 때 정리
         stage.setOnCloseRequest(e -> {
-            onlineBoard.cleanup();
+            currentOnlineBoard.cleanup();
         });
     
         stage.show();
-        onlineBoard.getRoot().requestFocus();
+        currentOnlineBoard.getRoot().requestFocus();
     }
 }
