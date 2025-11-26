@@ -158,7 +158,9 @@ public class VersusBoard {
         if (playerNumber == 1) {
             player1Board = new PlayerBoard(1, this::onLinesCleared, itemMode);
             player1Board.initializeUI();
-            player1ScorePanel = player1Board.scorePanel;
+            // Player 1용 조작키 설정 (WASD + Spacebar)
+            player1ScorePanel = new ScorePanel("W Rotate\nA D Move\nS Drop\nSPACE Pause");
+            player1Board.scorePanel = player1ScorePanel;
             player1AttackDisplay = new AttackQueueDisplay("Player 1");
             
             // 레이아웃: 중앙: 캔버스, 오른쪽: 점수판 + 공격표시
@@ -181,7 +183,9 @@ public class VersusBoard {
         } else {
             player2Board = new PlayerBoard(2, this::onLinesCleared, itemMode);
             player2Board.initializeUI();
-            player2ScorePanel = player2Board.scorePanel;
+            // Player 2용 조작키 설정 (방향키 + Enter)
+            player2ScorePanel = new ScorePanel("↑ Rotate\n← → Move\n↓ Drop\nENTER Pause");
+            player2Board.scorePanel = player2ScorePanel;
             player2AttackDisplay = new AttackQueueDisplay("Player 2");
             
             // 레이아웃: 왼쪽: 점수판 + 공격표시, 중앙: 캔버스

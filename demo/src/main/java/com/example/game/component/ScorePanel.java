@@ -37,8 +37,14 @@ public class ScorePanel {
     private static final double EASY_DIFFICULTY_MULTIPLIER = 0.9;
 
     private Text speedText; // 속도 표시 추가
+    private String customControls; // 커스텀 조작키 설명
 
     public ScorePanel() {
+        this(null);
+    }
+    
+    public ScorePanel(String customControls) {
+        this.customControls = customControls;
         calculateDynamicSizes();
         initializePanel();
 
@@ -143,7 +149,8 @@ public class ScorePanel {
         Text controlsTitle = new Text("Controls:");
         controlsTitle.getStyleClass().add("controls-title");
 
-        Text controls = new Text("↑ Rotate\n← → Move\n↓ Drop\nSPACE Pause\nESC Settings");
+        String controlsText = customControls != null ? customControls : "↑ Rotate\n← → Move\n↓ Drop\nSPACE Pause\nESC Settings";
+        Text controls = new Text(controlsText);
         controls.getStyleClass().add("controls-text");
 
         // 패널에 모든 요소 추가
