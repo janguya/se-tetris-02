@@ -508,6 +508,13 @@ public class PlayerBoard extends Board {
     }
     
     /**
+     * 애니메이션 활성 상태 확인 (VersusBoard에서 매 프레임 업데이트 여부 결정)
+     */
+    public boolean isAnimationActive() {
+        return lineAnimation != null && lineAnimation.isActive();
+    }
+    
+    /**
      * AI가 사용할 수 있는 getter 메서드들
      */
     public GameLogic getGameLogic() {

@@ -383,13 +383,21 @@ public class VersusBoard {
                 }
                 
                 // 플레이어 1 업데이트
-                if (now - lastUpdate1 >= player1Board.getDropInterval()) {
+                if (player1Board.isAnimationActive()) {
+                    // 애니메이션 중에는 매 프레임 업데이트 (부드러운 애니메이션)
+                    player1Board.update();
+                } else if (now - lastUpdate1 >= player1Board.getDropInterval()) {
+                    // 일반 상태에서는 dropInterval에 따라 업데이트
                     player1Board.update();
                     lastUpdate1 = now;
                 }
                 
                 // 플레이어 2 업데이트
-                if (now - lastUpdate2 >= player2Board.getDropInterval()) {
+                if (player2Board.isAnimationActive()) {
+                    // 애니메이션 중에는 매 프레임 업데이트 (부드러운 애니메이션)
+                    player2Board.update();
+                } else if (now - lastUpdate2 >= player2Board.getDropInterval()) {
+                    // 일반 상태에서는 dropInterval에 따라 업데이트
                     player2Board.update();
                     lastUpdate2 = now;
                 }
