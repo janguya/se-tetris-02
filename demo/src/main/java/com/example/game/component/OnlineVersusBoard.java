@@ -57,6 +57,7 @@ public class OnlineVersusBoard implements MessageListener {
     
     // 레이턴시 표시
     private Label latencyLabel;
+    private Label modeLabel;
 
     // 블록 동기화용 Random seed
     private Long randomSeed = null;
@@ -120,7 +121,7 @@ public class OnlineVersusBoard implements MessageListener {
         
         // 타이틀
         String modeDisplay = gameMode != null ? gameMode.getDisplayName() : "대기 중...";
-        Label modeLabel = new Label("⚔ 온라인 대전: " + modeDisplay + " ⚔");
+        modeLabel = new Label("⚔ 온라인 대전: " + modeDisplay + " ⚔");
         modeLabel.setFont(Font.font("Arial", FontWeight.BOLD, 32));
         modeLabel.setStyle("-fx-text-fill: white;" +
                           "-fx-effect: dropshadow(gaussian, rgba(0,212,255,0.5), 10, 0, 0, 0);");
@@ -141,6 +142,15 @@ public class OnlineVersusBoard implements MessageListener {
         
         topInfo.getChildren().addAll(modeLabel, latencyLabel, readyButton);
         return topInfo;
+    }
+
+    // 모드 레이블 업데이트
+    private void updateModeLabel() {
+        if (modeLabel != null && gameMode != null) {
+            Platform.runLater(() -> {
+                modeLabel.setText("⚔ 온라인 대전: " + gameMode.getDisplayName() + " ⚔");
+            });
+        }
     }
 
     // 개별 플레이어 보드 생성
