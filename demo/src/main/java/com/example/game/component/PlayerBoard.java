@@ -475,7 +475,8 @@ public class PlayerBoard extends Board {
     }
     
     public int getScore() {
-        return gameLogic.getTotalLinesCleared() * 100;
+        // ScorePanel의 실제 점수 반환
+        return scorePanel != null ? scorePanel.getScore() : 0;
     }
     
     @Override
