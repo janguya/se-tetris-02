@@ -151,7 +151,10 @@ public class PlayerBoard extends Board {
         
         boolean moved = gameLogic.moveDown();
         
-        if (!moved) {
+        if (moved) {
+            // 블록이 성공적으로 아래로 이동했을 때 점수 증가 (일반 모드와 동일)
+            scorePanel.addScore(1);
+        } else {
             handleBlockLanded(isLItemBlock, isBombBlock);
         }
     }
@@ -463,10 +466,22 @@ public class PlayerBoard extends Board {
         boolean isLItemBlock = currentBlock instanceof LItem;
         boolean isBombBlock = currentBlock instanceof BombBlock;
 
-        hardDrop();
+        // 하드 드롭 실행 (떨어진 거리만큼 점수 추가)
+        performHardDrop();
 
         handleBlockLanded(isLItemBlock, isBombBlock);
         drawBoard();
+    }
+    
+    /**
+     * 하드 드롭 실행 - 떨어진 거리만큼 점수 추가
+     */
+    private void performHardDrop() {
+        boolean dropped = false;
+        while (gameLogic.moveDown()) {
+            dropped = true;
+            scorePanel.addScore(1); // 한 칸당 1점
+        }
     }
     
     // Getters
