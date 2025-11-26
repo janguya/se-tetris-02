@@ -2,12 +2,15 @@ package com.example;
 
 import java.util.List;
 
+import com.example.game.component.OnlineVersusBoard;
 import com.example.game.component.SingleBoard;
-import com.example.game.component.VersusBoard;
 import com.example.game.component.VersusAIBoard;
+import com.example.game.component.VersusBoard;
 import com.example.game.component.VersusGameModeDialog;
 import com.example.gameover.GameOverScene;
 import com.example.gameover.ScoreManager;
+import com.example.network.NetworkLobbyDialog;
+import com.example.network.NetworkManager;
 import com.example.settings.GameSettings;
 import com.example.settings.SettingsDialog;
 import com.example.startmenu.StartMenuView;
@@ -114,6 +117,7 @@ public class Router {
                 showVersusAIGame();
                 break;
             case "P2P_VERSUS_MODE":
+                showOnlineVersusGame();
                 break;
             case "SETTINGS":
                 showSettings();
@@ -395,5 +399,79 @@ public void showGame() {
 
     public void exit() {
         System.exit(0);
+    }
+
+    // P2P 대전 모드
+    public void showOnlineVersusGame() {
+    // 로비 다이얼로그 표시
+        NetworkLobbyDialog.show(stage, new NetworkLobbyDialog.LobbyCallback() {
+            @Override
+            public void onServerCreated(NetworkManager networkManager) {
+                // 서버 생성 성공 - 게임 모드 선택
+                selectOnlineGameMode(networkManager, true);
+            }
+        
+            @Override
+            public void onClientConnected(NetworkManager networkManager) {
+                // 클라이언트 연결 성공 - 게임 모드 선택
+                selectOnlineGameMode(networkManager, false);
+            }
+        
+            @Override
+            public void onCancelled() {
+                // 취소 - 시작 메뉴로
+                showStartMenu();
+            }
+        });
+    }
+
+    // 온라인 대전 게임 모드 선택
+    private void selectOnlineGameMode(NetworkManager networkManager, boolean isServer) {
+        VersusGameModeDialog.show(stage, new VersusGameModeDialog.ModeSelectionCallback() {
+            @Override
+            public void onModeSelected(VersusGameModeDialog.VersusMode mode) {
+                startOnlineVersusGame(networkManager, mode, isServer);
+            }
+        
+            @Override
+            public void onCancel() {
+                // 취소 - 연결 종료 후 메뉴로
+                networkManager.shutdown();
+                showStartMenu();
+            }
+        });
+    }
+
+    // 온라인 대전 게임 시작
+    private void startOnlineVersusGame(NetworkManager networkManager, 
+                                  VersusGameModeDialog.VersusMode mode, 
+                                  boolean isServer) {
+        OnlineVersusBoard onlineBoard = new OnlineVersusBoard(mode, networkManager, isServer);
+    
+        Scene gameScene = new Scene(onlineBoard.getRoot(), currentWidth()*2, currentHeight()*1.3);
+        try {
+            gameScene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
+        } catch (Exception e) {
+            // ignore missing stylesheet
+        }
+    
+        stage.setScene(gameScene);
+        stage.setResizable(false);
+        stage.sizeToScene();
+    
+        if (savedX != null && savedY != null) {
+            stage.setX(savedX);
+            stage.setY(savedY);
+        } else {
+            stage.centerOnScreen();
+        }
+    
+        // 창 닫을 때 정리
+        stage.setOnCloseRequest(e -> {
+            onlineBoard.cleanup();
+        });
+    
+        stage.show();
+        onlineBoard.getRoot().requestFocus();
     }
 }
