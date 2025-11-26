@@ -72,6 +72,7 @@ public class OnlineVersusBoard implements MessageListener {
         this.isServer = isServer;
         this.localPlayerId = isServer ? "Server" : "Client";
         this.menuOverlay = new MenuOverlay();
+        networkManager.setListener(this);
         
         initializeUI();
         setupKeyHandling();

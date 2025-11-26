@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class NetworkManager {
 
     private final ConnectionConfig config;
-    private final MessageListener listener;
+    private MessageListener listener;
     private final String localId;
     
     // 연결 상태
@@ -387,6 +387,20 @@ public class NetworkManager {
     
     public long getCurrentLatency() {
         return currentLatency.get();
+    }
+
+    // 리스너 교체 메서드 추가
+    public void setListener(MessageListener newListener) {
+        if (newListener == null) {
+            throw new IllegalArgumentException("Listener cannot be null");
+        }
+        this.listener = newListener;
+        System.out.println(">>> NetworkManager: Listener replaced");
+    
+        // 이미 연결되어 있으면 새 리스너에게 알림
+        if (connected.get() && peerId != null) {
+            listener.onConnected(peerId);
+        }
     }
     
     public String getPeerId() {
