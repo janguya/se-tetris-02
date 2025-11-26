@@ -480,6 +480,11 @@ public class OnlineVersusBoard implements MessageListener {
                     VBox topInfo = createTopInfo();
                     root.setTop(topInfo);
                     BorderPane.setMargin(topInfo, new Insets(0, 0, 20, 0));
+
+                    // 연결된 상태면 준비 버튼 활성화
+                    if (remotePlayerId != null) {
+                        readyButton.setDisable(false);
+                    }
                 });
                 break;
                 
@@ -553,8 +558,6 @@ public class OnlineVersusBoard implements MessageListener {
         Platform.runLater(() -> {
             latencyLabel.setText("📡 연결됨: " + peerId);
             latencyLabel.setStyle("-fx-text-fill: green;");
-
-            readyButton.setDisable(false);
         
             // 준비 버튼 활성화
             readyButton.setDisable(false);
