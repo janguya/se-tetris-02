@@ -332,12 +332,27 @@ public class OnlineVersusBoard implements MessageListener {
         if (randomSeed != null) {
             localBoard.gameLogic.setRandomSeed(randomSeed);
             remoteBoard.gameLogic.setRandomSeed(randomSeed);
+
+            // 블록이 재생성되었으므로 화면 강제 갱신
+            Platform.runLater(() -> {
+                localBoard.drawBoard();
+                remoteBoard.drawBoard();
+                System.out.println(">>> Boards redrawn with synchronized blocks");
+            });
+
             System.out.println(">>> Applied random seed to both boards: " + randomSeed);
         } else {
             System.out.println(">>> WARNING: No random seed set! Blocks will desync!");
         }
         gameActive = true;
         startGameLoop();
+
+        // 게임 시작 시 포커스 요청
+         Platform.runLater(() -> {
+            mainContainer.requestFocus();
+            System.out.println(">>> Focus requested for keyboard input");
+        });
+
         System.out.println(">>> Online game started!");
     }
 
@@ -357,6 +372,7 @@ public class OnlineVersusBoard implements MessageListener {
                     localBoard.update();
                     lastUpdate = now;
                 }
+                // remoteBoard.update();
                 
                 // 게임 종료 체크
                 checkGameEnd();
