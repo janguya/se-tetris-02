@@ -340,12 +340,12 @@ public class OnlineVersusBoard implements MessageListener {
             localBoard.gameLogic.setRandomSeed(mySeed);
             remoteBoard.gameLogic.setRandomSeed(opponentSeed);
 
+            System.out.println(">>> " + (isServer ? "Server" : "Client") + 
+                 " - localBoard seed: " + mySeed + 
+                 ", remoteBoard seed: " + opponentSeed);
             // 블록이 재생성되었으므로 화면 강제 갱신
-            Platform.runLater(() -> {
                 localBoard.drawBoard();
                 remoteBoard.drawBoard();
-                System.out.println(">>> Boards redrawn with synchronized blocks");
-            });
 
         } else {
             System.out.println(">>> WARNING: No random seed set! Blocks will desync!");
@@ -609,9 +609,12 @@ public class OnlineVersusBoard implements MessageListener {
             if (isServer && gameMode != null) {
                 // 2개의 다른 Random seed 생성
                 player1Seed = System.nanoTime();
-                player2Seed = System.nanoTime() + 999999999L;  // 약 1초 차이
+try { Thread.sleep(1); } catch (Exception e) { }  // 확실한 시간 차이 보장
+player2Seed = System.nanoTime();
+System.out.println(">>> Server generated seeds - P1: " + player1Seed + ", P2: " + player2Seed);
                 sendGameStart();
             }
+
             // 클라이언트: GAME_START 메시지 대기 (아무것도 안 함)
         });
     }
