@@ -63,6 +63,25 @@ public class GameLogic {
         initializeGame();
     }
 
+    // Random seed 설정 (P2P 동기화용)
+    // @param seed Random seed 값
+    public void setRandomSeed(long seed) {
+        this.random = new Random(seed);
+        System.out.println(">>> GameLogic: Random seed set to " + seed);
+
+        // 기존 블록 지우기 (겹치지 않도록)
+        eraseCurrent();
+
+        // 블록 재생성 (동기화를 위해)
+        currentBlock = getRandomBlock();
+        nextBlock = getRandomBlock();
+    
+        // 현재 블록을 보드에 다시 배치
+        x = 3;
+        y = 0;
+        placeCurrent();
+    }
+
     // 게임 초기화
     private void initializeGame() {
         board = new int[HEIGHT][WIDTH]; // 모두 0으로 초기화
