@@ -197,7 +197,7 @@ public void showGame() {
      * 대전 게임 시작
      */
     private void startVersusGame(VersusGameModeDialog.VersusMode mode) {
-        VersusBoard versusBoard = new VersusBoard(mode, new VersusBoard.VersusGameCallback() {
+        VersusBoard versusBoard = new VersusBoard(stage, mode, new VersusBoard.VersusGameCallback() {
             @Override
             public void onPlayerWin(int winnerPlayer, int player1Score, int player2Score) {
                 // 승리 메시지 출력 후 시작 메뉴로
@@ -264,7 +264,7 @@ public void showGame() {
      * AI 대전 게임 시작
      */
     private void startVersusAIGame(VersusGameModeDialog.VersusMode mode) {
-        VersusAIBoard versusAIBoard = new VersusAIBoard(mode, new VersusAIBoard.VersusGameCallback() {
+        VersusAIBoard versusAIBoard = new VersusAIBoard(stage, mode, new VersusAIBoard.VersusGameCallback() {
             @Override
             public void onPlayerWin(int winnerPlayer, int player1Score, int player2Score) {
                 System.out.println("=== AI 대전 모드 게임 종료 ===");
