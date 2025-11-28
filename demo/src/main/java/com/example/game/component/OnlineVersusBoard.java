@@ -59,8 +59,9 @@ public class OnlineVersusBoard implements MessageListener {
     private Label latencyLabel;
     private Label modeLabel;
 
-    // 블록 동기화용 Random seed
-    private Long randomSeed = null;
+    // 블록 동기화용 Random seed (2개)
+    private Long player1Seed = null;  // 플레이어 1(서버)의 블록 순서
+    private Long player2Seed = null;  // 플레이어 2(클라이언트)의 블록 순서
 
     // 생성자
     public OnlineVersusBoard(VersusGameModeDialog.VersusMode mode, 
@@ -264,7 +265,8 @@ public class OnlineVersusBoard implements MessageListener {
     private void sendGameStart() {
         GameMessage message = new GameMessage(MessageType.GAME_START, localPlayerId);
         message.put("mode", gameMode.name()); // 모드 정보 전송
-        message.put("randomSeed", randomSeed); // Random seed 전송
+        message.put("player1Seed", player1Seed); // 플레이어 1 seed
+        message.put("player2Seed", player2Seed); // 플레이어 2 seed
         networkManager.sendMessage(message);
         System.out.println(">>> Sent GAME_START with mode: " + gameMode.getDisplayName());
     }
@@ -278,7 +280,7 @@ public class OnlineVersusBoard implements MessageListener {
 
     // remoteBoard 화면 강제 갱신
     private void refreshRemoteBoard() {
-        remoteBoard.update(); // 화면 강제 갱신
+         Platform.runLater(() -> remoteBoard.drawBoard());
     }
 
     // 로컬 플레이어의 줄 삭제 처리(공격)
@@ -329,9 +331,14 @@ public class OnlineVersusBoard implements MessageListener {
     private void startGame() {
 
         // Random seed 적용 (블록 동기화)
-        if (randomSeed != null) {
-            localBoard.gameLogic.setRandomSeed(randomSeed);
-            remoteBoard.gameLogic.setRandomSeed(randomSeed);
+        if (player1Seed != null && player2Seed != null) {
+            // 서버: 내 블록은 player1Seed, 상대 블록은 player2Seed
+            // 클라이언트: 내 블록은 player2Seed, 상대 블록은 player1Seed
+            Long mySeed = isServer ? player1Seed : player2Seed;
+            Long opponentSeed = isServer ? player2Seed : player1Seed;
+            
+            localBoard.gameLogic.setRandomSeed(mySeed);
+            remoteBoard.gameLogic.setRandomSeed(opponentSeed);
 
             // 블록이 재생성되었으므로 화면 강제 갱신
             Platform.runLater(() -> {
@@ -340,7 +347,6 @@ public class OnlineVersusBoard implements MessageListener {
                 System.out.println(">>> Boards redrawn with synchronized blocks");
             });
 
-            System.out.println(">>> Applied random seed to both boards: " + randomSeed);
         } else {
             System.out.println(">>> WARNING: No random seed set! Blocks will desync!");
         }
@@ -361,6 +367,8 @@ public class OnlineVersusBoard implements MessageListener {
         if (gameLoop != null) {
             gameLoop.stop();
         }
+
+        final long[] lastRemoteUpdate = {System.nanoTime()}; // 독립적인 타이머
         
         gameLoop = new javafx.animation.AnimationTimer() {
             @Override
@@ -372,7 +380,13 @@ public class OnlineVersusBoard implements MessageListener {
                     localBoard.update();
                     lastUpdate = now;
                 }
-                // remoteBoard.update();
+                // 상대방 보드도 자동 낙하 (동일한 간격으로)
+                // remoteBoard는 네트워크 메시지 없이도 자동으로 떨어져야 함
+                if (now - lastRemoteUpdate[0] >= remoteBoard.getDropInterval()) {
+                remoteBoard.update();
+                Platform.runLater(() -> remoteBoard.drawBoard());
+                lastRemoteUpdate[0] = now;
+            }
                 
                 // 게임 종료 체크
                 checkGameEnd();
@@ -495,11 +509,13 @@ public class OnlineVersusBoard implements MessageListener {
                     System.out.println(">>> Received game mode from server: " + gameMode.getDisplayName());
                 }
                 
-                // Random seed 받기
-                Long seed = (Long) message.get("randomSeed");
-                if (seed != null) {
-                    this.randomSeed = seed;
-                    System.out.println(">>> Received random seed: " + seed);
+                // 2개의 Random seed 받기
+                Long p1Seed = (Long) message.get("player1Seed");
+                Long p2Seed = (Long) message.get("player2Seed");
+                if (p1Seed != null && p2Seed != null) {
+                    this.player1Seed = p1Seed;
+                    this.player2Seed = p2Seed;
+                    System.out.println(">>> Received seeds - P1: " + p1Seed + ", P2: " + p2Seed);
                 }
                 
                 // UI 업데이트 (모드 표시)
@@ -591,7 +607,9 @@ public class OnlineVersusBoard implements MessageListener {
             
             // 서버: GAME_START 메시지 전송 (모드 정보 + Random seed)
             if (isServer && gameMode != null) {
-                randomSeed = System.currentTimeMillis(); // Random seed 생성
+                // 2개의 다른 Random seed 생성
+                player1Seed = System.currentTimeMillis();
+                player2Seed = System.currentTimeMillis() + 12345;
                 sendGameStart();
             }
             // 클라이언트: GAME_START 메시지 대기 (아무것도 안 함)

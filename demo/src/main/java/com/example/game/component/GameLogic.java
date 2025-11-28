@@ -68,6 +68,18 @@ public class GameLogic {
     public void setRandomSeed(long seed) {
         this.random = new Random(seed);
         System.out.println(">>> GameLogic: Random seed set to " + seed);
+
+        // 기존 블록 지우기 (겹치지 않도록)
+        eraseCurrent();
+
+        // 블록 재생성 (동기화를 위해)
+        currentBlock = getRandomBlock();
+        nextBlock = getRandomBlock();
+    
+        // 현재 블록을 보드에 다시 배치
+        x = 3;
+        y = 0;
+        placeCurrent();
     }
 
     // 게임 초기화
