@@ -43,6 +43,8 @@ public class VersusAIBoard {
     private BorderPane root;
     private HBox gameArea;
     private MenuOverlay menuOverlay;
+    private VersusGameOverScene gameOverScene;
+    private Stage stage;
     
     // 플레이어 1 (왼쪽) - 사람 (WASD 또는 방향키)
     private PlayerBoard player1Board;
@@ -82,13 +84,15 @@ public class VersusAIBoard {
         }
     }
     
-    public VersusAIBoard(VersusGameModeDialog.VersusMode mode, VersusGameCallback callback) {
+    public VersusAIBoard(Stage stage, VersusGameModeDialog.VersusMode mode, VersusGameCallback callback) {
+        this.stage = stage;
         this.gameMode = mode;
         this.callback = callback;
         this.gameSettings = GameSettings.getInstance();
         this.menuOverlay = new MenuOverlay();
         
         initializeUI();
+        this.gameOverScene = new VersusGameOverScene(stage, mainContainer, this::restartGame);
         setupKeyHandling();
         startGame();
     }
@@ -159,7 +163,9 @@ public class VersusAIBoard {
         if (playerNumber == 1) {
             player1Board = new PlayerBoard(1, this::onLinesCleared, itemMode);
             player1Board.initializeUI();
-            player1ScorePanel = player1Board.scorePanel;
+            // Player용 조작키 설정 (방향키 + Space)
+            player1ScorePanel = new ScorePanel("↑ Rotate\n← → Move\n↓ Drop\nSPACE Pause");
+            player1Board.scorePanel = player1ScorePanel;
             player1AttackDisplay = new AttackQueueDisplay("Player 1");
             
             VBox rightPanel = new VBox(15);
@@ -179,7 +185,9 @@ public class VersusAIBoard {
         } else {
             player2Board = new PlayerBoard(2, this::onLinesCleared, itemMode);
             player2Board.initializeUI();
-            player2ScorePanel = player2Board.scorePanel;
+            // AI용 조작키 설정 (AI는 조작키 없음)
+            player2ScorePanel = new ScorePanel("AI\nControlled");
+            player2Board.scorePanel = player2ScorePanel;
             player2AttackDisplay = new AttackQueueDisplay("Player 2");
             
             // AI 플레이어 생성
@@ -352,7 +360,11 @@ public class VersusAIBoard {
                 }
                 
                 // 플레이어 1 업데이트
-                if (now - lastUpdate1 >= player1Board.getDropInterval()) {
+                if (player1Board.isAnimationActive()) {
+                    // 애니메이션 중에는 매 프레임 업데이트 (부드러운 애니메이션)
+                    player1Board.update();
+                } else if (now - lastUpdate1 >= player1Board.getDropInterval()) {
+                    // 일반 상태에서는 dropInterval에 따라 업데이트
                     player1Board.update();
                     lastUpdate1 = now;
                 }
@@ -361,7 +373,11 @@ public class VersusAIBoard {
                 aiPlayer.update();
                 
                 // 플레이어 2 (AI) 업데이트
-                if (now - lastUpdate2 >= player2Board.getDropInterval()) {
+                if (player2Board.isAnimationActive()) {
+                    // 애니메이션 중에는 매 프레임 업데이트 (부드러운 애니메이션)
+                    player2Board.update();
+                } else if (now - lastUpdate2 >= player2Board.getDropInterval()) {
+                    // 일반 상태에서는 dropInterval에 따라 업데이트
                     player2Board.update();
                     lastUpdate2 = now;
                 }
@@ -443,101 +459,66 @@ public class VersusAIBoard {
      * 게임 종료 조건 체크
      */
     private void checkGameEnd() {
+        if (!gameActive) return;
+        
         boolean player1Lost = player1Board.isGameOver();
         boolean player2Lost = player2Board.isGameOver();
         
         if (player1Lost && player2Lost) {
-            endGameByScore();
+            com.example.utils.Logger.info("[VersusAIBoard] Both lost - DRAW");
+            endGameDraw();
         } else if (player1Lost) {
-            endGame(2);
+            com.example.utils.Logger.info("[VersusAIBoard] Player lost - AI WINS");
+            endGame(VersusGameOverScene.GameResult.PLAYER2_WIN);
         } else if (player2Lost) {
-            endGame(1);
+            com.example.utils.Logger.info("[VersusAIBoard] AI lost - Player WINS");
+            endGame(VersusGameOverScene.GameResult.PLAYER1_WIN);
         }
     }
     
     private void endGameByTime() {
+        if (!gameActive) return;
+        
+        com.example.utils.Logger.info("[VersusAIBoard] Time limit reached");
         int player1Score = player1Board.getScore();
         int player2Score = player2Board.getScore();
         
         if (player1Score > player2Score) {
-            endGame(1);
+            endGame(VersusGameOverScene.GameResult.PLAYER1_WIN);
         } else if (player2Score > player1Score) {
-            endGame(2);
+            endGame(VersusGameOverScene.GameResult.PLAYER2_WIN);
         } else {
-            endGameByScore();
+            endGameDraw();
         }
     }
     
-    private void endGameByScore() {
-        int player1Score = player1Board.getScore();
-        int player2Score = player2Board.getScore();
-        
-        int winner = player1Score >= player2Score ? 1 : 2;
-        endGame(winner);
+    private void endGameDraw() {
+        endGame(VersusGameOverScene.GameResult.DRAW);
     }
     
-    private void endGame(int winner) {
+    private void endGame(VersusGameOverScene.GameResult result) {
+        if (!gameActive) return;
+        
         gameActive = false;
         if (gameLoop != null) {
             gameLoop.stop();
         }
         
-        showVictoryMessage(winner);
-        callback.onPlayerWin(winner, player1Board.getScore(), player2Board.getScore());
-    }
-    
-    /**
-     * 승리 메시지 표시
-     */
-    private void showVictoryMessage(int winner) {
-        VBox victoryBox = new VBox(30);
-        victoryBox.setAlignment(Pos.CENTER);
-        victoryBox.setPadding(new Insets(50));
-        victoryBox.getStyleClass().add("versus-result-panel");
-        victoryBox.setMaxWidth(500);
+        com.example.utils.Logger.info("[VersusAIBoard] endGame called with result: " + result);
         
-        String winnerText = winner == 1 ? "You Win!" : "AI Wins!";
-        Label winnerLabel = new Label(winnerText);
-        winnerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 48));
-        winnerLabel.setStyle("-fx-text-fill: " + (winner == 1 ? "#00d4ff" : "#ff6b6b") + ";" +
-                            "-fx-effect: dropshadow(gaussian, " + 
-                            (winner == 1 ? "rgba(0,212,255,0.8)" : "rgba(255,107,107,0.8)") + 
-                            ", 20, 0, 0, 0);");
+        int player1Score = player1Board.getScore();
+        int player2Score = player2Board.getScore();
         
-        VBox scoresBox = new VBox(10);
-        scoresBox.setAlignment(Pos.CENTER);
-        
-        Label player1ScoreLabel = new Label("You: " + player1Board.getScore());
-        player1ScoreLabel.setFont(Font.font("Courier New", FontWeight.BOLD, 24));
-        player1ScoreLabel.setStyle("-fx-text-fill: #00d4ff;");
-        
-        Label player2ScoreLabel = new Label("AI: " + player2Board.getScore());
-        player2ScoreLabel.setFont(Font.font("Courier New", FontWeight.BOLD, 24));
-        player2ScoreLabel.setStyle("-fx-text-fill: #ff6b6b;");
-        
-        scoresBox.getChildren().addAll(player1ScoreLabel, player2ScoreLabel);
-        
-        HBox buttonsBox = new HBox(20);
-        buttonsBox.setAlignment(Pos.CENTER);
-        
-        javafx.scene.control.Button restartButton = new javafx.scene.control.Button("다시 하기");
-        restartButton.getStyleClass().add("versus-button");
-        restartButton.setPrefWidth(150);
-        restartButton.setOnAction(e -> {
-            mainContainer.getChildren().remove(victoryBox);
-            restartGame();
+        javafx.application.Platform.runLater(() -> {
+            com.example.utils.Logger.info("[VersusAIBoard] Showing game over scene");
+            gameOverScene.show(result, player1Score, player2Score);
         });
         
-        javafx.scene.control.Button menuButton = new javafx.scene.control.Button("메인 메뉴");
-        menuButton.getStyleClass().add("versus-button");
-        menuButton.setPrefWidth(150);
-        menuButton.setOnAction(e -> goToMainMenu());
-        
-        buttonsBox.getChildren().addAll(restartButton, menuButton);
-        victoryBox.getChildren().addAll(winnerLabel, scoresBox, buttonsBox);
-        
-        mainContainer.getChildren().add(victoryBox);
+        // 콜백 호출을 제거 - 종료 화면의 버튼에서만 메뉴로 이동
+        // callback.onPlayerWin(winner, player1Score, player2Score);
     }
+    
+
     
     /**
      * 라인 클리어 콜백
@@ -562,6 +543,7 @@ public class VersusAIBoard {
         gameActive = true;
         isPaused = false;
         menuOverlay.hide();
+        gameOverScene.hide();
         
         player1Board.restart();
         player2Board.restart();

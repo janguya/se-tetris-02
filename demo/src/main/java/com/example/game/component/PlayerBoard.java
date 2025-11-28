@@ -151,7 +151,10 @@ public class PlayerBoard extends Board {
         
         boolean moved = gameLogic.moveDown();
         
-        if (!moved) {
+        if (moved) {
+            // 블록이 성공적으로 아래로 이동했을 때 점수 증가 (일반 모드와 동일)
+            scorePanel.addScore(1);
+        } else {
             handleBlockLanded(isLItemBlock, isBombBlock);
         }
     }
@@ -463,10 +466,22 @@ public class PlayerBoard extends Board {
         boolean isLItemBlock = currentBlock instanceof LItem;
         boolean isBombBlock = currentBlock instanceof BombBlock;
 
-        hardDrop();
+        // 하드 드롭 실행 (떨어진 거리만큼 점수 추가)
+        performHardDrop();
 
         handleBlockLanded(isLItemBlock, isBombBlock);
         drawBoard();
+    }
+    
+    /**
+     * 하드 드롭 실행 - 떨어진 거리만큼 점수 추가
+     */
+    private void performHardDrop() {
+        boolean dropped = false;
+        while (gameLogic.moveDown()) {
+            dropped = true;
+            scorePanel.addScore(1); // 한 칸당 1점
+        }
     }
     
     // Getters
@@ -475,7 +490,8 @@ public class PlayerBoard extends Board {
     }
     
     public int getScore() {
-        return gameLogic.getTotalLinesCleared() * 100;
+        // ScorePanel의 실제 점수 반환
+        return scorePanel != null ? scorePanel.getScore() : 0;
     }
     
     @Override
@@ -489,6 +505,13 @@ public class PlayerBoard extends Board {
     
     public long getDropInterval() {
         return gameLogic.getDropInterval(baseDropInterval);
+    }
+    
+    /**
+     * 애니메이션 활성 상태 확인 (VersusBoard에서 매 프레임 업데이트 여부 결정)
+     */
+    public boolean isAnimationActive() {
+        return lineAnimation != null && lineAnimation.isActive();
     }
     
     /**
