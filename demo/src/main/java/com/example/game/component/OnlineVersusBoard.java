@@ -608,8 +608,8 @@ public class OnlineVersusBoard implements MessageListener {
             // 서버: GAME_START 메시지 전송 (모드 정보 + Random seed)
             if (isServer && gameMode != null) {
                 // 2개의 다른 Random seed 생성
-                player1Seed = System.currentTimeMillis();
-                player2Seed = System.currentTimeMillis() + 12345;
+                player1Seed = System.nanoTime();
+                player2Seed = System.nanoTime() + 999999999L;  // 약 1초 차이
                 sendGameStart();
             }
             // 클라이언트: GAME_START 메시지 대기 (아무것도 안 함)
