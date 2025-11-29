@@ -63,8 +63,8 @@ class GameSettingsTest {
     void testWindowSizeEnum() {
         WindowSize small = WindowSize.SMALL;
         assertEquals("작은 화면", small.getDisplayName());
-        assertEquals(400, small.getWidth());
-        assertEquals(520, small.getHeight());
+        assertEquals(440, small.getWidth());
+        assertEquals(600, small.getHeight());
         
         WindowSize medium = WindowSize.MEDIUM;
         assertEquals("중간 화면", medium.getDisplayName());
