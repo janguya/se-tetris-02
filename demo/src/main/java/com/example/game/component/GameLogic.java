@@ -30,6 +30,7 @@ public class GameLogic {
     private Block nextBlock; // 다음 블록
     private int x = 3; // 현재 블록 X좌표
     private int y = -1; // 현재 블록 Y좌표
+    private int rotation = 0; // 현재 블록 회전 횟수 (0-3)
     private Random random; // 랜덤 블록 생성용
     private boolean gameOver = false; // 게임 오버 상태
 
@@ -90,6 +91,7 @@ public class GameLogic {
         nextBlock = getRandomBlock(); // 다음 블록 생성
         x=3;
         y=0;
+        rotation = 0;
         gameOver = false;
         placeCurrent(); // 현재 블록 보드에 놓기
         
@@ -321,6 +323,7 @@ public class GameLogic {
     // 2) 스폰 좌표 설정 (현재 x=3, y=0을 기본으로 사용하셨으므로 유지)
     x = 3;
     y = 0; // 두 칸 짜리 블럭은 -1에서 스폰
+    rotation = 0; // 회전 초기화
 
     // 3) 스폰 가능? (경계/충돌 검사)
     if (!canMove(x, y, currentBlock)) {
@@ -595,6 +598,10 @@ public class GameLogic {
         return y;
     }
 
+    public int getCurrentRotation() {
+        return rotation;
+    }
+
     // 새로 추가된 Getters
     public int getTotalBlocksSpawned() {
         return totalBlocksSpawned;
@@ -682,6 +689,7 @@ public class GameLogic {
         // 위치 설정
         this.x = blockX;
         this.y = blockY;
+        this.rotation = rotation;
         
         placeCurrent();
     }

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Queue;
 
 import com.example.Router;
+import com.example.game.blocks.Block;
 import com.example.game.component.MenuOverlay.MenuCallback;
 import com.example.network.GameMessage;
 import com.example.network.MessageListener;
@@ -538,14 +539,14 @@ public class OnlineVersusBoard implements MessageListener {
         Block currentBlock = localBoard.getGameLogic().getCurrentBlock();
         if (currentBlock != null) {
             message.put("blockType", currentBlock.getClass().getSimpleName());
-            message.put("blockX", currentBlock.getX());
-            message.put("blockY", currentBlock.getY());
-            message.put("blockRotation", currentBlock.getRotation());
+            message.put("blockX", localBoard.getGameLogic().getCurrentX());
+            message.put("blockY", localBoard.getGameLogic().getCurrentY());
+            message.put("blockRotation", localBoard.getGameLogic().getCurrentRotation());
         }
         
         // 보드 상태 (착지된 블록들)
-        String[][] board = localBoard.getGameLogic().getBoard();
-        message.put("boardData", serializeBoardData(board));
+        String[][] boardTypes = localBoard.getGameLogic().getBlockTypes();
+        message.put("boardData", serializeBoardData(boardTypes));
         
         // 점수
         message.put("score", localBoard.getScore());
@@ -577,7 +578,7 @@ public class OnlineVersusBoard implements MessageListener {
         // 점수 업데이트
         Integer score = (Integer) message.get("score");
         if (score != null) {
-            remoteScorePanel.updateScore(score);
+            remoteScorePanel.setScore(score);
         }
         
         // Remote Board의 GameLogic에 상태 적용
