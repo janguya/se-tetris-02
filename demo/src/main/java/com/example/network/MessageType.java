@@ -25,6 +25,7 @@ public enum MessageType {
     
     // 게임 상태 동기화
     GAME_STATE,             // 전체 게임 상태
+    BOARD_UPDATE,           // 보드 상태 업데이트
     BLOCK_SPAWN,            // 블록 생성
     BLOCK_MOVE,             // 블록 이동 (left, right, down)
     BLOCK_ROTATE,           // 블록 회전

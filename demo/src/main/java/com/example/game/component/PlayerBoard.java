@@ -23,8 +23,13 @@ public class PlayerBoard extends Board {
         void onLinesCleared(int playerNumber, int linesCleared, List<String[]> clearedLines);
     }
     
+    public interface AutoDropCallback {
+        void onAutoDrop();
+    }
+    
     private final int playerNumber;
     private final LineClearCallback callback;
+    private AutoDropCallback autoDropCallback;
     
     // 공격받은 줄 관리
     private Queue<String[]> pendingAttackLines;
@@ -37,6 +42,9 @@ public class PlayerBoard extends Board {
         
         // GameLogic을 아이템 모드로 재초기화
         gameLogic = new GameLogic(itemMode);
+        
+        // UI 초기화 (캔버스와 GraphicsContext 생성)
+        initializeUI();
         
         // 키 입력 핸들러는 설정하지 않음 (VersusBoard에서 직접 처리)
         // 자동 게임 루프도 시작하지 않음
@@ -60,6 +68,10 @@ public class PlayerBoard extends Board {
         drawBoard();
     }
     
+    public void setAutoDropCallback(AutoDropCallback callback) {
+        this.autoDropCallback = callback;
+    }
+    
     // 자동 게임 루프 대신 수동 업데이트
     public void update() {
         // 애니메이션 업데이트
@@ -75,6 +87,11 @@ public class PlayerBoard extends Board {
         
         // 블록 자동 낙하
         handleMoveDown();
+        
+        // 자동 낙하 콜백 호출 (네트워크 전송용)
+        if (autoDropCallback != null) {
+            autoDropCallback.onAutoDrop();
+        }
         
         drawBoard();
     }

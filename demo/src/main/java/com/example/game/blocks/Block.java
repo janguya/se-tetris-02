@@ -20,6 +20,10 @@ public abstract class Block {
         return cssClass;
     }
     
+    public void setShape(int[][] newShape) {
+        this.shape = newShape;
+    }
+    
     public void rotate() {
         int rows = shape.length;
         int cols = shape[0].length;

@@ -2,6 +2,7 @@ package com.example.network;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import java.util.prefs.Preferences;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -30,6 +31,12 @@ public class NetworkLobbyDialog {
     
     private Stage dialog;
     private NetworkManager networkManager;
+
+    // IP 주소 저장을 위한 Preferences
+    private static final String PREF_KEY_LAST_IP = "last_server_ip";
+    private static final String PREF_KEY_IP_HISTORY = "ip_history";
+    private static final int MAX_IP_HISTORY = 5;
+    private final Preferences prefs = Preferences.userNodeForPackage(NetworkLobbyDialog.class);
 
     // 로비 다이얼로그 표시
     // @param owner 부모 윈도우
@@ -176,7 +183,7 @@ public class NetworkLobbyDialog {
         dialog.close();
         
         // IP 입력 다이얼로그
-        TextInputDialog ipDialog = new TextInputDialog("192.168.0.1");
+        TextInputDialog ipDialog = new TextInputDialog(getLastConnectedIP());
         ipDialog.setTitle("서버 연결");
         ipDialog.setHeaderText("서버 IP 주소 입력");
         ipDialog.setContentText("서버 IP:");
@@ -221,6 +228,7 @@ public class NetworkLobbyDialog {
                     if (networkManager.isConnected()) {
                         Platform.runLater(() -> {
                             loadingDialog.close();
+                            saveConnectedIP(serverIp);
                             showSuccessDialog("연결 성공!", "서버에 연결되었습니다.");
                             callback.onClientConnected(networkManager);
                         });
@@ -328,5 +336,37 @@ public class NetworkLobbyDialog {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private String getLastConnectedIP() {
+        String ip = prefs.get(PREF_KEY_LAST_IP, "192.168.0.1");
+        System.out.println(">>> Loaded last IP: " + ip);
+        return ip;
+    }
+
+    // 접속한 IP 주소 저장
+    private void saveConnectedIP(String ip) {
+        if (ip == null || ip.isEmpty()) {
+            return;
+        }
+        
+        // 유효한 IP 형식인지 간단히 체크
+        if (!ip.matches("^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$")) {
+            System.out.println(">>> Invalid IP format, not saving: " + ip);
+            return;
+        }
+        
+        // 최근 IP로 저장
+        prefs.put(PREF_KEY_LAST_IP, ip);
+        
+        System.out.println(">>> Saved IP to preferences: " + ip);
+    }
+    
+    // 저장된 IP 기록 삭제 (설정 초기화용)
+    public static void clearIPHistory() {
+        Preferences prefs = Preferences.userNodeForPackage(NetworkLobbyDialog.class);
+        prefs.remove(PREF_KEY_LAST_IP);
+        prefs.remove(PREF_KEY_IP_HISTORY);
+        System.out.println(">>> Cleared IP history");
     }
 }

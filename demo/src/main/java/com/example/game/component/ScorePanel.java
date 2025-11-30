@@ -398,6 +398,12 @@ public class ScorePanel {
     private void updateLinesDisplay() {
         linesText.setText("Lines: " + linesCleared);
     }
+    
+    // 온라인 대전용: 상대방 점수 직접 설정
+    public void setScore(int score) {
+        this.score = score;
+        updateScoreDisplay();
+    }
 
     // 점수, 레벨, 라인 수 초기화
     public void resetScore() {
