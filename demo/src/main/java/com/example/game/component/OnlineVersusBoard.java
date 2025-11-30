@@ -696,9 +696,46 @@ public class OnlineVersusBoard implements MessageListener {
     }
     
     public void restartGame() {
+        // 온라인 대전에서는 재시작 시 연결을 유지하고 준비 단계로 돌아감
         gameOverScene.hide();
-        disconnect();
-        goToMainMenu();
+    
+        // 게임 상태 초기화
+        gameActive = false;
+        localReady = false;
+        remoteReady = false;
+    
+        // 보드 초기화
+        localBoard.restart();
+        remoteBoard.restart();
+        localScorePanel.resetScore();
+        remoteScorePanel.resetScore();
+    
+        localAttackQueue.clear();
+        remoteAttackQueue.clear();
+    
+        if (localAttackDisplay != null) {
+            localAttackDisplay.clear();
+        }
+        if (remoteAttackDisplay != null) {
+            remoteAttackDisplay.clear();
+        }
+    
+        // 준비 버튼 재활성화
+        Platform.runLater(() -> {
+            readyButton.setText("준비");
+            readyButton.setStyle("-fx-background-color: #00d4ff; -fx-text-fill: white; -fx-background-radius: 10;");
+            readyButton.setDisable(false);
+        
+            // 서버라면 새로운 시드 생성 및 전송
+            if (isServer) {
+                player1Seed = System.nanoTime();
+                try { Thread.sleep(1); } catch (Exception e) {}
+                player2Seed = System.nanoTime();
+                sendGameStart();
+            }
+
+            mainContainer.requestFocus();
+        });
     }
     
     private void goToMainMenu() {
