@@ -2,6 +2,7 @@ package com.example.network;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import java.util.prefs.Preferences;
 
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -17,7 +18,6 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import java.util.prefs.Preferences;
 
 // 네트워크 로비 다이얼로그
 // 서버 생성 또는 클라이언트로 접속하는 UI 제공
@@ -183,7 +183,7 @@ public class NetworkLobbyDialog {
         dialog.close();
         
         // IP 입력 다이얼로그
-        TextInputDialog ipDialog = new TextInputDialog("192.168.0.1");
+        TextInputDialog ipDialog = new TextInputDialog(getLastConnectedIP());
         ipDialog.setTitle("서버 연결");
         ipDialog.setHeaderText("서버 IP 주소 입력");
         ipDialog.setContentText("서버 IP:");
@@ -228,6 +228,7 @@ public class NetworkLobbyDialog {
                     if (networkManager.isConnected()) {
                         Platform.runLater(() -> {
                             loadingDialog.close();
+                            saveConnectedIP(serverIp);
                             showSuccessDialog("연결 성공!", "서버에 연결되었습니다.");
                             callback.onClientConnected(networkManager);
                         });
