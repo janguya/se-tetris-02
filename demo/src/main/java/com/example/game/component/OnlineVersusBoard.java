@@ -64,6 +64,8 @@ public class OnlineVersusBoard implements MessageListener {
     private AnimationTimer gameLoop;
     private long lastUpdateLocal = 0;
     private long lastUpdateRemote = 0;
+    private long lastBoardStateSent = 0;
+    private static final long BOARD_STATE_SEND_INTERVAL = 100_000_000; // 100ms = 10 updates/sec
     private boolean isPaused = false;
     
     // 시간제한 모드용
@@ -558,7 +560,13 @@ public class OnlineVersusBoard implements MessageListener {
         StringBuilder sb = new StringBuilder();
         for (int y = 0; y < board.length; y++) {
             for (int x = 0; x < board[y].length; x++) {
-                sb.append(board[y][x] != null ? "1" : "0");
+                String blockType = board[y][x];
+                if (blockType == null) {
+                    sb.append("0");
+                } else {
+                    sb.append(blockType);
+                }
+                if (x < board[y].length - 1) sb.append(",");
             }
             if (y < board.length - 1) sb.append(";");
         }
@@ -600,9 +608,10 @@ public class OnlineVersusBoard implements MessageListener {
         String[][] board = new String[rows.length][10];
         
         for (int y = 0; y < rows.length; y++) {
-            String row = rows[y];
-            for (int x = 0; x < Math.min(row.length(), 10); x++) {
-                board[y][x] = row.charAt(x) == '1' ? "block" : null;
+            String[] cells = rows[y].split(",");
+            for (int x = 0; x < Math.min(cells.length, 10); x++) {
+                String cell = cells[x];
+                board[y][x] = cell.equals("0") ? null : cell;
             }
         }
         
