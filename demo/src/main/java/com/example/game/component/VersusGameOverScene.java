@@ -1,6 +1,7 @@
 package com.example.game.component;
 
 import com.example.Router;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -30,11 +31,18 @@ public class VersusGameOverScene {
     private VBox resultOverlay;
     private Stage stage;
     private Runnable onRestart;
+    private Runnable onMainMenu;  // 추가
     
+    // 기존 생성자 - 하위 호환성 유지 (일반 대전 모드용)
     public VersusGameOverScene(Stage stage, StackPane gameContainer, Runnable onRestart) {
+        this(stage, gameContainer, onRestart, null);
+    }
+    // 새로운 생성자 - 온라인 대전 모드용
+    public VersusGameOverScene(Stage stage, StackPane gameContainer, Runnable onRestart, Runnable onMainMenu) {
         this.stage = stage;
         this.gameContainer = gameContainer;
         this.onRestart = onRestart;
+        this.onMainMenu = onMainMenu;
     }
     
     /**
@@ -249,8 +257,15 @@ public class VersusGameOverScene {
                                "-fx-background-radius: 8; " +
                                "-fx-cursor: hand;"));
         menuButton.setOnAction(e -> {
-            Router router = new Router(stage);
-            router.showStartMenu();
+            hide();
+            // 온라인 대전 모드인 경우 연결 종료 먼저
+            if (onMainMenu != null) {
+                onMainMenu.run();
+            } else {
+                // 일반 대전 모드
+                Router router = new Router(stage);
+                router.showStartMenu();
+            }
         });
         
         box.getChildren().addAll(restartButton, menuButton);

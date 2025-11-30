@@ -112,7 +112,7 @@ public class OnlineVersusBoard implements MessageListener {
         networkManager.setListener(this);
         
         initializeUI();
-        this.gameOverScene = new VersusGameOverScene(stage, mainContainer, this::restartGame);
+        this.gameOverScene = new VersusGameOverScene(stage, mainContainer, this::restartGame, this::goToMainMenuWithDisconnect);
         setupKeyHandling();
     }
     
@@ -743,6 +743,11 @@ public class OnlineVersusBoard implements MessageListener {
             Router router = new Router(stage);
             router.showStartMenu();
         });
+    }
+
+    private void goToMainMenuWithDisconnect() {
+        disconnect();
+        goToMainMenu();
     }
     
     private void exitGame() {
