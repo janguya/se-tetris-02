@@ -38,6 +38,9 @@ public class PlayerBoard extends Board {
         // GameLogic을 아이템 모드로 재초기화
         gameLogic = new GameLogic(itemMode);
         
+        // UI 초기화 (캔버스와 GraphicsContext 생성)
+        initializeUI();
+        
         // 키 입력 핸들러는 설정하지 않음 (VersusBoard에서 직접 처리)
         // 자동 게임 루프도 시작하지 않음
     }
