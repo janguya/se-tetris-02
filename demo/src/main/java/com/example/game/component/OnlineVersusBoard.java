@@ -394,7 +394,7 @@ public class OnlineVersusBoard implements MessageListener {
                 long elapsedNanos1 = now - lastUpdateLocal;
                 long dropInterval1 = localBoard.getDropInterval();
                 
-                if (elapsedNanos1 >= dropInterval1 * 1_000_000) {
+                if (elapsedNanos1 >= dropInterval1) {
                     localBoard.update();
                     lastUpdateLocal = now;
                 }
@@ -407,7 +407,7 @@ public class OnlineVersusBoard implements MessageListener {
                 long elapsedNanos2 = now - lastUpdateRemote;
                 long dropInterval2 = remoteBoard.getDropInterval();
                 
-                if (elapsedNanos2 >= dropInterval2 * 1_000_000) {
+                if (elapsedNanos2 >= dropInterval2) {
                     remoteBoard.update();
                     lastUpdateRemote = now;
                 }
