@@ -642,4 +642,67 @@ public class GameLogic {
         }
         return itemManager.getLinesUntilNextItem(totalLinesCleared);
     }
+    
+    // 네트워크에서 받은 블록 정보로 현재 블록 설정
+    public void setCurrentBlockFromNetwork(String blockType, int blockX, int blockY, int rotation) {
+        eraseCurrent();
+        
+        // 블록 타입에 따라 생성
+        switch (blockType) {
+            case "IBlock":
+                currentBlock = new IBlock();
+                break;
+            case "JBlock":
+                currentBlock = new JBlock();
+                break;
+            case "LBlock":
+                currentBlock = new LBlock();
+                break;
+            case "OBlock":
+                currentBlock = new OBlock();
+                break;
+            case "SBlock":
+                currentBlock = new SBlock();
+                break;
+            case "TBlock":
+                currentBlock = new TBlock();
+                break;
+            case "ZBlock":
+                currentBlock = new ZBlock();
+                break;
+            default:
+                return;
+        }
+        
+        // 회전 적용
+        for (int i = 0; i < rotation; i++) {
+            currentBlock.rotate();
+        }
+        
+        // 위치 설정
+        this.x = blockX;
+        this.y = blockY;
+        
+        placeCurrent();
+    }
+    
+    // 네트워크에서 받은 보드 데이터로 보드 설정
+    public void setBoardFromNetwork(String[][] networkBoard) {
+        eraseCurrent();
+        
+        // 보드 데이터 복사 (착지된 블록들만)
+        for (int row = 0; row < HEIGHT && row < networkBoard.length; row++) {
+            for (int col = 0; col < WIDTH && col < networkBoard[row].length; col++) {
+                if (networkBoard[row][col] != null) {
+                    board[row][col] = 1;
+                    blockTypes[row][col] = networkBoard[row][col];
+                } else {
+                    board[row][col] = 0;
+                    blockTypes[row][col] = null;
+                }
+            }
+        }
+        
+        placeCurrent();
+    }
 }

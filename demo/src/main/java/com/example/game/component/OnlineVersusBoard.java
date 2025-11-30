@@ -269,24 +269,19 @@ public class OnlineVersusBoard implements MessageListener {
             switch (code) {
                 case LEFT:
                     localBoard.onMoveLeft();
-                    sendGameAction(MessageType.BLOCK_MOVE, "direction", "left");
                     break;
                 case RIGHT:
                     localBoard.onMoveRight();
-                    sendGameAction(MessageType.BLOCK_MOVE, "direction", "right");
                     break;
                 case DOWN:
                     localBoard.onMoveDown();
-                    sendGameAction(MessageType.BLOCK_MOVE, "direction", "down");
                     break;
                 case UP:
                     localBoard.onRotate();
-                    sendGameAction(MessageType.BLOCK_ROTATE, null, null);
                     break;
                 case ENTER:
                 case SPACE:
                     localBoard.onHardDrop();
-                    sendGameAction(MessageType.BLOCK_DROP, null, null);
                     break;
                 case ESCAPE:
                     togglePause();
@@ -360,15 +355,13 @@ public class OnlineVersusBoard implements MessageListener {
         
         if (player1Seed != null && player2Seed != null) {
             Long mySeed = isServer ? player1Seed : player2Seed;
-            Long opponentSeed = isServer ? player2Seed : player1Seed;
             
             localBoard.getGameLogic().setRandomSeed(mySeed);
-            remoteBoard.getGameLogic().setRandomSeed(opponentSeed);
             
-            Logger.info(">>> Seeds applied - Local: " + mySeed + ", Remote: " + opponentSeed);
+            Logger.info(">>> Seed applied - Local: " + mySeed);
         }
         
-        // 각 보드에서 블록 생성 시작 (GameLogic이 자동으로 처리)
+        // Remote Board는 seed 없이 네트워크 상태만 표시
         
         startGameLoop();
         
@@ -397,6 +390,7 @@ public class OnlineVersusBoard implements MessageListener {
                 
                 if (elapsedNanos1 >= dropInterval1) {
                     localBoard.update();
+                    sendBoardState();  // 보드 상태 전송
                     lastUpdateLocal = now;
                 }
                 
@@ -404,7 +398,7 @@ public class OnlineVersusBoard implements MessageListener {
                     localBoard.update();
                 }
                 
-                // 원격 보드는 애니메이션만 처리 (자동 낙하 없음)
+                // 원격 보드는 네트워크로 받은 상태만 표시 (자동 업데이트 없음)
                 if (remoteBoard.isAnimationActive()) {
                     remoteBoard.update();
                 }
@@ -537,9 +531,85 @@ public class OnlineVersusBoard implements MessageListener {
         });
     }
     
+    private void sendBoardState() {
+        GameMessage message = new GameMessage(MessageType.BOARD_UPDATE, localPlayerId);
+        
+        // 현재 블록 정보
+        Block currentBlock = localBoard.getGameLogic().getCurrentBlock();
+        if (currentBlock != null) {
+            message.put("blockType", currentBlock.getClass().getSimpleName());
+            message.put("blockX", currentBlock.getX());
+            message.put("blockY", currentBlock.getY());
+            message.put("blockRotation", currentBlock.getRotation());
+        }
+        
+        // 보드 상태 (착지된 블록들)
+        String[][] board = localBoard.getGameLogic().getBoard();
+        message.put("boardData", serializeBoardData(board));
+        
+        // 점수
+        message.put("score", localBoard.getScore());
+        
+        networkManager.sendMessage(message);
+    }
+    
+    private String serializeBoardData(String[][] board) {
+        StringBuilder sb = new StringBuilder();
+        for (int y = 0; y < board.length; y++) {
+            for (int x = 0; x < board[y].length; x++) {
+                sb.append(board[y][x] != null ? "1" : "0");
+            }
+            if (y < board.length - 1) sb.append(";");
+        }
+        return sb.toString();
+    }
+    
+    private void updateRemoteBoard(GameMessage message) {
+        // 블록 정보 복원
+        String blockType = message.getString("blockType");
+        Integer blockX = (Integer) message.get("blockX");
+        Integer blockY = (Integer) message.get("blockY");
+        Integer blockRotation = (Integer) message.get("blockRotation");
+        
+        // 보드 데이터 복원
+        String boardData = message.getString("boardData");
+        
+        // 점수 업데이트
+        Integer score = (Integer) message.get("score");
+        if (score != null) {
+            remoteScorePanel.updateScore(score);
+        }
+        
+        // Remote Board의 GameLogic에 상태 적용
+        if (blockType != null && blockX != null && blockY != null && blockRotation != null) {
+            remoteBoard.getGameLogic().setCurrentBlockFromNetwork(blockType, blockX, blockY, blockRotation);
+        }
+        
+        if (boardData != null) {
+            String[][] board = deserializeBoardData(boardData);
+            remoteBoard.getGameLogic().setBoardFromNetwork(board);
+        }
+        
+        // 화면 갱신
+        remoteBoard.drawBoard();
+    }
+    
+    private String[][] deserializeBoardData(String data) {
+        String[] rows = data.split(";");
+        String[][] board = new String[rows.length][10];
+        
+        for (int y = 0; y < rows.length; y++) {
+            String row = rows[y];
+            for (int x = 0; x < Math.min(row.length(), 10); x++) {
+                board[y][x] = row.charAt(x) == '1' ? "block" : null;
+            }
+        }
+        
+        return board;
+    }
+    
     private void onLocalAutoDrop() {
-        // 로컬 보드의 자동 낙하를 네트워크로 전송
-        sendGameAction(MessageType.BLOCK_MOVE, "direction", "down");
+        // 자동 낙하는 sendBoardState()로 처리되므로 여기서는 별도 전송 불필요
     }
     
     private void onLocalLinesCleared(int playerNumber, int linesCleared, List<String[]> clearedLines) {
@@ -680,24 +750,9 @@ public class OnlineVersusBoard implements MessageListener {
             case GAME_READY:
                 startGame();
                 break;
-            
-            case BLOCK_MOVE:
-                String direction = message.getString("direction");
-                if ("left".equals(direction)) {
-                    remoteBoard.onMoveLeft();
-                } else if ("right".equals(direction)) {
-                    remoteBoard.onMoveRight();
-                } else if ("down".equals(direction)) {
-                    remoteBoard.onMoveDown();
-                }
-                break;
                 
-            case BLOCK_ROTATE:
-                remoteBoard.onRotate();
-                break;
-                
-            case BLOCK_DROP:
-                remoteBoard.onHardDrop();
+            case BOARD_UPDATE:
+                updateRemoteBoard(message);
                 break;
                 
             case ATTACK:
