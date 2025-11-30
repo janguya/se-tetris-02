@@ -23,8 +23,13 @@ public class PlayerBoard extends Board {
         void onLinesCleared(int playerNumber, int linesCleared, List<String[]> clearedLines);
     }
     
+    public interface AutoDropCallback {
+        void onAutoDrop();
+    }
+    
     private final int playerNumber;
     private final LineClearCallback callback;
+    private AutoDropCallback autoDropCallback;
     
     // 공격받은 줄 관리
     private Queue<String[]> pendingAttackLines;
@@ -63,6 +68,10 @@ public class PlayerBoard extends Board {
         drawBoard();
     }
     
+    public void setAutoDropCallback(AutoDropCallback callback) {
+        this.autoDropCallback = callback;
+    }
+    
     // 자동 게임 루프 대신 수동 업데이트
     public void update() {
         // 애니메이션 업데이트
@@ -78,6 +87,11 @@ public class PlayerBoard extends Board {
         
         // 블록 자동 낙하
         handleMoveDown();
+        
+        // 자동 낙하 콜백 호출 (네트워크 전송용)
+        if (autoDropCallback != null) {
+            autoDropCallback.onAutoDrop();
+        }
         
         drawBoard();
     }

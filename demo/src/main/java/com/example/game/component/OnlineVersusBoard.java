@@ -213,6 +213,7 @@ public class OnlineVersusBoard implements MessageListener {
         
         if (isLocal) {
             localBoard = new PlayerBoard(1, this::onLocalLinesCleared, itemMode);
+            localBoard.setAutoDropCallback(this::onLocalAutoDrop);
             localScorePanel = new ScorePanel();
             localBoard.scorePanel = localScorePanel;
             localAttackDisplay = new AttackQueueDisplay("You");
@@ -403,17 +404,7 @@ public class OnlineVersusBoard implements MessageListener {
                     localBoard.update();
                 }
                 
-                // 원격 보드도 동일하게 업데이트 (독립 게임 진행)
-                long elapsedNanos2 = now - lastUpdateRemote;
-                long dropInterval2 = remoteBoard.getDropInterval();
-                
-                if (elapsedNanos2 >= dropInterval2) {
-                    remoteBoard.update();
-                    lastUpdateRemote = now;
-                }
-                
-                // 원격 보드는 네트워크로 받은 상태만 표시 (자동 업데이트 안함)
-                // 애니메이션만 처리
+                // 원격 보드는 애니메이션만 처리 (자동 낙하 없음)
                 if (remoteBoard.isAnimationActive()) {
                     remoteBoard.update();
                 }
@@ -544,6 +535,11 @@ public class OnlineVersusBoard implements MessageListener {
                 gameOverScene.show(result, remoteScore, localScore);
             }
         });
+    }
+    
+    private void onLocalAutoDrop() {
+        // 로컬 보드의 자동 낙하를 네트워크로 전송
+        sendGameAction(MessageType.BLOCK_MOVE, "direction", "down");
     }
     
     private void onLocalLinesCleared(int playerNumber, int linesCleared, List<String[]> clearedLines) {
