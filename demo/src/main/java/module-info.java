@@ -1,6 +1,7 @@
 module com.example.tetris {
     requires transitive javafx.controls;
     requires transitive javafx.fxml;
+    requires transitive javafx.graphics;
     requires java.prefs;
 
     opens com.example to javafx.fxml;

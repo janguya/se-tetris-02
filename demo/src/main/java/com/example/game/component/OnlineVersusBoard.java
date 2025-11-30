@@ -367,9 +367,7 @@ public class OnlineVersusBoard implements MessageListener {
             Logger.info(">>> Seeds applied - Local: " + mySeed + ", Remote: " + opponentSeed);
         }
         
-        // 각 보드에서 블록 생성 시작
-        localBoard.getGameLogic().spawnBlock();
-        localBoard.render();
+        // 각 보드에서 블록 생성 시작 (GameLogic이 자동으로 처리)
         
         startGameLoop();
         
@@ -612,18 +610,17 @@ public class OnlineVersusBoard implements MessageListener {
         message.put("player2Seed", player2Seed);
         networkManager.sendMessage(message);
     }
-    
     private void sendBoardState() {
         if (!gameActive || networkManager == null) return;
         
         GameMessage message = new GameMessage(MessageType.BOARD_UPDATE, localPlayerId);
         
         // 보드 상태 직렬화
-        String[][] board = localBoard.getGameLogic().getBoard();
+        int[][] board = localBoard.getGameLogic().getBoard();
         StringBuilder boardData = new StringBuilder();
         for (int row = 0; row < board.length; row++) {
             for (int col = 0; col < board[row].length; col++) {
-                boardData.append(board[row][col] != null ? "1" : "0");
+                boardData.append(board[row][col] != 0 ? "1" : "0");
             }
             if (row < board.length - 1) boardData.append(";");
         }
@@ -662,20 +659,20 @@ public class OnlineVersusBoard implements MessageListener {
     
     private void updateRemoteBoard(String boardData) {
         String[] rows = boardData.split(";");
-        String[][] board = remoteBoard.getGameLogic().getBoard();
+        int[][] board = remoteBoard.getGameLogic().getBoard();
         
         for (int row = 0; row < rows.length && row < board.length; row++) {
             String rowData = rows[row];
             for (int col = 0; col < rowData.length() && col < board[row].length; col++) {
                 if (rowData.charAt(col) == '1') {
-                    board[row][col] = "synced-block";
+                    board[row][col] = 1;
                 } else {
-                    board[row][col] = null;
+                    board[row][col] = 0;
                 }
             }
         }
         
-        remoteBoard.render();
+        // 보드를 다시 그림 (update 메서드가 자동으로 처리)
     }
     
     @Override
@@ -724,6 +721,26 @@ public class OnlineVersusBoard implements MessageListener {
             case GAME_READY:
                 startGame();
                 break;
+            
+            case BLOCK_MOVE:
+                String direction = message.getString("direction");
+                if ("left".equals(direction)) {
+                    remoteBoard.onMoveLeft();
+                } else if ("right".equals(direction)) {
+                    remoteBoard.onMoveRight();
+                } else if ("down".equals(direction)) {
+                    remoteBoard.onMoveDown();
+                }
+                break;
+                
+            case BLOCK_ROTATE:
+                remoteBoard.onRotate();
+                break;
+                
+            case BLOCK_DROP:
+                remoteBoard.onHardDrop();
+                break;
+            
             case BOARD_UPDATE:
                 // 상대방 보드 상태 업데이트
                 String boardData = message.getString("boardData");
@@ -731,27 +748,10 @@ public class OnlineVersusBoard implements MessageListener {
                     updateRemoteBoard(boardData);
                 }
                 int opponentScore = message.getInt("score", 0);
-                remoteScorePanel.updateScore(opponentScore);
-                break;
-                
-            case ATTACK:
-                int linesCleared = message.getInt("linesCleared", 0);
-                String attackData = message.getString("attackData");
-                List<String[]> attackLines = deserializeAttackLines(attackData);
-                
-                localAttackQueue.offer(new AttackData(attackLines, linesCleared));
-                Logger.info(">>> Received attack: " + linesCleared + " lines");
-                break;
-                
-            case GAME_OVER:
-                endGame(true);
-                break;
-            case BLOCK_ROTATE:
-                remoteBoard.onRotate();
-                break;
-                
-            case BLOCK_DROP:
-                remoteBoard.onHardDrop();
+                if (remoteScorePanel != null) {
+                    // ScorePanel은 PlayerBoard.update()에서 자동 업데이트됨
+                    // 필요시 remoteBoard.setScore(opponentScore) 메서드 추가 필요
+                }
                 break;
                 
             case ATTACK:
