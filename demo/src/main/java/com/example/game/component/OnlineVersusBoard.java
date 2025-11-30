@@ -272,19 +272,24 @@ public class OnlineVersusBoard implements MessageListener {
             switch (code) {
                 case LEFT:
                     localBoard.onMoveLeft();
+                    sendBoardState(); // 즉시 상태 전송
                     break;
                 case RIGHT:
                     localBoard.onMoveRight();
+                    sendBoardState(); // 즉시 상태 전송
                     break;
                 case DOWN:
                     localBoard.onMoveDown();
+                    sendBoardState(); // 즉시 상태 전송
                     break;
                 case UP:
                     localBoard.onRotate();
+                    sendBoardState(); // 즉시 상태 전송
                     break;
                 case ENTER:
                 case SPACE:
                     localBoard.onHardDrop();
+                    sendBoardState(); // 즉시 상태 전송
                     break;
                 case ESCAPE:
                     togglePause();
@@ -598,6 +603,10 @@ public class OnlineVersusBoard implements MessageListener {
             String[][] board = deserializeBoardData(boardData);
             remoteBoard.getGameLogic().setBoardFromNetwork(board);
         }
+        
+        // Canvas를 완전히 클리어하여 잔상 제거
+        javafx.scene.canvas.GraphicsContext gc = remoteBoard.getCanvas().getGraphicsContext2D();
+        gc.clearRect(0, 0, remoteBoard.getCanvas().getWidth(), remoteBoard.getCanvas().getHeight());
         
         // 화면 갱신
         remoteBoard.drawBoard();
