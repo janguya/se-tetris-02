@@ -17,6 +17,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import java.util.prefs.Preferences;
 
 // 네트워크 로비 다이얼로그
 // 서버 생성 또는 클라이언트로 접속하는 UI 제공
