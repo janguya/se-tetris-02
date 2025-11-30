@@ -209,15 +209,18 @@ public class OnlineVersusBoard implements MessageListener {
             localScorePanel = localBoard.scorePanel;
             localAttackDisplay = new AttackQueueDisplay("You");
             
-            // 중앙: 보드 + 공격 표시
-            VBox centerBox = new VBox(10);
-            centerBox.setAlignment(Pos.CENTER);
-            centerBox.getChildren().addAll(localBoard.getCanvas(), localAttackDisplay.getContainer());
+            // 스코어 패널에 공격 표시 추가
+            VBox scorePanelWithAttack = new VBox(15);
+            scorePanelWithAttack.setAlignment(Pos.TOP_CENTER);
+            scorePanelWithAttack.getChildren().addAll(
+                localScorePanel.getPanel(),
+                localAttackDisplay.getContainer()
+            );
+            scorePanelWithAttack.getStyleClass().add("side-panel");
             
-            container.setCenter(centerBox);
-            container.setRight(localScorePanel.getPanel());
-            localScorePanel.getPanel().getStyleClass().add("side-panel");
-            BorderPane.setMargin(localScorePanel.getPanel(), new Insets(0, 0, 0, 15));
+            container.setCenter(localBoard.getCanvas());
+            container.setRight(scorePanelWithAttack);
+            BorderPane.setMargin(scorePanelWithAttack, new Insets(0, 0, 0, 15));
             
         } else {
             remoteBoard = new PlayerBoard(2, (pn, lc, cl) -> {}, itemMode);
@@ -225,15 +228,18 @@ public class OnlineVersusBoard implements MessageListener {
             remoteScorePanel = remoteBoard.scorePanel;
             remoteAttackDisplay = new AttackQueueDisplay("Opponent");
             
-            // 중앙: 보드 + 공격 표시
-            VBox centerBox = new VBox(10);
-            centerBox.setAlignment(Pos.CENTER);
-            centerBox.getChildren().addAll(remoteBoard.getCanvas(), remoteAttackDisplay.getContainer());
+            // 스코어 패널에 공격 표시 추가
+            VBox scorePanelWithAttack = new VBox(15);
+            scorePanelWithAttack.setAlignment(Pos.TOP_CENTER);
+            scorePanelWithAttack.getChildren().addAll(
+                remoteScorePanel.getPanel(),
+                remoteAttackDisplay.getContainer()
+            );
+            scorePanelWithAttack.getStyleClass().add("side-panel");
             
-            container.setLeft(remoteScorePanel.getPanel());
-            container.setCenter(centerBox);
-            remoteScorePanel.getPanel().getStyleClass().add("side-panel");
-            BorderPane.setMargin(remoteScorePanel.getPanel(), new Insets(0, 15, 0, 0));
+            container.setLeft(scorePanelWithAttack);
+            container.setCenter(remoteBoard.getCanvas());
+            BorderPane.setMargin(scorePanelWithAttack, new Insets(0, 15, 0, 0));
         }
         
         return container;
@@ -366,7 +372,9 @@ public class OnlineVersusBoard implements MessageListener {
 
     // 게임 시작
     private void startGame() {
-
+        gameActive = true;
+        gameStartTime = System.currentTimeMillis(); // 타이머 초기화
+        
         // Random seed 적용 (블록 동기화)
         if (player1Seed != null && player2Seed != null) {
             // 서버: 내 블록은 player1Seed, 상대 블록은 player2Seed
@@ -387,7 +395,7 @@ public class OnlineVersusBoard implements MessageListener {
         } else {
             System.out.println(">>> WARNING: No random seed set! Blocks will desync!");
         }
-        gameActive = true;
+        
         startGameLoop();
 
         // 게임 시작 시 포커스 요청
@@ -412,18 +420,38 @@ public class OnlineVersusBoard implements MessageListener {
             public void handle(long now) {
                 if (!gameActive || isPaused) return;
                 
+                // 시간제한 모드에서 타이머 업데이트
+                if (gameMode == VersusGameModeDialog.VersusMode.TIME_LIMIT) {
+                    updateTimer();
+                }
+                
                 // 로컬 보드 업데이트
-                if (now - lastUpdate >= localBoard.getDropInterval()) {
+                long elapsedNanos = now - lastUpdate;
+                long dropInterval = localBoard.getDropInterval();
+                
+                if (elapsedNanos >= dropInterval * 1_000_000) {
                     localBoard.update();
                     lastUpdate = now;
                 }
+                
+                // 애니메이션 중일 때는 매 프레임 업데이트
+                if (localBoard.isAnimationActive()) {
+                    localBoard.update();
+                }
+                
                 // 상대방 보드도 자동 낙하 (동일한 간격으로)
-                // remoteBoard는 네트워크 메시지 없이도 자동으로 떨어져야 함
-                if (now - lastRemoteUpdate[0] >= remoteBoard.getDropInterval()) {
-                remoteBoard.update();
-                Platform.runLater(() -> remoteBoard.drawBoard());
-                lastRemoteUpdate[0] = now;
-            }
+                if (now - lastRemoteUpdate[0] >= remoteBoard.getDropInterval() * 1_000_000) {
+                    remoteBoard.update();
+                    lastRemoteUpdate[0] = now;
+                }
+                
+                // 상대방 보드 애니메이션 중일 때도 매 프레임 업데이트
+                if (remoteBoard.isAnimationActive()) {
+                    remoteBoard.update();
+                }
+                
+                // AttackDisplay 업데이트
+                updateAttackDisplays();
                 
                 // 게임 종료 체크
                 checkGameEnd();
@@ -437,6 +465,11 @@ public class OnlineVersusBoard implements MessageListener {
     // 게임 종료 체크
     private void checkGameEnd() {
         if (localBoard.isGameOver()) {
+            // 상대방에게 내가 졌다는 메시지 전송
+            GameMessage gameOverMsg = new GameMessage(MessageType.GAME_OVER, localPlayerId);
+            gameOverMsg.put("score", localBoard.getScore());
+            networkManager.sendMessage(gameOverMsg);
+            
             endGame(false); // 내가 짐
         }
         // 상대방이 졌다는 메시지를 받으면 endGame(true) 호출
@@ -485,6 +518,12 @@ public class OnlineVersusBoard implements MessageListener {
         
         int localScore = localBoard.getScore();
         int remoteScore = remoteBoard.getScore();
+        
+        // 상대방에게 시간 종료 메시지 전송
+        GameMessage timeUpMsg = new GameMessage(MessageType.GAME_OVER, localPlayerId);
+        timeUpMsg.put("reason", "time_limit");
+        timeUpMsg.put("score", localScore);
+        networkManager.sendMessage(timeUpMsg);
         
         VersusGameOverScene.GameResult result;
         if (localScore > remoteScore) {
@@ -702,6 +741,12 @@ public class OnlineVersusBoard implements MessageListener {
                 
             case GAME_OVER:
                 // 상대방이 게임 오버
+                int opponentScore = message.getInt("score", 0);
+                // 상대방 점수 동기화 (만약 메시지에 포함되어 있다면)
+                if (opponentScore > 0 && remoteBoard != null) {
+                    // remoteBoard의 점수는 실시간으로 동기화되지 않으므로 여기서 참고만
+                    System.out.println(">>> Opponent final score: " + opponentScore);
+                }
                 endGame(true); // 내가 승리
                 break;
                 
@@ -741,13 +786,40 @@ System.out.println(">>> Server generated seeds - P1: " + player1Seed + ", P2: " 
             latencyLabel.setText("❌ 연결 끊김: " + reason);
             latencyLabel.setStyle("-fx-text-fill: red;");
             
-            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
-                javafx.scene.control.Alert.AlertType.WARNING
-            );
-            alert.setTitle("연결 끊김");
-            alert.setHeaderText("상대방과의 연결이 끊어졌습니다.");
-            alert.setContentText(reason);
-            alert.showAndWait();
+            // 게임이 진행 중이었다면 게임 오버 처리
+            if (gameActive) {
+                gameActive = false;
+                if (gameLoop != null) {
+                    gameLoop.stop();
+                }
+                
+                // 연결 끊김으로 인한 승리 처리
+                int localScore = localBoard.getScore();
+                int remoteScore = remoteBoard.getScore();
+                
+                VersusGameOverScene.GameResult result = isServer ? 
+                    VersusGameOverScene.GameResult.PLAYER1_WIN : 
+                    VersusGameOverScene.GameResult.PLAYER2_WIN;
+                
+                if (isServer) {
+                    gameOverScene.show(result, localScore, remoteScore);
+                } else {
+                    gameOverScene.show(result, remoteScore, localScore);
+                }
+            } else {
+                // 게임 시작 전이라면 경고 다이얼로그만 표시
+                javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                    javafx.scene.control.Alert.AlertType.WARNING
+                );
+                alert.setTitle("연결 끊김");
+                alert.setHeaderText("상대방과의 연결이 끊어졌습니다.");
+                alert.setContentText(reason);
+                alert.showAndWait();
+                
+                // 메인 메뉴로 이동
+                com.example.Router router = new com.example.Router((javafx.stage.Stage) mainContainer.getScene().getWindow());
+                router.showStartMenu();
+            }
         });
     }
     
@@ -814,30 +886,21 @@ System.out.println(">>> Server generated seeds - P1: " + player1Seed + ", P2: " 
     }
     
     /**
-     * 게임 재시작
+     * 게임 재시작 (네트워크 모드에서는 메인 메뉴로 이동)
      */
     public void restartGame() {
         gameOverScene.hide();
         
-        // 게임 상태 초기화
-        gameActive = false;
-        localReady = false;
-        remoteReady = false;
+        // 네트워크 연결 종료
+        if (networkManager != null) {
+            networkManager.disconnect("Game ended");
+        }
         
-        // 보드 초기화
-        localBoard.restart();
-        remoteBoard.restart();
-        
-        // 타이머 리셋
-        gameStartTime = System.currentTimeMillis();
-        
-        // 준비 버튼 재활성화
+        // 메인 메뉴로 이동
         Platform.runLater(() -> {
-            readyButton.setDisable(false);
-            readyButton.setText("준비");
+            com.example.Router router = new com.example.Router(stage);
+            router.showStartMenu();
         });
-        
-        mainContainer.requestFocus();
     }
     
     // ============== Getters ==============
