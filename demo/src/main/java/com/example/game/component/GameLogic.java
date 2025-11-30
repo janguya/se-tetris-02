@@ -651,7 +651,7 @@ public class GameLogic {
     }
     
     // 네트워크에서 받은 블록 정보로 현재 블록 설정
-    public void setCurrentBlockFromNetwork(String blockType, int blockX, int blockY, int rotation) {
+    public void setCurrentBlockFromNetwork(String blockType, int blockX, int blockY, int[][] shape) {
         eraseCurrent();
         
         // 블록 타입에 따라 생성
@@ -681,15 +681,12 @@ public class GameLogic {
                 return;
         }
         
-        // 회전 적용
-        for (int i = 0; i < rotation; i++) {
-            currentBlock.rotate();
-        }
+        // 받은 shape를 직접 설정
+        currentBlock.setShape(shape);
         
         // 위치 설정
         this.x = blockX;
         this.y = blockY;
-        this.rotation = rotation;
         
         placeCurrent();
     }

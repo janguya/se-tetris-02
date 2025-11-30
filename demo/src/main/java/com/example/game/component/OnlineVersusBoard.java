@@ -548,7 +548,8 @@ public class OnlineVersusBoard implements MessageListener {
             message.put("blockType", currentBlock.getClass().getSimpleName());
             message.put("blockX", localBoard.getGameLogic().getCurrentX());
             message.put("blockY", localBoard.getGameLogic().getCurrentY());
-            message.put("blockRotation", localBoard.getGameLogic().getCurrentRotation());
+            // 블록의 현재 shape 배열을 직렬화해서 전송
+            message.put("blockShape", serializeBlockShape(currentBlock));
         }
         
         // 보드 상태 (착지된 블록들)
@@ -559,6 +560,20 @@ public class OnlineVersusBoard implements MessageListener {
         message.put("score", localBoard.getScore());
         
         networkManager.sendMessage(message);
+    }
+    
+    private String serializeBlockShape(Block block) {
+        StringBuilder sb = new StringBuilder();
+        int height = block.height();
+        int width = block.width();
+        sb.append(height).append("x").append(width).append(":");
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                sb.append(block.getShape(x, y));
+            }
+            if (y < height - 1) sb.append(",");
+        }
+        return sb.toString();
     }
     
     private String serializeBoardData(String[][] board) {
@@ -583,7 +598,7 @@ public class OnlineVersusBoard implements MessageListener {
         String blockType = message.getString("blockType");
         Integer blockX = (Integer) message.get("blockX");
         Integer blockY = (Integer) message.get("blockY");
-        Integer blockRotation = (Integer) message.get("blockRotation");
+        String blockShape = message.getString("blockShape");
         
         // 보드 데이터 복원
         String boardData = message.getString("boardData");
@@ -595,8 +610,9 @@ public class OnlineVersusBoard implements MessageListener {
         }
         
         // Remote Board의 GameLogic에 상태 적용
-        if (blockType != null && blockX != null && blockY != null && blockRotation != null) {
-            remoteBoard.getGameLogic().setCurrentBlockFromNetwork(blockType, blockX, blockY, blockRotation);
+        if (blockType != null && blockX != null && blockY != null && blockShape != null) {
+            int[][] shape = deserializeBlockShape(blockShape);
+            remoteBoard.getGameLogic().setCurrentBlockFromNetwork(blockType, blockX, blockY, shape);
         }
         
         if (boardData != null) {
@@ -610,6 +626,26 @@ public class OnlineVersusBoard implements MessageListener {
         
         // 화면 갱신
         remoteBoard.drawBoard();
+    }
+    
+    private int[][] deserializeBlockShape(String data) {
+        // Format: "height x width : row1,row2,..."
+        String[] parts = data.split(":");
+        String[] dimensions = parts[0].split("x");
+        int height = Integer.parseInt(dimensions[0]);
+        int width = Integer.parseInt(dimensions[1]);
+        
+        int[][] shape = new int[height][width];
+        String[] rows = parts[1].split(",");
+        
+        for (int y = 0; y < height; y++) {
+            String row = rows[y];
+            for (int x = 0; x < width; x++) {
+                shape[y][x] = Character.getNumericValue(row.charAt(x));
+            }
+        }
+        
+        return shape;
     }
     
     private String[][] deserializeBoardData(String data) {
