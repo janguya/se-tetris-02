@@ -710,4 +710,19 @@ public class GameLogic {
         
         placeCurrent();
     }
+
+    // 네트워크에서 받은 다음 블록 정보로 nextBlock 설정
+    public void setNextBlockFromNetwork(String blockType, int[][] shape) {
+        switch (blockType) {
+            case "IBlock": nextBlock = new IBlock(); break;
+            case "JBlock": nextBlock = new JBlock(); break;
+            case "LBlock": nextBlock = new LBlock(); break;
+            case "OBlock": nextBlock = new OBlock(); break;
+            case "SBlock": nextBlock = new SBlock(); break;
+            case "TBlock": nextBlock = new TBlock(); break;
+            case "ZBlock": nextBlock = new ZBlock(); break;
+            default: return;
+        }
+        nextBlock.setShape(shape);
+    }
 }

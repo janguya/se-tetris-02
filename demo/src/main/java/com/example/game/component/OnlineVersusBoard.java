@@ -551,6 +551,13 @@ public class OnlineVersusBoard implements MessageListener {
             // 블록의 현재 shape 배열을 직렬화해서 전송
             message.put("blockShape", serializeBlockShape(currentBlock));
         }
+
+        // 다음 블록 정보 추가
+        Block nextBlock = localBoard.getGameLogic().getNextBlock();
+        if (nextBlock != null) {
+            message.put("nextBlockType", nextBlock.getClass().getSimpleName());
+            message.put("nextBlockShape", serializeBlockShape(nextBlock));
+        }
         
         // 보드 상태 (착지된 블록들)
         String[][] boardTypes = localBoard.getGameLogic().getBlockTypes();
@@ -609,6 +616,14 @@ public class OnlineVersusBoard implements MessageListener {
             remoteScorePanel.setScore(score);
         }
         
+        // 다음 블록 정보 복원
+        String nextBlockType = message.getString("nextBlockType");
+        String nextBlockShape = message.getString("nextBlockShape");
+        if (nextBlockType != null && nextBlockShape != null) {
+            int[][] nextShape = deserializeBlockShape(nextBlockShape);
+            remoteBoard.getGameLogic().setNextBlockFromNetwork(nextBlockType, nextShape);
+        }
+
         // Remote Board의 GameLogic에 상태 적용
         if (blockType != null && blockX != null && blockY != null && blockShape != null) {
             int[][] shape = deserializeBlockShape(blockShape);
