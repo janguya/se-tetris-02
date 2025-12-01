@@ -851,11 +851,19 @@ public class OnlineVersusBoard implements MessageListener {
                 break;
                 
             case PLAYER_READY:
+                boolean wasRemoteReadyFalse = !remoteReady;
                 remoteReady = true;
                 Platform.runLater(() -> {
                     readyButton.setText("상대방 준비 완료!");
                     readyButton.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white;");
                 });
+
+                // ✨ 추가: 내가 이미 준비된 상태라면, 상대방에게 내 준비 상태를 알려줌
+                if (wasRemoteReadyFalse && localReady) {
+                    System.out.println(">>> Both sides ready! Sending my PLAYER_READY status");
+                    sendPlayerReady();
+                }
+
                 checkBothReady();
                 break;
                 
@@ -901,6 +909,20 @@ public class OnlineVersusBoard implements MessageListener {
                 sendGameStart();
             }
         });
+
+        new Thread(() -> {
+            try {
+                Thread.sleep(300);
+                if(localReady){
+                    sendPlayerReady();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            Platform.runLater(() -> {
+                mainContainer.requestFocus();
+            });
+        }).start();
     }
     
     @Override
