@@ -132,6 +132,7 @@ public class OnlineVersusBoard implements MessageListener {
         
         boolean itemMode = (gameMode == VersusGameModeDialog.VersusMode.ITEM);
         
+        // 초기 블록 생성하지 않음 (게임 시작 전)
         BorderPane localContainer = createPlayerBoard(true, itemMode);
         BorderPane remoteContainer = createPlayerBoard(false, itemMode);
         
@@ -219,7 +220,8 @@ public class OnlineVersusBoard implements MessageListener {
         playerContainer.setTop(playerHeader);
         
         if (isLocal) {
-            localBoard = new PlayerBoard(1, this::onLocalLinesCleared, itemMode);
+            // 게임 시작 전에는 블록을 생성하지 않음
+            localBoard = new PlayerBoard(1, this::onLocalLinesCleared, itemMode, false);
             localBoard.setAutoDropCallback(this::onLocalAutoDrop);
             localScorePanel = new ScorePanel();
             localBoard.scorePanel = localScorePanel;
@@ -238,7 +240,8 @@ public class OnlineVersusBoard implements MessageListener {
             BorderPane.setMargin(rightPanel, new Insets(0, 0, 0, 15));
             
         } else {
-            remoteBoard = new PlayerBoard(2, this::onRemoteLinesCleared, itemMode);
+            // 게임 시작 전에는 블록을 생성하지 않음
+            remoteBoard = new PlayerBoard(2, this::onRemoteLinesCleared, itemMode, false);
             remoteScorePanel = new ScorePanel();
             remoteBoard.scorePanel = remoteScorePanel;
             remoteAttackDisplay = new AttackQueueDisplay("Opponent");
@@ -371,6 +374,11 @@ public class OnlineVersusBoard implements MessageListener {
             localBoard.getGameLogic().setRandomSeed(mySeed);
             
             Logger.info(">>> Seed applied - Local: " + mySeed);
+        }
+        
+        // 게임 시작 시점에 첫 블록 생성
+        if (localBoard.getGameLogic().getCurrentBlock() == null) {
+            localBoard.getGameLogic().spawnNextPiece();
         }
         
         // Remote Board는 seed 없이 네트워크 상태만 표시
@@ -708,9 +716,11 @@ public class OnlineVersusBoard implements MessageListener {
         localReady = false;
         remoteReady = false;
     
-        // 보드 초기화
-        localBoard.restart();
-        remoteBoard.restart();
+        // 보드 초기화 (블록 생성하지 않음)
+        localBoard.getGameLogic().resetGameWithoutSpawn();
+        remoteBoard.getGameLogic().resetGameWithoutSpawn();
+        localBoard.drawBoard();
+        remoteBoard.drawBoard();
         localScorePanel.resetScore();
         remoteScorePanel.resetScore();
     
