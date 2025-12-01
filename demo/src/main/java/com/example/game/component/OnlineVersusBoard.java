@@ -22,7 +22,6 @@ import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
@@ -120,13 +119,11 @@ public class OnlineVersusBoard implements MessageListener {
         mainContainer = new StackPane();
         root = new BorderPane();
         root.getStyleClass().add("versus-root");
-        root.setPadding(new Insets(30));
+        root.setPadding(new Insets(10));
         
         VBox topInfo = createTopInfo();
-        root.setTop(topInfo);
-        BorderPane.setMargin(topInfo, new Insets(0, 0, 20, 0));
         
-        gameArea = new HBox(40);
+        gameArea = new HBox(10);
         gameArea.setAlignment(Pos.CENTER);
         gameArea.setPadding(new Insets(10));
         
@@ -135,25 +132,48 @@ public class OnlineVersusBoard implements MessageListener {
         BorderPane localContainer = createPlayerBoard(true, itemMode);
         BorderPane remoteContainer = createPlayerBoard(false, itemMode);
         
-        gameArea.getChildren().addAll(localContainer, remoteContainer);
-        HBox.setHgrow(localContainer, Priority.ALWAYS);
-        HBox.setHgrow(remoteContainer, Priority.ALWAYS);
+        gameArea.getChildren().addAll(localContainer, topInfo, remoteContainer);
+        localContainer.prefWidthProperty().bind(gameArea.widthProperty().multiply(0.4));
+        topInfo.prefWidthProperty().bind(gameArea.widthProperty().multiply(0.2));
+        remoteContainer.prefWidthProperty().bind(gameArea.widthProperty().multiply(0.4));
         
         root.setCenter(gameArea);
         mainContainer.getChildren().addAll(root, menuOverlay.getOverlay());
     }
 
     private VBox createTopInfo() {
-        VBox topInfo = new VBox(15);
+        VBox topInfo = new VBox(5);
         topInfo.setAlignment(Pos.CENTER);
-        topInfo.setPadding(new Insets(10));
+        topInfo.setPadding(new Insets(5));
         topInfo.getStyleClass().add("versus-top-info");
+        topInfo.setPrefWidth(250);
         
         String modeDisplay = gameMode != null ? gameMode.getDisplayName() : "대기 중...";
-        modeLabel = new Label("⚔ 온라인 대전: " + modeDisplay + " ⚔");
-        modeLabel.setFont(Font.font("Arial", FontWeight.BOLD, 32));
-        modeLabel.setStyle("-fx-text-fill: white;" +
-                           "-fx-effect: dropshadow(gaussian, rgba(0,212,255,0.5), 10, 0, 0, 0);");
+
+        String gamemodetext = "";
+        if (gameMode == VersusGameModeDialog.VersusMode.NORMAL) {
+            gamemodetext = "Normal";
+        } else if (gameMode == VersusGameModeDialog.VersusMode.TIME_LIMIT) {
+            gamemodetext = "Time Limit";
+        } else if (gameMode == VersusGameModeDialog.VersusMode.ITEM) {
+            gamemodetext = "Item";
+        }
+
+        modeLabel = new Label(gamemodetext);
+
+        if (gameMode == VersusGameModeDialog.VersusMode.NORMAL) {
+            modeLabel.getStyleClass().add("normal-mode-label");
+        } else if (gameMode == VersusGameModeDialog.VersusMode.TIME_LIMIT) {
+            modeLabel.getStyleClass().add("timelimit-mode-label");
+        } else if (gameMode == VersusGameModeDialog.VersusMode.ITEM) {
+            modeLabel.getStyleClass().add("item-mode-versus-label");
+        }
+
+
+        // modeLabel = new Label("⚔ 온라인 대전: " + modeDisplay + " ⚔");
+        // modeLabel.setFont(Font.font("Arial", FontWeight.BOLD, 32));
+        // modeLabel.setStyle("-fx-text-fill: white;" +
+        //                    "-fx-effect: dropshadow(gaussian, rgba(0,212,255,0.5), 10, 0, 0, 0);");
         
         topInfo.getChildren().add(modeLabel);
         
@@ -164,8 +184,9 @@ public class OnlineVersusBoard implements MessageListener {
         
         if (gameMode == VersusGameModeDialog.VersusMode.TIME_LIMIT) {
             timerLabel = new Label("⏱ 03:00");
-            timerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
-            timerLabel.setStyle("-fx-text-fill: #00ff00;");
+            timerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 35));
+            timerLabel.setStyle("-fx-text-fill: #ffeb3b;"
+                    + "-fx-effect: dropshadow(gaussian, rgba(255,235,59,0.6), 10, 0, 0, 0);");
             topInfo.getChildren().add(timerLabel);
         }
         
@@ -181,7 +202,7 @@ public class OnlineVersusBoard implements MessageListener {
         Label infoLabel = new Label("2줄 이상 삭제하면 상대방을 공격!");
         infoLabel.setFont(Font.font("Arial", FontWeight.NORMAL, 14));
         infoLabel.setStyle("-fx-text-fill: #bbbbbb;");
-        topInfo.getChildren().add(infoLabel);
+        //topInfo.getChildren().add(infoLabel);
         
         return topInfo;
     }
@@ -189,11 +210,10 @@ public class OnlineVersusBoard implements MessageListener {
     private BorderPane createPlayerBoard(boolean isLocal, boolean itemMode) {
         BorderPane playerContainer = new BorderPane();
         playerContainer.getStyleClass().add("versus-player-container");
-        playerContainer.setMaxWidth(600);
         
-        VBox playerHeader = new VBox(8);
+        VBox playerHeader = new VBox(5);
         playerHeader.setAlignment(Pos.CENTER);
-        playerHeader.setPadding(new Insets(15));
+        playerHeader.setPadding(new Insets(10));
         playerHeader.getStyleClass().add("versus-player-header");
         
         String playerName;
@@ -203,12 +223,12 @@ public class OnlineVersusBoard implements MessageListener {
             playerName = isServer ? "Player 2 (Client)" : "Player 1 (Host)";
         }
         Label playerLabel = new Label(playerName);
-        playerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        playerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 20));
         playerLabel.setStyle("-fx-text-fill: " + (isLocal ? "#00d4ff" : "#ff6b6b") + ";");
         
         String controls = isLocal ? "화살표 키 + Enter" : "자동 동기화";
         Label controlsLabel = new Label(controls);
-        controlsLabel.setFont(Font.font("Arial", FontWeight.NORMAL, 12));
+        controlsLabel.setFont(Font.font("Arial", FontWeight.NORMAL, 15));
         controlsLabel.setStyle("-fx-text-fill: #bbbbbb;");
         
         playerHeader.getChildren().addAll(playerLabel, controlsLabel);
@@ -221,7 +241,7 @@ public class OnlineVersusBoard implements MessageListener {
             localBoard.scorePanel = localScorePanel;
             localAttackDisplay = new AttackQueueDisplay("You");
             
-            VBox rightPanel = new VBox(15);
+            VBox rightPanel = new VBox(10);
             rightPanel.setAlignment(Pos.TOP_CENTER);
             rightPanel.getChildren().addAll(
                 localScorePanel.getPanel(),
@@ -231,7 +251,7 @@ public class OnlineVersusBoard implements MessageListener {
             playerContainer.setCenter(localBoard.getCanvas());
             playerContainer.setRight(rightPanel);
             rightPanel.getStyleClass().add("side-panel");
-            BorderPane.setMargin(rightPanel, new Insets(0, 0, 0, 15));
+            BorderPane.setMargin(rightPanel, new Insets(0, 0, 0, 10));
             
         } else {
             remoteBoard = new PlayerBoard(2, this::onRemoteLinesCleared, itemMode);
@@ -239,7 +259,7 @@ public class OnlineVersusBoard implements MessageListener {
             remoteBoard.scorePanel = remoteScorePanel;
             remoteAttackDisplay = new AttackQueueDisplay("Opponent");
             
-            VBox leftPanel = new VBox(15);
+            VBox leftPanel = new VBox(10);
             leftPanel.setAlignment(Pos.TOP_CENTER);
             leftPanel.getChildren().addAll(
                 remoteScorePanel.getPanel(),
@@ -249,7 +269,7 @@ public class OnlineVersusBoard implements MessageListener {
             playerContainer.setLeft(leftPanel);
             playerContainer.setCenter(remoteBoard.getCanvas());
             leftPanel.getStyleClass().add("side-panel");
-            BorderPane.setMargin(leftPanel, new Insets(0, 15, 0, 0));
+            BorderPane.setMargin(leftPanel, new Insets(0, 10, 0, 0));
         }
         
         return playerContainer;
