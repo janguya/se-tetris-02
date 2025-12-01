@@ -140,7 +140,9 @@ public class SettingsDialog {
         title.getStyleClass().add("settings-section-title");
 
         windowSizeCombo = new ComboBox<>();
-        windowSizeCombo.getItems().addAll(WindowSize.values());
+        windowSizeCombo.getItems().add(WindowSize.SMALL);
+        windowSizeCombo.getItems().add(WindowSize.MEDIUM);
+        windowSizeCombo.getItems().add(WindowSize.LARGE);
         windowSizeCombo.setValue(settings.getCurrentWindowSize());
         windowSizeCombo.getStyleClass().add("settings-combo");
 
