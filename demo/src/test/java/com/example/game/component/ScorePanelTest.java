@@ -139,4 +139,145 @@ public class ScorePanelTest {
             scorePanel.updateSpeed(1.0, 1);
         });
     }
+    
+    @Test
+    public void testUpdateSpeedMultipleLevels() {
+        assertDoesNotThrow(() -> {
+            scorePanel.updateSpeed(1.0, 1);
+            scorePanel.updateSpeed(0.9, 2);
+            scorePanel.updateSpeed(0.8, 3);
+            scorePanel.updateSpeed(0.7, 4);
+        });
+    }
+    
+    @Test
+    public void testScorePanelWithAllDifficulties() {
+        // EASY
+        ScorePanel easyPanel = new ScorePanel();
+        easyPanel.calculateLineScore(1);
+        int easyScore = easyPanel.getScore();
+        assertTrue(easyScore > 0);
+        
+        // NORMAL도 테스트
+        easyPanel.calculateLineScore(2);
+        assertTrue(easyPanel.getScore() > easyScore);
+    }
+    
+    @Test
+    public void testLevelProgressionWithManyLines() {
+        // 100줄 삭제로 레벨 10까지 올리기
+        scorePanel.addLines(100);
+        assertEquals(11, scorePanel.getLevel()); // 10줄마다 레벨업
+        assertEquals(100, scorePanel.getLinesCleared());
+    }
+    
+    @Test
+    public void testScoreAccumulation() {
+        int totalScore = 0;
+        
+        for (int i = 1; i <= 4; i++) {
+            scorePanel.calculateLineScore(i);
+            int currentScore = scorePanel.getScore();
+            assertTrue(currentScore > totalScore);
+            totalScore = currentScore;
+        }
+    }
+    
+    @Test
+    public void testUpdateNextBlockWithDifferentBlocks() {
+        Block[] blocks = {
+            new IBlock(),
+            new com.example.game.blocks.JBlock(),
+            new com.example.game.blocks.LBlock(),
+            new com.example.game.blocks.OBlock(),
+            new com.example.game.blocks.SBlock(),
+            new com.example.game.blocks.TBlock(),
+            new com.example.game.blocks.ZBlock()
+        };
+        
+        for (Block block : blocks) {
+            assertDoesNotThrow(() -> {
+                scorePanel.updateNextBlock(block);
+            });
+        }
+    }
+    
+    @Test
+    public void testGetNextBlockCanvasNotNull() {
+        assertNotNull(scorePanel.getNextBlockCanvas());
+        assertTrue(scorePanel.getNextBlockCanvas().getWidth() > 0);
+        assertTrue(scorePanel.getNextBlockCanvas().getHeight() > 0);
+    }
+    
+    @Test
+    public void testResetScoreMultipleTimes() {
+        for (int i = 0; i < 5; i++) {
+            scorePanel.addScore(1000);
+            scorePanel.addLines(20);
+            scorePanel.resetScore();
+            
+            assertEquals(0, scorePanel.getScore());
+            assertEquals(1, scorePanel.getLevel());
+            assertEquals(0, scorePanel.getLinesCleared());
+        }
+    }
+    
+    @Test
+    public void testScoreAddition() {
+        scorePanel.resetScore();
+        scorePanel.addScore(100);
+        assertEquals(100, scorePanel.getScore());
+        
+        scorePanel.addScore(50);
+        assertEquals(150, scorePanel.getScore());
+    }
+    
+    @Test
+    public void testLevelProgression() {
+        scorePanel.resetScore();
+        assertEquals(1, scorePanel.getLevel());
+        
+        scorePanel.addLines(5);
+        assertTrue(scorePanel.getLevel() >= 1);
+    }
+    
+    @Test
+    public void testUpdateSpeedWithExtremeValues() {
+        assertDoesNotThrow(() -> {
+            scorePanel.updateSpeed(0.1, 10);
+            scorePanel.updateSpeed(2.0, 1);
+            scorePanel.updateSpeed(0.0, 100);
+        });
+    }
+    
+    @Test
+    public void testCalculateLineScoreForAllLineCounts() {
+        scorePanel.resetScore();
+        
+        // 1줄, 2줄, 3줄, 4줄 각각 테스트
+        int[] scores = new int[5];
+        scores[0] = 0;
+        
+        for (int lines = 1; lines <= 4; lines++) {
+            scorePanel.resetScore();
+            scorePanel.calculateLineScore(lines);
+            scores[lines] = scorePanel.getScore();
+            assertTrue(scores[lines] > 0);
+        }
+        
+        // 더 많은 줄을 삭제할수록 점수가 더 높아야 함
+        assertTrue(scores[4] > scores[3]);
+        assertTrue(scores[3] > scores[2]);
+        assertTrue(scores[2] > scores[1]);
+    }
+    
+    @Test
+    public void testPanelNotNullAfterOperations() {
+        scorePanel.addScore(500);
+        scorePanel.addLines(15);
+        scorePanel.updateSpeed(0.8, 3);
+        scorePanel.resetScore();
+        
+        assertNotNull(scorePanel.getPanel());
+    }
 }

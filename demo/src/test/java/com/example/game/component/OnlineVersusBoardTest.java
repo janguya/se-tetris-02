@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import com.example.network.ConnectionConfig;
 import com.example.network.GameMessage;
 import com.example.network.MessageType;
+import com.example.network.MessageListener;
 import com.example.network.NetworkManager;
 
 import javafx.application.Platform;
@@ -22,6 +23,24 @@ public class OnlineVersusBoardTest {
 
     private OnlineVersusBoard onlineVersusBoard;
     private NetworkManager mockNetworkManager;
+
+    // 더미 MessageListener 구현
+    private static class DummyMessageListener implements MessageListener {
+        @Override
+        public void onMessageReceived(GameMessage message) {}
+        
+        @Override
+        public void onConnected(String peerId) {}
+        
+        @Override
+        public void onDisconnected(String peerId, String reason) {}
+        
+        @Override
+        public void onError(String errorMessage, Exception exception) {}
+        
+        @Override
+        public void onLatencyUpdate(long latencyMs) {}
+    }
 
     @BeforeAll
     public static void initToolkit() {
@@ -37,9 +56,9 @@ public class OnlineVersusBoardTest {
         CountDownLatch latch = new CountDownLatch(1);
         Platform.runLater(() -> {
             try {
-                // NetworkManager 목 객체 생성
+                // NetworkManager 목 객체 생성 - DummyMessageListener 사용
                 ConnectionConfig config = new ConnectionConfig(8080);
-                mockNetworkManager = new NetworkManager(config, null, "TestPlayer");
+                mockNetworkManager = new NetworkManager(config, new DummyMessageListener(), "TestPlayer");
                 
                 // OnlineVersusBoard 생성 (서버 모드)
                 onlineVersusBoard = new OnlineVersusBoard(
@@ -940,5 +959,446 @@ public class OnlineVersusBoardTest {
             }
         });
         Thread.sleep(400);
+    }
+
+    @Test
+    public void testReadyButtonServerSide() throws Exception {
+        Platform.runLater(() -> {
+            OnlineVersusBoard serverBoard = new OnlineVersusBoard(
+                VersusGameModeDialog.VersusMode.NORMAL,
+                mockNetworkManager,
+                true
+            );
+            serverBoard.onConnected("Client");
+            
+            GameMessage ready = new GameMessage(MessageType.PLAYER_READY, "Server");
+            serverBoard.onMessageReceived(ready);
+            
+            serverBoard.cleanup();
+        });
+        Thread.sleep(300);
+    }
+
+    @Test
+    public void testReadyButtonClientSide() throws Exception {
+        Platform.runLater(() -> {
+            OnlineVersusBoard clientBoard = new OnlineVersusBoard(
+                VersusGameModeDialog.VersusMode.NORMAL,
+                mockNetworkManager,
+                false
+            );
+            clientBoard.onConnected("Server");
+            
+            GameMessage ready = new GameMessage(MessageType.PLAYER_READY, "Client");
+            clientBoard.onMessageReceived(ready);
+            
+            clientBoard.cleanup();
+        });
+        Thread.sleep(300);
+    }
+
+    @Test
+    public void testGameStartBothPlayersReady() throws Exception {
+        Platform.runLater(() -> {
+            onlineVersusBoard.onConnected("Opponent");
+            
+            GameMessage localReady = new GameMessage(MessageType.PLAYER_READY, "TestPlayer");
+            onlineVersusBoard.onMessageReceived(localReady);
+            
+            GameMessage remoteReady = new GameMessage(MessageType.PLAYER_READY, "Opponent");
+            onlineVersusBoard.onMessageReceived(remoteReady);
+            
+            GameMessage start = new GameMessage(MessageType.GAME_START, "Server");
+            start.put("mode", "NORMAL");
+            start.put("player1Seed", 11111L);
+            start.put("player2Seed", 22222L);
+            onlineVersusBoard.onMessageReceived(start);
+        });
+        Thread.sleep(400);
+    }
+
+    @Test
+    public void testSynchronizedBlockMovement() throws Exception {
+        Platform.runLater(() -> {
+            GameMessage start = new GameMessage(MessageType.GAME_START, "Server");
+            start.put("mode", "NORMAL");
+            start.put("player1Seed", 33333L);
+            start.put("player2Seed", 44444L);
+            onlineVersusBoard.onMessageReceived(start);
+            
+            // 동기화된 블록 이동
+            for (int i = 0; i < 5; i++) {
+                GameMessage move = new GameMessage(MessageType.BLOCK_MOVE, "Opponent");
+                move.put("direction", "left");
+                onlineVersusBoard.onMessageReceived(move);
+                
+                GameMessage rotate = new GameMessage(MessageType.BLOCK_ROTATE, "Opponent");
+                onlineVersusBoard.onMessageReceived(rotate);
+            }
+        });
+        Thread.sleep(500);
+    }
+
+    @Test
+    public void testAttackQueueProcessing() throws Exception {
+        Platform.runLater(() -> {
+            // 여러 공격을 큐에 추가
+            for (int i = 0; i < 3; i++) {
+                GameMessage attack = new GameMessage(MessageType.ATTACK, "Opponent");
+                attack.put("linesCleared", 2);
+                attack.put("attackData", "1111111111;1111111111;");
+                onlineVersusBoard.onMessageReceived(attack);
+            }
+        });
+        Thread.sleep(400);
+    }
+
+    @Test
+    public void testLatencyUpdateRange() throws Exception {
+        Platform.runLater(() -> {
+            // 다양한 레이턴시 값
+            long[] latencies = {5L, 15L, 30L, 50L, 100L, 150L, 200L, 300L};
+            for (long latency : latencies) {
+                onlineVersusBoard.onLatencyUpdate(latency);
+            }
+        });
+        Thread.sleep(300);
+    }
+
+    @Test
+    public void testOpponentBoardSynchronization() throws Exception {
+        Platform.runLater(() -> {
+            GameMessage start = new GameMessage(MessageType.GAME_START, "Server");
+            start.put("mode", "NORMAL");
+            start.put("player1Seed", 55555L);
+            start.put("player2Seed", 66666L);
+            onlineVersusBoard.onMessageReceived(start);
+            
+            // 상대방 액션 시뮬레이션
+            GameMessage[] actions = {
+                createMoveMessage("left"),
+                createMoveMessage("right"),
+                new GameMessage(MessageType.BLOCK_ROTATE, "Opponent"),
+                createMoveMessage("down"),
+                new GameMessage(MessageType.BLOCK_DROP, "Opponent")
+            };
+            
+            for (GameMessage action : actions) {
+                onlineVersusBoard.onMessageReceived(action);
+            }
+        });
+        Thread.sleep(500);
+    }
+
+    private GameMessage createMoveMessage(String direction) {
+        GameMessage msg = new GameMessage(MessageType.BLOCK_MOVE, "Opponent");
+        msg.put("direction", direction);
+        return msg;
+    }
+
+    @Test
+    public void testGameEndConditions() throws Exception {
+        Platform.runLater(() -> {
+            GameMessage start = new GameMessage(MessageType.GAME_START, "Server");
+            start.put("mode", "NORMAL");
+            start.put("player1Seed", 77777L);
+            start.put("player2Seed", 88888L);
+            onlineVersusBoard.onMessageReceived(start);
+            
+            // 게임 오버 메시지
+            GameMessage gameOver = new GameMessage(MessageType.GAME_OVER, "Opponent");
+            onlineVersusBoard.onMessageReceived(gameOver);
+        });
+        Thread.sleep(400);
+    }
+
+    @Test
+    public void testItemModeGameStart() throws Exception {
+        Platform.runLater(() -> {
+            OnlineVersusBoard itemBoard = new OnlineVersusBoard(
+                VersusGameModeDialog.VersusMode.ITEM,
+                mockNetworkManager,
+                true
+            );
+            
+            GameMessage start = new GameMessage(MessageType.GAME_START, "Server");
+            start.put("mode", "ITEM");
+            start.put("player1Seed", 99999L);
+            start.put("player2Seed", 10101L);
+            
+            itemBoard.onMessageReceived(start);
+            itemBoard.cleanup();
+        });
+        Thread.sleep(400);
+    }
+
+    @Test
+    public void testTimeLimitModeGameStart() throws Exception {
+        Platform.runLater(() -> {
+            OnlineVersusBoard timeLimitBoard = new OnlineVersusBoard(
+                VersusGameModeDialog.VersusMode.TIME_LIMIT,
+                mockNetworkManager,
+                true
+            );
+            
+            GameMessage start = new GameMessage(MessageType.GAME_START, "Server");
+            start.put("mode", "TIME_LIMIT");
+            start.put("player1Seed", 12121L);
+            start.put("player2Seed", 13131L);
+            
+            timeLimitBoard.onMessageReceived(start);
+            timeLimitBoard.cleanup();
+        });
+        Thread.sleep(400);
+    }
+
+    @Test
+    public void testNetworkDisconnectionDuringGame() throws Exception {
+        Platform.runLater(() -> {
+            onlineVersusBoard.onConnected("Player");
+            
+            GameMessage start = new GameMessage(MessageType.GAME_START, "Server");
+            start.put("mode", "NORMAL");
+            start.put("player1Seed", 14141L);
+            start.put("player2Seed", 15151L);
+            onlineVersusBoard.onMessageReceived(start);
+            
+            // 게임 중 연결 끊김
+            onlineVersusBoard.onDisconnected("Player", "Connection lost during game");
+        });
+        Thread.sleep(400);
+    }
+
+    @Test
+    public void testMultipleAttacksInSequence() throws Exception {
+        Platform.runLater(() -> {
+            // 다양한 크기의 연속 공격
+            for (int lines = 2; lines <= 4; lines++) {
+                GameMessage attack = new GameMessage(MessageType.ATTACK, "Opponent");
+                attack.put("linesCleared", lines);
+                StringBuilder data = new StringBuilder();
+                for (int i = 0; i < lines; i++) {
+                    data.append("1111111111;");
+                }
+                attack.put("attackData", data.toString());
+                onlineVersusBoard.onMessageReceived(attack);
+            }
+        });
+        Thread.sleep(400);
+    }
+
+    @Test
+    public void testGameStateMessage() throws Exception {
+        Platform.runLater(() -> {
+            GameMessage state = new GameMessage(MessageType.GAME_STATE, "Opponent");
+            state.put("score", 1000);
+            state.put("level", 5);
+            
+            assertDoesNotThrow(() -> {
+                onlineVersusBoard.onMessageReceived(state);
+            });
+        });
+        Thread.sleep(200);
+    }
+
+    @Test
+    public void testCompleteGameFlow() throws Exception {
+        Platform.runLater(() -> {
+            // 1. 연결
+            onlineVersusBoard.onConnected("Player2");
+            
+            // 2. 준비
+            GameMessage ready1 = new GameMessage(MessageType.PLAYER_READY, "TestPlayer");
+            onlineVersusBoard.onMessageReceived(ready1);
+            
+            GameMessage ready2 = new GameMessage(MessageType.PLAYER_READY, "Player2");
+            onlineVersusBoard.onMessageReceived(ready2);
+            
+            // 3. 게임 시작
+            GameMessage start = new GameMessage(MessageType.GAME_START, "Server");
+            start.put("mode", "NORMAL");
+            start.put("player1Seed", 16161L);
+            start.put("player2Seed", 17171L);
+            onlineVersusBoard.onMessageReceived(start);
+            
+            // 4. 게임 플레이
+            GameMessage move = new GameMessage(MessageType.BLOCK_MOVE, "Player2");
+            move.put("direction", "left");
+            onlineVersusBoard.onMessageReceived(move);
+            
+            GameMessage rotate = new GameMessage(MessageType.BLOCK_ROTATE, "Player2");
+            onlineVersusBoard.onMessageReceived(rotate);
+            
+            GameMessage drop = new GameMessage(MessageType.BLOCK_DROP, "Player2");
+            onlineVersusBoard.onMessageReceived(drop);
+            
+            // 5. 공격
+            GameMessage attack = new GameMessage(MessageType.ATTACK, "Player2");
+            attack.put("linesCleared", 3);
+            attack.put("attackData", "111;111;111;");
+            onlineVersusBoard.onMessageReceived(attack);
+            
+            // 6. 게임 종료
+            GameMessage gameOver = new GameMessage(MessageType.GAME_OVER, "Player2");
+            onlineVersusBoard.onMessageReceived(gameOver);
+        });
+        Thread.sleep(600);
+    }
+
+    @Test
+    public void testServerBroadcastsGameStart() throws Exception {
+        Platform.runLater(() -> {
+            OnlineVersusBoard serverBoard = new OnlineVersusBoard(
+                VersusGameModeDialog.VersusMode.NORMAL,
+                mockNetworkManager,
+                true
+            );
+            
+            serverBoard.onConnected("Client");
+            
+            // 서버가 게임 시작을 브로드캐스트
+            GameMessage start = new GameMessage(MessageType.GAME_START, "Server");
+            start.put("mode", "NORMAL");
+            start.put("player1Seed", 18181L);
+            start.put("player2Seed", 19191L);
+            
+            assertDoesNotThrow(() -> {
+                serverBoard.onMessageReceived(start);
+            });
+            
+            serverBoard.cleanup();
+        });
+        Thread.sleep(400);
+    }
+
+    @Test
+    public void testClientReceivesGameStart() throws Exception {
+        Platform.runLater(() -> {
+            OnlineVersusBoard clientBoard = new OnlineVersusBoard(
+                VersusGameModeDialog.VersusMode.NORMAL,
+                mockNetworkManager,
+                false
+            );
+            
+            clientBoard.onConnected("Server");
+            
+            GameMessage ready = new GameMessage(MessageType.GAME_READY, "Server");
+            clientBoard.onMessageReceived(ready);
+            
+            GameMessage start = new GameMessage(MessageType.GAME_START, "Server");
+            start.put("mode", "NORMAL");
+            start.put("player1Seed", 20202L);
+            start.put("player2Seed", 21212L);
+            clientBoard.onMessageReceived(start);
+            
+            clientBoard.cleanup();
+        });
+        Thread.sleep(400);
+    }
+
+    @Test
+    public void testHighLatencyScenario() throws Exception {
+        Platform.runLater(() -> {
+            onlineVersusBoard.onLatencyUpdate(500L);
+            onlineVersusBoard.onLatencyUpdate(1000L);
+            onlineVersusBoard.onLatencyUpdate(750L);
+            onlineVersusBoard.onLatencyUpdate(250L);
+        });
+        Thread.sleep(300);
+    }
+
+    @Test
+    public void testLowLatencyScenario() throws Exception {
+        Platform.runLater(() -> {
+            onlineVersusBoard.onLatencyUpdate(5L);
+            onlineVersusBoard.onLatencyUpdate(10L);
+            onlineVersusBoard.onLatencyUpdate(8L);
+            onlineVersusBoard.onLatencyUpdate(12L);
+        });
+        Thread.sleep(200);
+    }
+
+    @Test
+    public void testRapidBlockMovements() throws Exception {
+        Platform.runLater(() -> {
+            GameMessage start = new GameMessage(MessageType.GAME_START, "Server");
+            start.put("mode", "NORMAL");
+            start.put("player1Seed", 22222L);
+            start.put("player2Seed", 23232L);
+            onlineVersusBoard.onMessageReceived(start);
+            
+            // 빠른 연속 이동
+            for (int i = 0; i < 10; i++) {
+                GameMessage move = new GameMessage(MessageType.BLOCK_MOVE, "Opponent");
+                move.put("direction", i % 2 == 0 ? "left" : "right");
+                onlineVersusBoard.onMessageReceived(move);
+            }
+        });
+        Thread.sleep(400);
+    }
+
+    @Test
+    public void testAllGameModesWithMessages() throws Exception {
+        Platform.runLater(() -> {
+            VersusGameModeDialog.VersusMode[] modes = {
+                VersusGameModeDialog.VersusMode.NORMAL,
+                VersusGameModeDialog.VersusMode.ITEM,
+                VersusGameModeDialog.VersusMode.TIME_LIMIT
+            };
+            
+            for (VersusGameModeDialog.VersusMode mode : modes) {
+                OnlineVersusBoard board = new OnlineVersusBoard(
+                    mode,
+                    mockNetworkManager,
+                    true
+                );
+                
+                GameMessage start = new GameMessage(MessageType.GAME_START, "Server");
+                start.put("mode", mode.toString());
+                start.put("player1Seed", 24242L);
+                start.put("player2Seed", 25252L);
+                
+                board.onMessageReceived(start);
+                board.cleanup();
+            }
+        });
+        Thread.sleep(600);
+    }
+
+    @Test
+    public void testRecoveryAfterError() throws Exception {
+        Platform.runLater(() -> {
+            onlineVersusBoard.onError("Test error", new Exception("Test"));
+            
+            // 에러 후 정상 메시지 처리
+            onlineVersusBoard.onConnected("Player");
+            
+            GameMessage msg = new GameMessage(MessageType.PLAYER_READY, "Player");
+            assertDoesNotThrow(() -> {
+                onlineVersusBoard.onMessageReceived(msg);
+            });
+        });
+        Thread.sleep(300);
+    }
+
+    @Test
+    public void testMultipleGameSessions() throws Exception {
+        Platform.runLater(() -> {
+            for (int session = 0; session < 3; session++) {
+                onlineVersusBoard.onConnected("Player" + session);
+                
+                GameMessage start = new GameMessage(MessageType.GAME_START, "Server");
+                start.put("mode", "NORMAL");
+                start.put("player1Seed", (long)(26262 + session * 1000));
+                start.put("player2Seed", (long)(27272 + session * 1000));
+                onlineVersusBoard.onMessageReceived(start);
+                
+                GameMessage gameOver = new GameMessage(MessageType.GAME_OVER, "Player" + session);
+                onlineVersusBoard.onMessageReceived(gameOver);
+                
+                onlineVersusBoard.onDisconnected("Player" + session, "Session end");
+            }
+        });
+        Thread.sleep(600);
     }
 }

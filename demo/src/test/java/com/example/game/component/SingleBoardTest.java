@@ -101,4 +101,107 @@ public class SingleBoardTest {
             singleBoard.onMoveDown();
         });
     }
+    
+    @Test
+    public void testOnPause() {
+        assertDoesNotThrow(() -> {
+            singleBoard.onPause();
+        });
+    }
+    
+    @Test
+    public void testMultipleRestarts() {
+        assertDoesNotThrow(() -> {
+            singleBoard.restartGame();
+            singleBoard.restartGame();
+            singleBoard.restartGame();
+        });
+    }
+    
+    @Test
+    public void testPauseMultipleTimes() {
+        assertDoesNotThrow(() -> {
+            singleBoard.onPause();
+            singleBoard.onPause();
+            singleBoard.onPause();
+        });
+    }
+    
+    @Test
+    public void testOperationsAfterRestart() {
+        assertDoesNotThrow(() -> {
+            singleBoard.restartGame();
+            singleBoard.onMoveLeft();
+            singleBoard.onRotate();
+            singleBoard.onMoveDown();
+        });
+    }
+    
+    @Test
+    public void testHardDropMultipleTimes() {
+        assertDoesNotThrow(() -> {
+            singleBoard.onHardDrop();
+            Thread.sleep(100);
+            singleBoard.onHardDrop();
+            Thread.sleep(100);
+            singleBoard.onHardDrop();
+        });
+    }
+    
+    @Test
+    public void testRotateMultipleTimes() {
+        assertDoesNotThrow(() -> {
+            singleBoard.onRotate();
+            singleBoard.onRotate();
+            singleBoard.onRotate();
+            singleBoard.onRotate();
+        });
+    }
+    
+    @Test
+    public void testMovementSequence() {
+        assertDoesNotThrow(() -> {
+            singleBoard.onMoveLeft();
+            singleBoard.onMoveLeft();
+            singleBoard.onMoveRight();
+            singleBoard.onMoveDown();
+        });
+    }
+    
+    @Test
+    public void testRestartDuringPlay() {
+        assertDoesNotThrow(() -> {
+            singleBoard.onMoveDown();
+            singleBoard.restartGame();
+            singleBoard.onMoveLeft();
+        });
+    }
+    
+    @Test
+    public void testMoveAndRotate() {
+        assertDoesNotThrow(() -> {
+            singleBoard.onMoveLeft();
+            singleBoard.onRotate();
+            singleBoard.onMoveRight();
+            singleBoard.onRotate();
+        });
+    }
+    
+    @Test
+    public void testPauseAfterOperations() {
+        assertDoesNotThrow(() -> {
+            singleBoard.onMoveDown();
+            singleBoard.onRotate();
+            singleBoard.onPause();
+        });
+    }
+    
+    @Test
+    public void testOperationsAfterPause() {
+        assertDoesNotThrow(() -> {
+            singleBoard.onPause();
+            singleBoard.onMoveLeft();
+            singleBoard.onRotate();
+        });
+    }
 }

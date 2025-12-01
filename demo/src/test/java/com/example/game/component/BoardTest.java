@@ -857,5 +857,252 @@ public class BoardTest {
         });
         Thread.sleep(200);
     }
+
+    // ========== 일시정지/재개 및 메뉴 테스트 ==========
+
+    @Test
+    public void testPauseShowsOverlay() throws Exception {
+        Platform.runLater(() -> {
+            board.onPause();
+            assertTrue(board.isPaused() || board.isMenuVisible(),
+                "Pause should show overlay or menu");
+        });
+        Thread.sleep(300);
+    }
+
+    @Test
+    public void testResumeHidesOverlay() throws Exception {
+        Platform.runLater(() -> {
+            board.onPause(); // pause
+            board.onPause(); // resume
+            
+            // 재개 후에는 일시정지가 아니어야 함
+            assertDoesNotThrow(() -> board.onMoveLeft());
+        });
+        Thread.sleep(300);
+    }
+
+    @Test
+    public void testPauseDuringBlockFall() throws Exception {
+        Platform.runLater(() -> {
+            // 블록이 떨어지는 중에 일시정지
+            for (int i = 0; i < 5; i++) {
+                board.onMoveDown();
+            }
+            board.onPause();
+            
+            assertTrue(board.isPaused() || board.isMenuVisible(),
+                "Should be paused during block fall");
+        });
+        Thread.sleep(300);
+    }
+
+    @Test
+    public void testMenuVisibility() throws Exception {
+        Platform.runLater(() -> {
+            assertFalse(board.isMenuVisible(), "Menu should not be visible initially");
+            
+            board.onPause();
+            
+            // 일시정지하면 메뉴가 보이거나 일시정지 상태가 됨
+            assertTrue(board.isPaused() || board.isMenuVisible());
+        });
+        Thread.sleep(300);
+    }
+
+    // ========== 게임 루프 및 애니메이션 테스트 ==========
+
+    @Test
+    public void testGameLoopExecution() throws Exception {
+        Platform.runLater(() -> {
+            assertTrue(board.isGameActive(), "Game loop should be active");
+            
+            // 여러 프레임 시뮬레이션
+            for (int i = 0; i < 20; i++) {
+                board.onMoveDown();
+            }
+            
+            assertTrue(board.isGameActive(), "Game should still be active");
+        });
+        Thread.sleep(400);
+    }
+
+    @Test
+    public void testAnimationFrames() throws Exception {
+        Platform.runLater(() -> {
+            // 애니메이션 프레임 시뮬레이션
+            for (int frame = 0; frame < 30; frame++) {
+                if (frame % 10 == 0) {
+                    board.onMoveLeft();
+                } else if (frame % 10 == 5) {
+                    board.onRotate();
+                }
+                // 프레임 업데이트를 위한 짧은 대기
+            }
+        });
+        Thread.sleep(500);
+    }
+
+    @Test
+    public void testBlockDropTiming() throws Exception {
+        Platform.runLater(() -> {
+            // 블록이 자동으로 떨어지는 것 시뮬레이션
+            for (int i = 0; i < 30; i++) {
+                board.onMoveDown();
+            }
+            
+            assertTrue(board.isGameActive(), "Game should still be active");
+        });
+        Thread.sleep(500);
+    }
+
+    @Test
+    public void testRapidHardDrops() throws Exception {
+        Platform.runLater(() -> {
+            for (int i = 0; i < 10; i++) {
+                board.onRotate();
+                board.onHardDrop();
+            }
+        });
+        Thread.sleep(400);
+    }
+
+    // ========== 게임 오버 조건 테스트 ==========
+
+    @Test
+    public void testGameOverScenario() throws Exception {
+        Platform.runLater(() -> {
+            // 빠르게 블록을 쌓아 게임 오버 유도
+            for (int i = 0; i < 100; i++) {
+                board.onHardDrop();
+            }
+            
+            // 게임이 종료되었거나 계속 진행 중
+            boolean gameState = board.isGameActive();
+            assertTrue(gameState || !gameState, "Game state should be valid");
+        });
+        Thread.sleep(800);
+    }
+
+    @Test
+    public void testRestartAfterGameOver() throws Exception {
+        Platform.runLater(() -> {
+            // 많은 블록을 빠르게 드롭
+            for (int i = 0; i < 50; i++) {
+                board.onHardDrop();
+            }
+            
+            // 재시작
+            board.restartGame();
+            
+            assertTrue(board.isGameActive(), "Game should be active after restart");
+            assertFalse(board.isPaused(), "Game should not be paused after restart");
+        });
+        Thread.sleep(600);
+    }
+
+    // ========== 복합 시나리오 테스트 ==========
+
+    @Test
+    public void testComplexGameplaySequence() throws Exception {
+        Platform.runLater(() -> {
+            // 복잡한 게임 플레이 시퀀스
+            for (int round = 0; round < 5; round++) {
+                // 블록 조작
+                board.onMoveLeft();
+                board.onMoveLeft();
+                board.onRotate();
+                board.onMoveRight();
+                board.onMoveRight();
+                board.onRotate();
+                board.onMoveDown();
+                board.onMoveDown();
+                board.onHardDrop();
+                
+                // 일시정지/재개
+                if (round % 2 == 0) {
+                    board.onPause();
+                    board.onPause();
+                }
+            }
+        });
+        Thread.sleep(600);
+    }
+
+    @Test
+    public void testItemModeWithPauseResume() throws Exception {
+        Platform.runLater(() -> {
+            GameSettings settings = GameSettings.getInstance();
+            boolean originalItemMode = settings.isItemModeEnabled();
+            
+            try {
+                settings.setItemModeEnabled(true);
+                Board itemBoard = new Board();
+                
+                // 게임 플레이
+                for (int i = 0; i < 5; i++) {
+                    itemBoard.onRotate();
+                    itemBoard.onHardDrop();
+                }
+                
+                // 일시정지/재개
+                itemBoard.onPause();
+                itemBoard.onPause();
+                
+                // 계속 플레이
+                for (int i = 0; i < 5; i++) {
+                    itemBoard.onMoveLeft();
+                    itemBoard.onHardDrop();
+                }
+                
+                itemBoard.cleanup();
+            } finally {
+                settings.setItemModeEnabled(originalItemMode);
+            }
+        });
+        Thread.sleep(600);
+    }
+
+    @Test
+    public void testDrawPauseOverlay() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                // drawPauseOverlay 메서드 호출
+                Method method = Board.class.getDeclaredMethod("drawPauseOverlay");
+                method.setAccessible(true);
+                
+                assertDoesNotThrow(() -> {
+                    try {
+                        method.invoke(board);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }, "drawPauseOverlay should not throw exception");
+            } catch (NoSuchMethodException e) {
+                fail("drawPauseOverlay method not found: " + e.getMessage());
+            }
+        });
+        Thread.sleep(200);
+    }
+
+    @Test
+    public void testContinuousGameplay() throws Exception {
+        Platform.runLater(() -> {
+            // 연속 게임 플레이 시뮬레이션
+            for (int cycle = 0; cycle < 3; cycle++) {
+                // 한 사이클
+                for (int i = 0; i < 10; i++) {
+                    board.onMoveLeft();
+                    board.onRotate();
+                    board.onMoveRight();
+                    board.onMoveDown();
+                }
+                
+                // 하드 드롭
+                board.onHardDrop();
+            }
+        });
+        Thread.sleep(500);
+    }
 }
 

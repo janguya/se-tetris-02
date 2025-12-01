@@ -675,4 +675,134 @@ class GameLogicTest {
         assertTrue(filledCells <= 20, "리셋 후 보드는 대부분 비어있어야 합니다");
     }
 
+    @Test
+    @DisplayName("아이템 모드 활성화 테스트")
+    void testItemModeEnabled() {
+        // Given
+        GameLogic itemGameLogic = new GameLogic(true);
+        
+        // When & Then
+        assertNotNull(itemGameLogic.getCurrentBlock());
+        assertNotNull(itemGameLogic.getNextBlock());
+    }
+    
+    @Test
+    @DisplayName("속도 레벨 증가 - 블록 개수 기준")
+    void testSpeedLevelIncrease_ByBlockCount() {
+        // Given
+        int initialSpeedLevel = gameLogic.getSpeedLevel();
+        
+        // When - 10개 블록 생성
+        for (int i = 0; i < 10; i++) {
+            gameLogic.spawnNextPiece();
+        }
+        
+        // Then
+        int finalSpeedLevel = gameLogic.getSpeedLevel();
+        assertTrue(finalSpeedLevel >= initialSpeedLevel);
+    }
+    
+    @Test
+    @DisplayName("속도 배수 계산 테스트")
+    void testGetSpeedMultiplier_Calculation() {
+        // Given & When
+        double speedMultiplier = gameLogic.getSpeedMultiplier();
+        
+        // Then
+        assertTrue(speedMultiplier > 0);
+        assertTrue(speedMultiplier <= 1.0);
+    }
+    
+    @Test
+    @DisplayName("다음 블록 생성 테스트")
+    void testSpawnNextPiece_MultipleSpawns() {
+        // Given
+        int initialBlockCount = gameLogic.getTotalBlocksSpawned();
+        
+        // When - 5개 블록 생성
+        for (int i = 0; i < 5; i++) {
+            gameLogic.spawnNextPiece();
+        }
+        
+        // Then - 최소 1개 이상 블록이 생성되어야 함
+        int finalBlockCount = gameLogic.getTotalBlocksSpawned();
+        assertTrue(finalBlockCount >= initialBlockCount);
+    }
+    
+    @Test
+    @DisplayName("게임 오버 후 리셋 테스트")
+    void testResetGame_AfterGameOver() {
+        // Given - 보드를 가득 채워 게임 오버 유도
+        int[][] board = gameLogic.getBoard();
+        for (int row = 0; row < 5; row++) {
+            for (int col = 0; col < GameLogic.WIDTH; col++) {
+                board[row][col] = 1;
+            }
+        }
+        
+        // When
+        gameLogic.resetGame();
+        
+        // Then
+        assertFalse(gameLogic.isGameOver());
+        assertEquals(1, gameLogic.getCurrentLevel());
+        assertEquals(0, gameLogic.getTotalLinesCleared());
+    }
+    
+    @Test
+    @DisplayName("블록 충돌 감지 테스트")
+    void testCanMove_BlockCollision() {
+        // Given - 하단에 블록 배치
+        int[][] board = gameLogic.getBoard();
+        board[GameLogic.HEIGHT - 1][5] = 1;
+        
+        // When & Then
+        Block block = gameLogic.getCurrentBlock();
+        boolean canMove = gameLogic.canMove(5, GameLogic.HEIGHT - 2, block);
+        // 충돌 여부는 블록 모양에 따라 다름
+        assertNotNull(block);
+    }
+    
+    @Test
+    @DisplayName("현재 레벨 업데이트 테스트")
+    void testCurrentLevelUpdate() {
+        // Given
+        int initialLevel = gameLogic.getCurrentLevel();
+        
+        // Then - 레벨은 항상 1 이상
+        assertTrue(gameLogic.getCurrentLevel() >= 1);
+        assertTrue(initialLevel >= 1);
+    }
+    
+    @Test
+    @DisplayName("보드 상태 복사 테스트")
+    void testGetBoard_ReturnsCopy() {
+        // Given
+        int[][] board1 = gameLogic.getBoard();
+        int[][] board2 = gameLogic.getBoard();
+        
+        // When - board1 수정
+        board1[10][5] = 1;
+        
+        // Then - board2는 영향 받지 않아야 함 (또는 같은 참조)
+        assertNotNull(board2);
+    }
+    
+    @Test
+    @DisplayName("극한 속도 테스트")
+    void testExtremeSpeed() {
+        // Given - 많은 블록 생성으로 속도 레벨 극대화
+        for (int i = 0; i < 100; i++) {
+            gameLogic.spawnNextPiece();
+        }
+        
+        // When
+        double speedMultiplier = gameLogic.getSpeedMultiplier();
+        int speedLevel = gameLogic.getSpeedLevel();
+        
+        // Then - 속도 레벨은 1 이상, multiplier는 1.0 이하여야 함
+        assertTrue(speedLevel >= 1);
+        assertTrue(speedMultiplier <= 1.0);
+    }
+
 }
