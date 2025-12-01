@@ -113,5 +113,61 @@ public class PlayerBoardTest {
         PlayerBoard itemBoard = new PlayerBoard(2, this::onLinesCleared, true);
         assertNotNull(itemBoard.getGameLogic(), "아이템 모드에서도 GameLogic이 초기화되어야 함");
     }
+    
+    /**
+     * 여러 공격 라인 수신 테스트
+     */
+    @Test
+    public void testMultipleAttackLines() {
+        List<String[]> attack1 = new ArrayList<>();
+        attack1.add(new String[GameLogic.WIDTH]);
+        
+        List<String[]> attack2 = new ArrayList<>();
+        attack2.add(new String[GameLogic.WIDTH]);
+        attack2.add(new String[GameLogic.WIDTH]);
+        
+        playerBoard.receiveAttackLines(attack1);
+        assertEquals(1, playerBoard.getPendingAttackCount());
+        
+        playerBoard.receiveAttackLines(attack2);
+        assertEquals(3, playerBoard.getPendingAttackCount());
+    }
+    
+    /**
+     * 빈 공격 라인 수신 테스트
+     */
+    @Test
+    public void testEmptyAttackLines() {
+        List<String[]> emptyAttack = new ArrayList<>();
+        playerBoard.receiveAttackLines(emptyAttack);
+        assertEquals(0, playerBoard.getPendingAttackCount());
+    }
+    
+    /**
+     * 아이템 모드와 일반 모드 비교 테스트
+     */
+    @Test
+    public void testItemModeVsNormalMode() {
+        PlayerBoard normalBoard = new PlayerBoard(1, this::onLinesCleared, false);
+        PlayerBoard itemBoard = new PlayerBoard(2, this::onLinesCleared, true);
+        
+        assertNotNull(normalBoard.getGameLogic());
+        assertNotNull(itemBoard.getGameLogic());
+    }
+    
+    /**
+     * 여러 플레이어 보드 동시 생성 테스트
+     */
+    @Test
+    public void testMultiplePlayers() {
+        PlayerBoard p1 = new PlayerBoard(1, this::onLinesCleared, false);
+        PlayerBoard p2 = new PlayerBoard(2, this::onLinesCleared, false);
+        
+        assertNotNull(p1);
+        assertNotNull(p2);
+        assertNotEquals(p1, p2);
+    }
+    
+
 }
 

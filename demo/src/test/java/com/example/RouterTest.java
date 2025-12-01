@@ -413,4 +413,70 @@ public class RouterTest {
         });
         Thread.sleep(100);
     }
+    
+    @Test
+    @DisplayName("showVersusGame 테스트")
+    public void testShowVersusGame() throws Exception {
+        Platform.runLater(() -> {
+            assertDoesNotThrow(() -> {
+                router.showVersusGame();
+            }, "showVersusGame should not throw exception");
+        });
+        Thread.sleep(500);
+    }
+    
+    @Test
+    @DisplayName("showVersusAIGame 테스트")
+    public void testShowVersusAIGame() throws Exception {
+        Platform.runLater(() -> {
+            assertDoesNotThrow(() -> {
+                router.showVersusAIGame();
+            }, "showVersusAIGame should not throw exception");
+        });
+        Thread.sleep(500);
+    }
+    
+    @Test
+    @DisplayName("showOnlineVersusGame 테스트")
+    public void testShowOnlineVersusGame() throws Exception {
+        Platform.runLater(() -> {
+            assertDoesNotThrow(() -> {
+                router.showOnlineVersusGame();
+            }, "showOnlineVersusGame should not throw exception");
+        });
+        Thread.sleep(500);
+    }
+    
+    @Test
+    @DisplayName("versus 라우팅 테스트")
+    public void testRouteToVersus() throws Exception {
+        Platform.runLater(() -> {
+            assertDoesNotThrow(() -> {
+                router.route("versus");
+            }, "Routing to versus should not throw exception");
+        });
+        Thread.sleep(500);
+    }
+    
+    @Test
+    @DisplayName("versus-ai 라우팅 테스트")
+    public void testRouteToVersusAI() throws Exception {
+        Platform.runLater(() -> {
+            assertDoesNotThrow(() -> {
+                router.route("versus-ai");
+            }, "Routing to versus-ai should not throw exception");
+        });
+        Thread.sleep(500);
+    }
+    
+    @Test
+    @DisplayName("online 라우팅 테스트")
+    public void testRouteToOnline() throws Exception {
+        Platform.runLater(() -> {
+            assertDoesNotThrow(() -> {
+                router.route("online");
+            }, "Routing to online should not throw exception");
+        });
+        Thread.sleep(500);
+    }
 }
