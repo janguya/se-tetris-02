@@ -197,14 +197,18 @@ public class OnlineVersusBoard implements MessageListener {
         playerHeader.getStyleClass().add("versus-player-header");
         
         String playerName;
+        String playerColor;
         if (isLocal) {
             playerName = isServer ? "Player 1 (Host)" : "Player 2 (Client)";
+            playerColor = isServer ? "#00d4ff" : "#ff6b6b";  // Host=파란색, Client=빨간색
         } else {
             playerName = isServer ? "Player 2 (Client)" : "Player 1 (Host)";
+            playerColor = isServer ? "#ff6b6b" : "#00d4ff";  // Host가 보는 상대=빨간색, Client가 보는 상대=파란색
         }
+        
         Label playerLabel = new Label(playerName);
         playerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
-        playerLabel.setStyle("-fx-text-fill: " + (isLocal ? "#00d4ff" : "#ff6b6b") + ";");
+        playerLabel.setStyle("-fx-text-fill: " + playerColor + ";");
         
         String controls = isLocal ? "화살표 키 + Enter" : "자동 동기화";
         Label controlsLabel = new Label(controls);
