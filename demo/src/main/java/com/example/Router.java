@@ -488,7 +488,7 @@ public void showGame() {
         // 새 온라인 보드 생성 및 추적
         currentOnlineBoard = new OnlineVersusBoard(stage, mode, networkManager, isServer);
     
-        Scene gameScene = new Scene(currentOnlineBoard.getRoot(), currentWidth()*2, currentHeight()*1.3);
+        Scene gameScene = new Scene(currentOnlineBoard.getRoot(), currentWidth()*2.7, currentHeight()*1.3);
         try {
             gameScene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         } catch (Exception e) {

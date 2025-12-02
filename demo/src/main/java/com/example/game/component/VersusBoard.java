@@ -251,14 +251,15 @@ public class VersusBoard {
 
         topInfo.getChildren().add(modeLabel);
 
+        timerLabel = new Label("");
         // 시간제한 모드에서는 타이머 추가
         if (gameMode == VersusGameModeDialog.VersusMode.TIME_LIMIT) {
-            timerLabel = new Label("⏱ 03:00");
+            timerLabel.setText("⏱ 03:00");
             timerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 35));
             timerLabel.setStyle("-fx-text-fill: #ffeb3b;"
                     + "-fx-effect: dropshadow(gaussian, rgba(255,235,59,0.6), 10, 0, 0, 0);");
-            topInfo.getChildren().add(timerLabel);
         }
+        topInfo.getChildren().add(timerLabel);
 
         // 게임 설명
         Label infoLabel = new Label("2줄 이상 삭제하면 상대방을 공격!");
