@@ -180,13 +180,14 @@ public class OnlineVersusBoard implements MessageListener {
         latencyLabel.setStyle("-fx-text-fill: #ffeb3b;");
         topInfo.getChildren().add(latencyLabel);
 
+        timerLabel = new Label("");
         if (gameMode == VersusGameModeDialog.VersusMode.TIME_LIMIT) {
-            timerLabel = new Label("⏱ 03:00");
+            timerLabel.setText("⏱ 03:00");
             timerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 35));
             timerLabel.setStyle("-fx-text-fill: #ffeb3b;"
                     + "-fx-effect: dropshadow(gaussian, rgba(255,235,59,0.6), 10, 0, 0, 0);");
-            topInfo.getChildren().add(timerLabel);
         }
+        topInfo.getChildren().add(timerLabel);
 
         readyButton = new javafx.scene.control.Button("준비");
         readyButton.setFont(Font.font("Arial", FontWeight.BOLD, 18));
@@ -888,7 +889,7 @@ public class OnlineVersusBoard implements MessageListener {
                             gamemodetext = "Item";
                         }
 
-                        modeLabel = new Label(gamemodetext);
+                        modeLabel.setText(gamemodetext);
 
                         if (gameMode == VersusGameModeDialog.VersusMode.NORMAL) {
                             modeLabel.getStyleClass().add("normal-mode-label");
@@ -896,6 +897,13 @@ public class OnlineVersusBoard implements MessageListener {
                             modeLabel.getStyleClass().add("timelimit-mode-label");
                         } else if (gameMode == VersusGameModeDialog.VersusMode.ITEM) {
                             modeLabel.getStyleClass().add("item-mode-versus-label");
+                        }
+
+                        if (gameMode == VersusGameModeDialog.VersusMode.TIME_LIMIT) {
+                            timerLabel.setText("⏱ 03:00");
+                            timerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 35));
+                            timerLabel.setStyle("-fx-text-fill: #ffeb3b;"
+                                    + "-fx-effect: dropshadow(gaussian, rgba(255,235,59,0.6), 10, 0, 0, 0);");
                         }
 
                     }
