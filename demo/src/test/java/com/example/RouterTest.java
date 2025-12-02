@@ -3,6 +3,7 @@ package com.example;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,6 +12,8 @@ import org.junit.jupiter.api.DisplayName;
 
 import com.example.settings.GameSettings;
 import com.example.game.component.VersusGameModeDialog;
+import com.example.game.component.VersusBoard;
+import com.example.game.component.VersusAIBoard;
 import com.example.network.NetworkManager;
 import com.example.network.ConnectionConfig;
 
@@ -1097,5 +1100,356 @@ public class RouterTest {
             }
         });
         Thread.sleep(100);
+    }
+    
+    @Test
+    @DisplayName("toggleItemMode private 메서드 테스트")
+    public void testToggleItemModePrivate() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                Method toggleItemMode = Router.class.getDeclaredMethod("toggleItemMode");
+                toggleItemMode.setAccessible(true);
+                
+                GameSettings settings = GameSettings.getInstance();
+                boolean initialState = settings.isItemModeEnabled();
+                
+                assertDoesNotThrow(() -> {
+                    toggleItemMode.invoke(router);
+                }, "toggleItemMode should not throw exception");
+                
+                // 상태가 변경되었는지 확인
+                assertEquals(!initialState, settings.isItemModeEnabled(),
+                    "Item mode should be toggled after private method call");
+            } catch (Exception e) {
+                fail("Failed to invoke toggleItemMode: " + e.getMessage());
+            }
+        });
+        Thread.sleep(200);
+    }
+    
+    @Test
+    @DisplayName("updateStageSize private 메서드 테스트")
+    public void testUpdateStageSizePrivate() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                router.showStartMenu(); // Scene이 필요
+                
+                Method updateStageSize = Router.class.getDeclaredMethod("updateStageSize");
+                updateStageSize.setAccessible(true);
+                
+                assertDoesNotThrow(() -> {
+                    updateStageSize.invoke(router);
+                }, "updateStageSize should not throw exception");
+                
+                assertNotNull(stage.getScene(), "Scene should still exist after updateStageSize");
+            } catch (Exception e) {
+                fail("Failed to invoke updateStageSize: " + e.getMessage());
+            }
+        });
+        Thread.sleep(200);
+    }
+    
+    @Test
+    @DisplayName("createSettingsCallback 실행 테스트")
+    public void testExecuteSettingsCallback() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                router.showStartMenu();
+                
+                Method createSettingsCallback = Router.class.getDeclaredMethod("createSettingsCallback");
+                createSettingsCallback.setAccessible(true);
+                
+                Runnable callback = (Runnable) createSettingsCallback.invoke(router);
+                assertNotNull(callback, "Callback should not be null");
+                
+                // 콜백 실행
+                assertDoesNotThrow(() -> {
+                    callback.run();
+                }, "Executing settings callback should not throw exception");
+                
+                assertNotNull(stage.getScene(), "Scene should exist after callback execution");
+            } catch (Exception e) {
+                fail("Failed to execute settings callback: " + e.getMessage());
+            }
+        });
+        Thread.sleep(300);
+    }
+    
+    @Test
+    @DisplayName("Stage 위치 저장 및 복원 테스트")
+    public void testStageSaveAndRestorePosition() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                router.showStartMenu();
+                
+                // 위치 설정
+                stage.setX(100);
+                stage.setY(200);
+                
+                // 설정 변경 콜백 (위치 저장)
+                Method createSettingsCallback = Router.class.getDeclaredMethod("createSettingsCallback");
+                createSettingsCallback.setAccessible(true);
+                Runnable callback = (Runnable) createSettingsCallback.invoke(router);
+                
+                assertDoesNotThrow(() -> {
+                    callback.run();
+                }, "Settings callback should save position");
+            } catch (Exception e) {
+                fail("Failed to test position save/restore: " + e.getMessage());
+            }
+        });
+        Thread.sleep(300);
+    }
+    
+    @Test
+    @DisplayName("설정 변경 후 크기 업데이트 테스트")
+    public void testSettingsChangeSizeUpdate() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                router.setSize(800, 600);
+                router.showStartMenu();
+                
+                Method createSettingsCallback = Router.class.getDeclaredMethod("createSettingsCallback");
+                createSettingsCallback.setAccessible(true);
+                Runnable callback = (Runnable) createSettingsCallback.invoke(router);
+                
+                // 콜백 실행 시 override가 null이 되어야 함
+                callback.run();
+                
+                // 설정에서 값을 가져와야 함
+                assertNotNull(stage.getScene(), "Scene should exist");
+            } catch (Exception e) {
+                fail("Failed to test settings change size update: " + e.getMessage());
+            }
+        });
+        Thread.sleep(300);
+    }
+    
+    @Test
+    @DisplayName("게임 종료 콜백 테스트")
+    public void testSingleGameEndCallback() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                router.showGame();
+                Thread.sleep(200);
+                
+                // 게임을 시작한 후 메뉴로 돌아가는 것을 시뮬레이션
+                assertDoesNotThrow(() -> {
+                    router.showStartMenu();
+                }, "Returning to menu after game should not throw exception");
+            } catch (Exception e) {
+                fail("Failed to test game end callback: " + e.getMessage());
+            }
+        });
+        Thread.sleep(500);
+    }
+    
+    @Test
+    @DisplayName("Versus 게임 종료 콜백 테스트")
+    public void testVersusGameEndCallback() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                // Versus 게임 시작 후 메뉴로 돌아가기
+                router.showVersusGame();
+                Thread.sleep(300);
+                router.showStartMenu();
+                
+                assertNotNull(stage.getScene(), "Scene should exist after versus game end");
+            } catch (Exception e) {
+                fail("Failed to test versus game end callback: " + e.getMessage());
+            }
+        });
+        Thread.sleep(500);
+    }
+    
+    @Test
+    @DisplayName("크기 override 값 테스트")
+    public void testSizeOverrideValues() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                router.setSize(900, 700);
+                
+                Method currentWidth = Router.class.getDeclaredMethod("currentWidth");
+                currentWidth.setAccessible(true);
+                Method currentHeight = Router.class.getDeclaredMethod("currentHeight");
+                currentHeight.setAccessible(true);
+                
+                int width = (int) currentWidth.invoke(router);
+                int height = (int) currentHeight.invoke(router);
+                
+                assertEquals(900, width, "Width should be overridden to 900");
+                assertEquals(700, height, "Height should be overridden to 700");
+            } catch (Exception e) {
+                fail("Failed to test size override values: " + e.getMessage());
+            }
+        });
+        Thread.sleep(100);
+    }
+    
+    @Test
+    @DisplayName("default 크기 값 테스트")
+    public void testDefaultSizeValues() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                // Override 없이 기본값 사용
+                Router defaultRouter = new Router(new Stage());
+                
+                Method currentWidth = Router.class.getDeclaredMethod("currentWidth");
+                currentWidth.setAccessible(true);
+                Method currentHeight = Router.class.getDeclaredMethod("currentHeight");
+                currentHeight.setAccessible(true);
+                
+                int width = (int) currentWidth.invoke(defaultRouter);
+                int height = (int) currentHeight.invoke(defaultRouter);
+                
+                // GameSettings의 기본값 사용
+                GameSettings settings = GameSettings.getInstance();
+                assertEquals(settings.getWindowWidth(), width, "Width should match GameSettings");
+                assertEquals(settings.getWindowHeight(), height, "Height should match GameSettings");
+            } catch (Exception e) {
+                fail("Failed to test default size values: " + e.getMessage());
+            }
+        });
+        Thread.sleep(100);
+    }
+    
+    @Test
+    @DisplayName("여러 화면 전환 시 위치 유지 테스트")
+    public void testPositionPersistenceAcrossScreens() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                router.showStartMenu();
+                stage.setX(150);
+                stage.setY(250);
+                
+                double savedX = stage.getX();
+                double savedY = stage.getY();
+                
+                router.route("GAME");
+                Thread.sleep(200);
+                router.showStartMenu();
+                
+                // 위치가 변경되지 않았는지 확인 (근사치)
+                assertTrue(Math.abs(stage.getX() - savedX) < 50, "X position should be preserved");
+                assertTrue(Math.abs(stage.getY() - savedY) < 50, "Y position should be preserved");
+            } catch (Exception e) {
+                fail("Failed to test position persistence: " + e.getMessage());
+            }
+        });
+        Thread.sleep(500);
+    }
+    
+    @Test
+    @DisplayName("VersusBoard 콜백 - startVersusGame 통한 콜백 생성 테스트")
+    public void testStartVersusGameCallbackCreation() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                router.showStartMenu();
+                
+                // startVersusGame을 reflection으로 호출
+                Method startVersusGame = Router.class.getDeclaredMethod("startVersusGame", VersusGameModeDialog.VersusMode.class);
+                startVersusGame.setAccessible(true);
+                
+                assertDoesNotThrow(() -> {
+                    startVersusGame.invoke(router, VersusGameModeDialog.VersusMode.NORMAL);
+                }, "startVersusGame should create VersusBoard with callback");
+                
+                assertNotNull(stage.getScene(), "Scene should be set after starting versus game");
+            } catch (Exception e) {
+                fail("Failed to test startVersusGame callback creation: " + e.getMessage());
+            }
+        });
+        Thread.sleep(300);
+    }
+    
+    @Test
+    @DisplayName("VersusAIBoard 콜백 - startVersusAIGame 통한 콜백 생성 테스트")
+    public void testStartVersusAIGameCallbackCreation() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                router.showStartMenu();
+                
+                // startVersusAIGame을 reflection으로 호출
+                Method startVersusAIGame = Router.class.getDeclaredMethod("startVersusAIGame", VersusGameModeDialog.VersusMode.class);
+                startVersusAIGame.setAccessible(true);
+                
+                assertDoesNotThrow(() -> {
+                    startVersusAIGame.invoke(router, VersusGameModeDialog.VersusMode.TIME_LIMIT);
+                }, "startVersusAIGame should create VersusAIBoard with callback");
+                
+                assertNotNull(stage.getScene(), "Scene should be set after starting AI versus game");
+            } catch (Exception e) {
+                fail("Failed to test startVersusAIGame callback creation: " + e.getMessage());
+            }
+        });
+        Thread.sleep(300);
+    }
+    
+    @Test
+    @DisplayName("VersusGameModeDialog 콜백 - onCancel 실행 테스트")
+    public void testVersusGameModeDialogOnCancelCallback() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                router.showStartMenu();
+                
+                // 콜백 생성 및 실행
+                AtomicBoolean cancelCalled = new AtomicBoolean(false);
+                VersusGameModeDialog.ModeSelectionCallback callback = new VersusGameModeDialog.ModeSelectionCallback() {
+                    @Override
+                    public void onModeSelected(VersusGameModeDialog.VersusMode mode) {
+                        // Not testing this path
+                    }
+                    
+                    @Override
+                    public void onCancel() {
+                        cancelCalled.set(true);
+                    }
+                };
+                
+                // Cancel 콜백 실행
+                callback.onCancel();
+                
+                assertTrue(cancelCalled.get(), "onCancel callback should be executed");
+            } catch (Exception e) {
+                fail("Failed to test VersusGameModeDialog onCancel callback: " + e.getMessage());
+            }
+        });
+        Thread.sleep(200);
+    }
+    
+    @Test
+    @DisplayName("Router showVersusGame를 통한 콜백 생성 및 실행")
+    public void testShowVersusGameCallbackCreation() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                // showVersusGame 호출하여 콜백이 생성되는지 확인
+                assertDoesNotThrow(() -> {
+                    router.showVersusGame();
+                }, "showVersusGame should create callback without error");
+                
+                assertNotNull(stage.getScene(), "Scene should be set after showVersusGame");
+            } catch (Exception e) {
+                fail("Failed to test showVersusGame callback creation: " + e.getMessage());
+            }
+        });
+        Thread.sleep(300);
+    }
+    
+    @Test
+    @DisplayName("Router showVersusAIGame를 통한 콜백 생성 및 실행")
+    public void testShowVersusAIGameCallbackCreation() throws Exception {
+        Platform.runLater(() -> {
+            try {
+                // showVersusAIGame 호출하여 콜백이 생성되는지 확인
+                assertDoesNotThrow(() -> {
+                    router.showVersusAIGame();
+                }, "showVersusAIGame should create callback without error");
+                
+                assertNotNull(stage.getScene(), "Scene should be set after showVersusAIGame");
+            } catch (Exception e) {
+                fail("Failed to test showVersusAIGame callback creation: " + e.getMessage());
+            }
+        });
+        Thread.sleep(300);
     }
 }

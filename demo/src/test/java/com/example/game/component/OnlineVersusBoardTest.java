@@ -23,6 +23,7 @@ public class OnlineVersusBoardTest {
 
     private OnlineVersusBoard onlineVersusBoard;
     private NetworkManager mockNetworkManager;
+    private Stage mockStage;
 
     // 더미 MessageListener 구현
     private static class DummyMessageListener implements MessageListener {
@@ -56,12 +57,16 @@ public class OnlineVersusBoardTest {
         CountDownLatch latch = new CountDownLatch(1);
         Platform.runLater(() -> {
             try {
+                // Stage 초기화
+                mockStage = new Stage();
+                
                 // NetworkManager 목 객체 생성 - DummyMessageListener 사용
                 ConnectionConfig config = new ConnectionConfig(8080);
                 mockNetworkManager = new NetworkManager(config, new DummyMessageListener(), "TestPlayer");
                 
                 // OnlineVersusBoard 생성 (서버 모드)
                 onlineVersusBoard = new OnlineVersusBoard(
+                    mockStage,
                     VersusGameModeDialog.VersusMode.NORMAL,
                     mockNetworkManager,
                     true  // isServer
@@ -113,6 +118,7 @@ public class OnlineVersusBoardTest {
     public void testServerMode() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard serverBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.NORMAL,
                 mockNetworkManager,
                 true
@@ -127,6 +133,7 @@ public class OnlineVersusBoardTest {
     public void testClientMode() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard clientBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.NORMAL,
                 mockNetworkManager,
                 false
@@ -141,6 +148,7 @@ public class OnlineVersusBoardTest {
     public void testNormalMode() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard normalBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.NORMAL,
                 mockNetworkManager,
                 true
@@ -155,6 +163,7 @@ public class OnlineVersusBoardTest {
     public void testItemMode() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard itemBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.ITEM,
                 mockNetworkManager,
                 true
@@ -169,6 +178,7 @@ public class OnlineVersusBoardTest {
     public void testTimeLimitMode() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard timeLimitBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.TIME_LIMIT,
                 mockNetworkManager,
                 true
@@ -406,6 +416,7 @@ public class OnlineVersusBoardTest {
     public void testGameModeNormal() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard board = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.NORMAL,
                 mockNetworkManager,
                 true
@@ -420,6 +431,7 @@ public class OnlineVersusBoardTest {
     public void testGameModeItem() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard board = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.ITEM,
                 mockNetworkManager,
                 true
@@ -434,6 +446,7 @@ public class OnlineVersusBoardTest {
     public void testGameModeTimeLimit() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard board = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.TIME_LIMIT,
                 mockNetworkManager,
                 true
@@ -565,11 +578,11 @@ public class OnlineVersusBoardTest {
     public void testMultipleGameModes() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard board1 = new OnlineVersusBoard(
-                VersusGameModeDialog.VersusMode.NORMAL, mockNetworkManager, true);
+                mockStage, VersusGameModeDialog.VersusMode.NORMAL, mockNetworkManager, true);
             OnlineVersusBoard board2 = new OnlineVersusBoard(
-                VersusGameModeDialog.VersusMode.ITEM, mockNetworkManager, false);
+                mockStage, VersusGameModeDialog.VersusMode.ITEM, mockNetworkManager, false);
             OnlineVersusBoard board3 = new OnlineVersusBoard(
-                VersusGameModeDialog.VersusMode.TIME_LIMIT, mockNetworkManager, true);
+                mockStage, VersusGameModeDialog.VersusMode.TIME_LIMIT, mockNetworkManager, true);
             
             assertNotNull(board1);
             assertNotNull(board2);
@@ -750,6 +763,7 @@ public class OnlineVersusBoardTest {
     public void testItemModeInitialization() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard itemBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.ITEM,
                 mockNetworkManager,
                 true
@@ -776,6 +790,7 @@ public class OnlineVersusBoardTest {
     public void testTimeLimitModeInitialization() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard timeLimitBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.TIME_LIMIT,
                 mockNetworkManager,
                 false
@@ -868,6 +883,7 @@ public class OnlineVersusBoardTest {
         Platform.runLater(() -> {
             // 서버 보드
             OnlineVersusBoard serverBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.NORMAL,
                 mockNetworkManager,
                 true
@@ -877,6 +893,7 @@ public class OnlineVersusBoardTest {
             ConnectionConfig clientConfig = new ConnectionConfig(8081);
             NetworkManager clientNetwork = new NetworkManager(clientConfig, null, "Client");
             OnlineVersusBoard clientBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.NORMAL,
                 clientNetwork,
                 false
@@ -921,6 +938,7 @@ public class OnlineVersusBoardTest {
         Platform.runLater(() -> {
             // 클라이언트가 게임 준비 완료 메시지를 받을 때
             OnlineVersusBoard clientBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.NORMAL,
                 mockNetworkManager,
                 false
@@ -965,6 +983,7 @@ public class OnlineVersusBoardTest {
     public void testReadyButtonServerSide() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard serverBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.NORMAL,
                 mockNetworkManager,
                 true
@@ -983,6 +1002,7 @@ public class OnlineVersusBoardTest {
     public void testReadyButtonClientSide() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard clientBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.NORMAL,
                 mockNetworkManager,
                 false
@@ -1116,6 +1136,7 @@ public class OnlineVersusBoardTest {
     public void testItemModeGameStart() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard itemBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.ITEM,
                 mockNetworkManager,
                 true
@@ -1136,6 +1157,7 @@ public class OnlineVersusBoardTest {
     public void testTimeLimitModeGameStart() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard timeLimitBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.TIME_LIMIT,
                 mockNetworkManager,
                 true
@@ -1249,6 +1271,7 @@ public class OnlineVersusBoardTest {
     public void testServerBroadcastsGameStart() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard serverBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.NORMAL,
                 mockNetworkManager,
                 true
@@ -1275,6 +1298,7 @@ public class OnlineVersusBoardTest {
     public void testClientReceivesGameStart() throws Exception {
         Platform.runLater(() -> {
             OnlineVersusBoard clientBoard = new OnlineVersusBoard(
+                mockStage,
                 VersusGameModeDialog.VersusMode.NORMAL,
                 mockNetworkManager,
                 false
@@ -1348,6 +1372,7 @@ public class OnlineVersusBoardTest {
             
             for (VersusGameModeDialog.VersusMode mode : modes) {
                 OnlineVersusBoard board = new OnlineVersusBoard(
+                    mockStage,
                     mode,
                     mockNetworkManager,
                     true
