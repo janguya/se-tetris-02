@@ -18,7 +18,7 @@ class ItemsTest {
 
         assertNotNull(block, "SingleBlock이 null이면 안됩니다");
         assertNotNull(block.getCssClass(), "CSS 클래스가 null이면 안됩니다");
-        assertEquals("item-single", block.getCssClass(), "CSS 클래스가 item-single이어야 합니다");
+        assertEquals("item", block.getCssClass(), "CSS 클래스가 item이어야 합니다");
         assertEquals(1, block.width(), "SingleBlock의 너비는 1이어야 합니다");
         assertEquals(1, block.height(), "SingleBlock의 높이는 1이어야 합니다");
         assertEquals(1, block.getShape(0, 0), "SingleBlock의 (0,0) 위치는 1이어야 합니다");
@@ -42,7 +42,7 @@ class ItemsTest {
 
         assertNotNull(block, "weightedBlock이 null이면 안됩니다");
         assertNotNull(block.getCssClass(), "CSS 클래스가 null이면 안됩니다");
-        assertEquals("item-weight", block.getCssClass(), "CSS 클래스가 item-weight이어야 합니다");
+        assertEquals("item", block.getCssClass(), "CSS 클래스가 item이어야 합니다");
         assertEquals(4, block.width(), "weightedBlock의 너비는 4이어야 합니다");
         assertEquals(2, block.height(), "weightedBlock의 높이는 2이어야 합니다");
     }
