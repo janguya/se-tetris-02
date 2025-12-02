@@ -36,14 +36,18 @@ public class PlayerBoard extends Board {
     private Queue<String[]> pendingAttackLines;
 
     public PlayerBoard(int playerNumber, LineClearCallback callback, boolean itemMode) {
+        this(playerNumber, callback, itemMode, true);
+    }
+    
+    public PlayerBoard(int playerNumber, LineClearCallback callback, boolean itemMode, boolean spawnInitialBlock) {
         super();
         this.playerNumber = playerNumber;
         this.callback = callback;
         this.pendingAttackLines = new LinkedList<>();
-
-        // GameLogic을 아이템 모드로 재초기화
-        gameLogic = new GameLogic(itemMode);
-
+        
+        // GameLogic을 아이템 모드로 재초기화 (초기 블록 생성 여부 제어)
+        gameLogic = new GameLogic(itemMode, spawnInitialBlock);
+        
         // UI 초기화 (캔버스와 GraphicsContext 생성)
         initializeUI();
 
