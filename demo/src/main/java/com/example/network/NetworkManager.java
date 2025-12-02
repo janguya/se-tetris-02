@@ -175,22 +175,54 @@ public class NetworkManager {
                 // 스트림 초기화
                 initializeStreams();
                 
+                // 메시지 수신 시작 (먼저 시작해야 응답을 받을 수 있음)
+                startReceiving();
+                
+                // ===== 핸드셰이크 시작: CONNECT_REQUEST 전송 =====
+                System.out.println(">>> Client: Sending CONNECT_REQUEST...");
+                GameMessage request = new GameMessage(MessageType.CONNECT_REQUEST, localId);
+                request.put("clientId", localId);
+                request.put("version", "1.0");
+                sendMessageDirect(request);
+                
+                // CONNECT_RESPONSE 대기 (최대 5초)
+                System.out.println(">>> Client: Waiting for CONNECT_RESPONSE...");
+                int timeout = 0;
+                while (!handshakeComplete.get() && timeout < 50) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        System.err.println(">>> Client: Handshake wait interrupted");
+                        break;
+                    }
+                    timeout++;
+                }
+                
+                if (!handshakeComplete.get()) {
+                    System.err.println(">>> Client: Handshake failed - no CONNECT_RESPONSE from server");
+                    running.set(false);
+                    throw new IOException("서버가 응답하지 않습니다. 방이 존재하지 않을 수 있습니다.");
+                }
+                
+                System.out.println(">>> Client: Handshake complete!");
+                // ===== 핸드셰이크 완료 =====
+                
                 // 연결 완료
                 connected.set(true);
                 
                 // 핑 시작
                 startPingScheduler();
                 
-                // 메시지 수신 시작
-                startReceiving();
-                
                 // 리스너 알림
                 listener.onConnected(peerId != null ? peerId : hostAddress);
                 
-            } catch (IOException e) {
+            } catch (Exception e) {
                 System.err.println("Failed to connect: " + e.getMessage());
                 listener.onError("Connection failed", e);
                 running.set(false);
+                connected.set(false);
+                handshakeComplete.set(false);
             }
         });
     }
