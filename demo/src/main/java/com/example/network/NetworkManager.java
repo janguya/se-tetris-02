@@ -246,7 +246,7 @@ public class NetworkManager {
         executorService.submit(() -> {
             System.out.println("Started receiving messages...");
             
-            while (running.get() && connected.get()) {
+            while (running.get()) {
                 try {
                     // 메시지 수신
                     Object obj = in.readObject();
