@@ -31,6 +31,7 @@ public class NetworkManager {
     private ObjectInputStream in;
     private final AtomicBoolean connected = new AtomicBoolean(false);
     private final AtomicBoolean running = new AtomicBoolean(false);
+    private final AtomicBoolean handshakeComplete = new AtomicBoolean(false);
     
     // 스레드 풀
     private final ExecutorService executorService;
@@ -196,6 +197,15 @@ public class NetworkManager {
                     
                     if (obj instanceof GameMessage) {
                         GameMessage message = (GameMessage) obj;
+
+                        // 핸드셰이크 메시지 처리
+                        if (message.getType() == MessageType.CONNECT_REQUEST) {
+                            handleConnectRequest(message);
+                            continue;
+                        } else if (message.getType() == MessageType.CONNECT_RESPONSE) {
+                            handleConnectResponse(message);
+                            continue;
+                        }
                         
                         // PONG 메시지는 레이턴시 계산
                         if (message.getType() == MessageType.PONG) {
@@ -241,6 +251,64 @@ public class NetworkManager {
                 disconnect("Connection lost");
             }
         });
+    }
+
+    // 서버: CONNECT_REQUEST 처리
+    private void handleConnectRequest(GameMessage request) {
+        System.out.println(">>> Server: Received CONNECT_REQUEST from " + request.getSenderId());
+        
+        // 클라이언트 정보 저장
+        peerId = request.getSenderId();
+        String clientVersion = request.getString("version");
+        
+        System.out.println(">>> Server: Client version: " + clientVersion);
+        
+        // CONNECT_RESPONSE 전송
+        GameMessage response = new GameMessage(MessageType.CONNECT_RESPONSE, localId);
+        response.put("serverId", localId);
+        response.put("version", "1.0");
+        response.put("status", "accepted");
+        
+        sendMessageDirect(response);
+        
+        System.out.println(">>> Server: Sent CONNECT_RESPONSE");
+        
+        // 핸드셰이크 완료
+        handshakeComplete.set(true);
+    }
+
+    // 클라이언트: CONNECT_RESPONSE 처리
+    private void handleConnectResponse(GameMessage response) {
+        System.out.println(">>> Client: Received CONNECT_RESPONSE from " + response.getSenderId());
+        
+        String status = response.getString("status");
+        
+        if ("accepted".equals(status)) {
+            peerId = response.getSenderId();
+            String serverVersion = response.getString("version");
+            
+            System.out.println(">>> Client: Server version: " + serverVersion);
+            System.out.println(">>> Client: Connection accepted!");
+            
+            // 핸드셰이크 완료
+            handshakeComplete.set(true);
+        } else {
+            System.err.println(">>> Client: Connection rejected by server");
+            disconnect("Connection rejected");
+        }
+    }
+
+    // 직접 메시지 전송 (핸드셰이크용)
+    private void sendMessageDirect(GameMessage message) {
+        try {
+            synchronized (out) {
+                out.writeObject(message);
+                out.flush();
+                out.reset();
+            }
+        } catch (IOException e) {
+            System.err.println("Failed to send message: " + e.getMessage());
+        }
     }
 
     // 메시지 전송
@@ -327,6 +395,7 @@ public class NetworkManager {
         
         running.set(false);
         connected.set(false);
+        handshakeComplete.set(false);
         
         // 핑 스케줄러 중지
         if (pingScheduler != null) {
@@ -378,7 +447,7 @@ public class NetworkManager {
     // ============== 상태 조회 ==============
     
     public boolean isConnected() {
-        return connected.get();
+        return connected.get() && handshakeComplete.get();
     }
     
     public boolean isRunning() {

@@ -193,6 +193,14 @@ public class NetworkLobbyDialog {
                 callback.onCancelled();
                 return;
             }
+
+            // IP 형식 간단 검증
+            if (!isValidIP(serverIp)) {
+                showErrorDialog("잘못된 IP 주소", 
+                    "올바른 IP 주소 형식이 아닙니다.\n예: 192.168.0.100");
+                callback.onCancelled();
+                return;
+            }
             
             // 로딩 다이얼로그 표시
             Stage loadingDialog = showLoadingDialog("서버 연결 중...");
@@ -225,26 +233,72 @@ public class NetworkLobbyDialog {
                         attempts++;
                     }
                     
-                    if (networkManager.isConnected()) {
-                        Platform.runLater(() -> {
-                            loadingDialog.close();
-                            saveConnectedIP(serverIp);
-                            showSuccessDialog("연결 성공!", "서버에 연결되었습니다.");
-                            callback.onClientConnected(networkManager);
-                        });
-                    } else {
-                        throw new IOException("연결 타임아웃");
+                    // 서버가 제대로 동작하는지 확인
+                    Thread.sleep(2000);
+
+                    
+                    if (!networkManager.isConnected()) {
+                        // 연결은 되었지만 바로 끊김 = 서버가 제대로 동작하지 않음
+                        throw new IOException(
+                            "서버가 응답하지 않습니다.\n\n" +
+                            "서버 쪽에서 방을 제대로 열지 않았거나\n" +
+                            "네트워크 문제가 있을 수 있습니다."
+                        );
                     }
+                    
+                    System.out.println(">>> Server verified, connection successful!");
+                    
+                    // 연결 성공
+                    Platform.runLater(() -> {
+                        loadingDialog.close();
+                        saveConnectedIP(serverIp);
+                        showSuccessDialog("연결 성공!", "서버에 연결되었습니다.");
+                        callback.onClientConnected(networkManager);
+                    });
                     
                 } catch (Exception e) {
                     Platform.runLater(() -> {
                         loadingDialog.close();
-                        showErrorDialog("연결 실패", e.getMessage());
+                        
+                        String errorMsg = e.getMessage();
+                        if (errorMsg == null || errorMsg.isEmpty()) {
+                            errorMsg = "알 수 없는 오류가 발생했습니다.";
+                        }
+                        
+                        showErrorDialog("연결 실패", errorMsg);
                         callback.onCancelled();
                     });
                 }
             });
         });
+    }
+
+    // IP 주소 형식 검증
+    private boolean isValidIP(String ip) {
+        if (ip == null || ip.isEmpty()) {
+            return false;
+        }
+        
+        // 간단한 IP 형식 체크 (xxx.xxx.xxx.xxx)
+        String ipPattern = "^(?:[0-9]{1,3}\\.){3}[0-9]{1,3}$";
+        if (!ip.matches(ipPattern)) {
+            return false;
+        }
+        
+        // 각 옥텟이 0-255 범위인지 확인
+        String[] parts = ip.split("\\.");
+        for (String part : parts) {
+            try {
+                int num = Integer.parseInt(part);
+                if (num < 0 || num > 255) {
+                    return false;
+                }
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+        
+        return true;
     }
 
     // 서버 정보 다이얼로그
