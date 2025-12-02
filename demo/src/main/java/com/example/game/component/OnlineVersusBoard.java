@@ -128,7 +128,8 @@ public class OnlineVersusBoard implements MessageListener {
         gameArea.setPadding(new Insets(10));
 
         boolean itemMode = (gameMode == VersusGameModeDialog.VersusMode.ITEM);
-
+        
+        // 초기 블록 생성하지 않음 (게임 시작 전)
         BorderPane localContainer = createPlayerBoard(true, itemMode);
         BorderPane remoteContainer = createPlayerBoard(false, itemMode);
 
@@ -216,15 +217,19 @@ public class OnlineVersusBoard implements MessageListener {
         playerHeader.getStyleClass().add("versus-player-header");
 
         String playerName;
+        String playerColor;
         if (isLocal) {
             playerName = isServer ? "Player 1 (Host)" : "Player 2 (Client)";
+            playerColor = isServer ? "#00d4ff" : "#ff6b6b";  // Host=파란색, Client=빨간색
         } else {
             playerName = isServer ? "Player 2 (Client)" : "Player 1 (Host)";
+            playerColor = isServer ? "#ff6b6b" : "#00d4ff";  // Host가 보는 상대=빨간색, Client가 보는 상대=파란색
         }
+        
         Label playerLabel = new Label(playerName);
-        playerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 20));
-        playerLabel.setStyle("-fx-text-fill: " + (isLocal ? "#00d4ff" : "#ff6b6b") + ";");
-
+        playerLabel.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        playerLabel.setStyle("-fx-text-fill: " + playerColor + ";");
+        
         String controls = isLocal ? "화살표 키 + Enter" : "자동 동기화";
         Label controlsLabel = new Label(controls);
         controlsLabel.setFont(Font.font("Arial", FontWeight.NORMAL, 15));
@@ -234,7 +239,8 @@ public class OnlineVersusBoard implements MessageListener {
         playerContainer.setTop(playerHeader);
 
         if (isLocal) {
-            localBoard = new PlayerBoard(1, this::onLocalLinesCleared, itemMode);
+            // 게임 시작 전에는 블록을 생성하지 않음
+            localBoard = new PlayerBoard(1, this::onLocalLinesCleared, itemMode, false);
             localBoard.setAutoDropCallback(this::onLocalAutoDrop);
             localScorePanel = new ScorePanel();
             localBoard.scorePanel = localScorePanel;
@@ -253,7 +259,8 @@ public class OnlineVersusBoard implements MessageListener {
             BorderPane.setMargin(rightPanel, new Insets(0, 0, 0, 10));
 
         } else {
-            remoteBoard = new PlayerBoard(2, this::onRemoteLinesCleared, itemMode);
+            // 게임 시작 전에는 블록을 생성하지 않음
+            remoteBoard = new PlayerBoard(2, this::onRemoteLinesCleared, itemMode, false);
             remoteScorePanel = new ScorePanel();
             remoteBoard.scorePanel = remoteScorePanel;
             remoteAttackDisplay = new AttackQueueDisplay("Opponent");
@@ -389,7 +396,12 @@ public class OnlineVersusBoard implements MessageListener {
 
             Logger.info(">>> Seed applied - Local: " + mySeed);
         }
-
+        
+        // 게임 시작 시점에 첫 블록 생성
+        if (localBoard.getGameLogic().getCurrentBlock() == null) {
+            localBoard.getGameLogic().spawnNextPiece();
+        }
+        
         // Remote Board는 seed 없이 네트워크 상태만 표시
         startGameLoop();
 
@@ -735,10 +747,12 @@ public class OnlineVersusBoard implements MessageListener {
         gameActive = false;
         localReady = false;
         remoteReady = false;
-
-        // 보드 초기화
-        localBoard.restart();
-        remoteBoard.restart();
+    
+        // 보드 초기화 (블록 생성하지 않음)
+        localBoard.getGameLogic().resetGameWithoutSpawn();
+        remoteBoard.getGameLogic().resetGameWithoutSpawn();
+        localBoard.drawBoard();
+        remoteBoard.drawBoard();
         localScorePanel.resetScore();
         remoteScorePanel.resetScore();
 

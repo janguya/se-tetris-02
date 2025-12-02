@@ -31,6 +31,7 @@ public class NetworkLobbyDialog {
     
     private Stage dialog;
     private NetworkManager networkManager;
+    private CompletableFuture<Void> connectionWaitFuture; // 연결 대기 스레드 관리용
 
     // IP 주소 저장을 위한 Preferences
     private static final String PREF_KEY_LAST_IP = "last_server_ip";
@@ -249,12 +250,23 @@ public class NetworkLobbyDialog {
 
     // 서버 정보 다이얼로그
     private void showServerInfoDialog(String ip, int port, LobbyCallback callback) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("서버 시작됨");
-        alert.setHeaderText("서버가 시작되었습니다!");
+        Stage serverDialog = new Stage();
+        serverDialog.initModality(Modality.APPLICATION_MODAL);
+        serverDialog.setTitle("서버 시작됨");
+        serverDialog.setResizable(false);
         
-        VBox content = new VBox(10);
-        content.setPadding(new Insets(10));
+        VBox content = new VBox(15);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new Insets(30));
+        
+        Label titleLabel = new Label("서버가 시작되었습니다!");
+        titleLabel.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        titleLabel.setStyle("-fx-text-fill: black;");
+        
+        VBox infoBox = new VBox(10);
+        infoBox.setAlignment(Pos.CENTER_LEFT);
+        infoBox.setPadding(new Insets(20));
+        infoBox.setStyle("-fx-background-color: #f0f0f0; -fx-background-radius: 10;");
         
         Label ipLabel = new Label("📡 서버 IP: " + ip);
         ipLabel.setFont(Font.font("Arial", FontWeight.BOLD, 14));
@@ -266,31 +278,63 @@ public class NetworkLobbyDialog {
         infoLabel.setFont(Font.font("Arial", FontWeight.NORMAL, 11));
         infoLabel.setStyle("-fx-text-fill: gray;");
         
+        infoBox.getChildren().addAll(ipLabel, portLabel, infoLabel);
+        
         Label waitLabel = new Label("⏳ 클라이언트 연결 대기 중...");
         waitLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
         waitLabel.setStyle("-fx-text-fill: orange;");
         
-        content.getChildren().addAll(ipLabel, portLabel, infoLabel, waitLabel);
-        alert.getDialogPane().setContent(content);
-        
-        // 비동기로 표시 (닫지 않음)
-        alert.show();
-        
-        // 연결 대기
-        CompletableFuture.runAsync(() -> {
-            while (!networkManager.isConnected()) {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    break;
-                }
+        Button cancelButton = new Button("연결 취소");
+        cancelButton.setPrefWidth(150);
+        cancelButton.setPrefHeight(40);
+        cancelButton.setStyle("-fx-background-color: #ff6b6b; -fx-text-fill: white; -fx-font-size: 14; -fx-font-weight: bold; -fx-background-radius: 5;");
+        cancelButton.setOnAction(e -> {
+            // 연결 대기 취소
+            if (connectionWaitFuture != null) {
+                connectionWaitFuture.cancel(true);
             }
             
-            Platform.runLater(() -> {
-                alert.close();
-                showSuccessDialog("클라이언트 연결됨!", "게임을 시작합니다.");
-                callback.onServerCreated(networkManager);
-            });
+            // 네트워크 매니저 종료
+            if (networkManager != null) {
+                networkManager.shutdown();
+            }
+            
+            serverDialog.close();
+            callback.onCancelled();
+        });
+        
+        content.getChildren().addAll(titleLabel, infoBox, waitLabel, cancelButton);
+        
+        Scene scene = new Scene(content, 400, 300);
+        try {
+            scene.getStylesheets().add(
+                NetworkLobbyDialog.class.getResource("/styles.css").toExternalForm()
+            );
+        } catch (Exception e) {
+            // 스타일시트 없으면 무시
+        }
+        
+        serverDialog.setScene(scene);
+        serverDialog.show();
+        
+        // 연결 대기
+        connectionWaitFuture = CompletableFuture.runAsync(() -> {
+            try {
+                while (!networkManager.isConnected() && !Thread.currentThread().isInterrupted()) {
+                    Thread.sleep(100);
+                }
+                
+                if (!Thread.currentThread().isInterrupted() && networkManager.isConnected()) {
+                    Platform.runLater(() -> {
+                        serverDialog.close();
+                        showSuccessDialog("클라이언트 연결됨!", "게임을 시작합니다.");
+                        callback.onServerCreated(networkManager);
+                    });
+                }
+            } catch (InterruptedException e) {
+                // 취소됨
+                Thread.currentThread().interrupt();
+            }
         });
     }
 
