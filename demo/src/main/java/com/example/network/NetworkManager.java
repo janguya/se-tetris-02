@@ -102,14 +102,38 @@ public class NetworkManager {
             // 스트림 초기화
             initializeStreams();
 
+            // 메시지 수신 시작 (핸드셰이크 대기를 위해 먼저 시작)
+            startReceiving();
+            
+            // ===== CONNECT_REQUEST 대기 =====
+            System.out.println(">>> Server: Waiting for CONNECT_REQUEST from client...");
+            int timeout = 0;
+            while (!handshakeComplete.get() && timeout < 50) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    System.err.println(">>> Client: Handshake wait interrupted");
+                    break;
+                }
+                timeout++;
+            }
+            
+            
+            if (!handshakeComplete.get()) {
+                System.err.println(">>> Client: Handshake failed - no CONNECT_RESPONSE from server");
+                running.set(false);
+                throw new IOException("서버가 응답하지 않습니다. 방이 존재하지 않을 수 있습니다.");
+            }
+            
+            System.out.println(">>> Server: Handshake complete!");
+            // ===== 핸드셰이크 완료 =====
+            
             // 연결 완료
             connected.set(true);
             
             // 핑 시작
             startPingScheduler();
-            
-            // 메시지 수신 시작
-            startReceiving();
             
             // 리스너 알림
             listener.onConnected(peerId != null ? peerId : "Unknown");
