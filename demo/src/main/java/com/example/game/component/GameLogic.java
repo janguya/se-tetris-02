@@ -55,13 +55,17 @@ public class GameLogic {
     private boolean isAnimatingClear = false;
 
     public GameLogic() {
-        this(true); // 기본값: 아이템 모드 비활성화
+        this(true, true); // 기본값: 아이템 모드 비활성화, 초기 블록 생성
     }
     
     public GameLogic(boolean itemModeEnabled) {
+        this(itemModeEnabled, true);
+    }
+    
+    public GameLogic(boolean itemModeEnabled, boolean spawnInitialBlock) {
         random = new Random();
         itemManager = new ItemManager(itemModeEnabled);
-        initializeGame();
+        initializeGame(spawnInitialBlock);
     }
 
     // Random seed 설정 (P2P 동기화용)
@@ -85,18 +89,33 @@ public class GameLogic {
 
     // 게임 초기화
     private void initializeGame() {
+        initializeGame(true);
+    }
+    
+    private void initializeGame(boolean spawnInitialBlock) {
         board = new int[HEIGHT][WIDTH]; // 모두 0으로 초기화
         blockTypes = new String[HEIGHT][WIDTH]; // 모두 null로 초기화
-        currentBlock = getRandomBlock(); // 첫 블록 생성
-        nextBlock = getRandomBlock(); // 다음 블록 생성
-        x=3;
-        y=0;
-        rotation = 0;
+        
+        if (spawnInitialBlock) {
+            currentBlock = getRandomBlock(); // 첫 블록 생성
+            nextBlock = getRandomBlock(); // 다음 블록 생성
+            x=3;
+            y=0;
+            rotation = 0;
+            placeCurrent(); // 현재 블록 보드에 놓기
+            totalBlocksSpawned = 1; // 첫 블록 카운트
+        } else {
+            currentBlock = null;
+            nextBlock = null;
+            x=3;
+            y=0;
+            rotation = 0;
+            totalBlocksSpawned = 0;
+        }
+        
         gameOver = false;
-        placeCurrent(); // 현재 블록 보드에 놓기
         
         // 통계 초기화
-        totalBlocksSpawned = 1; // 첫 블록 카운트
         totalLinesCleared = 0;
         currentLevel = 1;
         speedLevel = 1;
@@ -620,7 +639,15 @@ public class GameLogic {
     }
 
     public void resetGame() {
-        initializeGame();
+        initializeGame(true);
+        if (itemManager != null) {
+            itemManager.reset();
+        }
+        nextBlockShouldBeItem = false;
+    }
+    
+    public void resetGameWithoutSpawn() {
+        initializeGame(false);
         if (itemManager != null) {
             itemManager.reset();
         }
