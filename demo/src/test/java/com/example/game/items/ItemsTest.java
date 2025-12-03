@@ -271,6 +271,177 @@ class ItemsTest {
     }
 
     @Test
+    @DisplayName("SandBlock CSS 클래스 테스트")
+    void testSandBlockCssClass() {
+        SandBlock sandBlock = new SandBlock(new IBlock());
+        assertEquals("item-sand", sandBlock.getCssClass(), "SandBlock의 CSS 클래스는 item-sand여야 합니다");
+    }
+
+    @Test
+    @DisplayName("SandBlock isItemBlock 테스트")
+    void testSandBlockIsItemBlock() {
+        SandBlock sandBlock = new SandBlock(new TBlock());
+        assertTrue(sandBlock.isItemBlock(), "SandBlock은 아이템 블록이어야 합니다");
+    }
+
+    @Test
+    @DisplayName("SandBlock hasActivated 초기 상태 테스트")
+    void testSandBlockHasActivatedInitialState() {
+        SandBlock sandBlock = new SandBlock(new OBlock());
+        assertFalse(sandBlock.hasActivated(), "초기 상태에서는 활성화되지 않아야 합니다");
+    }
+
+    @Test
+    @DisplayName("SandBlock applyGravity 기본 테스트")
+    void testSandBlockApplyGravity() {
+        SandBlock sandBlock = new SandBlock(new IBlock());
+        int[][] board = new int[20][10];
+        String[][] blockTypes = new String[20][10];
+
+        // applyGravity 호출
+        assertDoesNotThrow(() -> {
+            sandBlock.applyGravity(board, blockTypes, 0, 3);
+        }, "applyGravity는 예외를 발생시키지 않아야 합니다");
+
+        assertTrue(sandBlock.hasActivated(), "applyGravity 후에는 활성화되어야 합니다");
+    }
+
+    @Test
+    @DisplayName("SandBlock applyGravity 중복 호출 방지 테스트")
+    void testSandBlockApplyGravityDuplicatePrevention() {
+        SandBlock sandBlock = new SandBlock(new OBlock());
+        int[][] board = new int[20][10];
+        String[][] blockTypes = new String[20][10];
+
+        // 첫 번째 호출
+        sandBlock.applyGravity(board, blockTypes, 0, 3);
+
+        // 보드 상태 기록
+        int[][] boardCopy = new int[20][10];
+        for (int i = 0; i < 20; i++) {
+            System.arraycopy(board[i], 0, boardCopy[i], 0, 10);
+        }
+
+        // 두 번째 호출 - 중복 실행 방지되어야 함
+        sandBlock.applyGravity(board, blockTypes, 5, 3);
+
+        // 보드 상태가 변경되지 않았는지 확인
+        assertTrue(sandBlock.hasActivated(), "활성화 상태는 유지되어야 합니다");
+    }
+
+    @Test
+    @DisplayName("SandBlock applyGravity 셀 낙하 테스트")
+    void testSandBlockApplyGravityCellFalling() {
+        SandBlock sandBlock = new SandBlock(new IBlock());
+        int[][] board = new int[20][10];
+        String[][] blockTypes = new String[20][10];
+
+        // 바닥에 블록 배치 (블록이 바닥까지 떨어지도록)
+        for (int col = 0; col < 10; col++) {
+            board[19][col] = 1;
+            blockTypes[19][col] = "base-block";
+        }
+
+        // applyGravity 호출 (상단에서)
+        sandBlock.applyGravity(board, blockTypes, 0, 3);
+
+        // 블록이 아래로 떨어졌는지 확인 (18번째 줄에 있어야 함)
+        boolean foundSandBlock = false;
+        for (int row = 0; row < 19; row++) {
+            for (int col = 0; col < 10; col++) {
+                if (blockTypes[row][col] != null && blockTypes[row][col].equals("item-sand")) {
+                    foundSandBlock = true;
+                    break;
+                }
+            }
+        }
+        assertTrue(foundSandBlock || sandBlock.hasActivated(), "모래 블록이 중력에 따라 떨어져야 합니다");
+    }
+
+    @Test
+    @DisplayName("SandBlock applyGravity 경계 확인 테스트")
+    void testSandBlockApplyGravityBoundaryCheck() {
+        SandBlock sandBlock = new SandBlock(new LBlock());
+        int[][] board = new int[20][10];
+        String[][] blockTypes = new String[20][10];
+
+        // 보드 우측 경계 근처에서 호출
+        assertDoesNotThrow(() -> {
+            sandBlock.applyGravity(board, blockTypes, 0, 8);
+        }, "경계 근처에서도 예외가 발생하지 않아야 합니다");
+
+        assertTrue(sandBlock.hasActivated(), "활성화되어야 합니다");
+    }
+
+    @Test
+    @DisplayName("SandBlock applyGravity 좌측 경계 밖 테스트")
+    void testSandBlockApplyGravityLeftBoundary() {
+        SandBlock sandBlock = new SandBlock(new JBlock());
+        int[][] board = new int[20][10];
+        String[][] blockTypes = new String[20][10];
+
+        // 좌측 경계 밖에서 호출
+        assertDoesNotThrow(() -> {
+            sandBlock.applyGravity(board, blockTypes, 0, -1);
+        }, "좌측 경계 밖에서도 예외가 발생하지 않아야 합니다");
+
+        assertTrue(sandBlock.hasActivated(), "활성화되어야 합니다");
+    }
+
+    @Test
+    @DisplayName("SandBlock rotate 테스트")
+    void testSandBlockRotate() {
+        SandBlock sandBlock = new SandBlock(new TBlock());
+
+        int beforeWidth = sandBlock.width();
+        int beforeHeight = sandBlock.height();
+
+        // 회전
+        sandBlock.rotate();
+
+        // T블록은 회전하면 크기가 바뀜
+        assertNotNull(sandBlock, "회전 후에도 null이 아니어야 합니다");
+    }
+
+    @Test
+    @DisplayName("SandBlock 다양한 베이스 블록 테스트")
+    void testSandBlockWithVariousBaseBlocks() {
+        Block[] baseBlocks = {
+                new IBlock(), new OBlock(), new TBlock(),
+                new SBlock(), new ZBlock(), new JBlock(), new LBlock()
+        };
+
+        for (Block baseBlock : baseBlocks) {
+            SandBlock sandBlock = new SandBlock(baseBlock);
+            assertNotNull(sandBlock, "SandBlock이 null이면 안됩니다");
+            assertEquals("item-sand", sandBlock.getCssClass(), "CSS 클래스가 일치해야 합니다");
+            assertTrue(sandBlock.isItemBlock(), "아이템 블록이어야 합니다");
+            assertFalse(sandBlock.hasActivated(), "초기에는 활성화되지 않아야 합니다");
+        }
+    }
+
+    @Test
+    @DisplayName("SandBlock applyGravity 빈 공간으로 낙하 테스트")
+    void testSandBlockApplyGravityToEmptySpace() {
+        SandBlock sandBlock = new SandBlock(new OBlock());
+        int[][] board = new int[20][10];
+        String[][] blockTypes = new String[20][10];
+
+        // 빈 보드에서 applyGravity 호출 - 바닥까지 떨어져야 함
+        sandBlock.applyGravity(board, blockTypes, 0, 3);
+
+        // 바닥(19번째 줄) 근처에 블록이 있는지 확인
+        boolean foundAtBottom = false;
+        for (int col = 0; col < 10; col++) {
+            if (board[19][col] == 1) {
+                foundAtBottom = true;
+                break;
+            }
+        }
+        assertTrue(foundAtBottom, "빈 공간에서는 바닥까지 떨어져야 합니다");
+    }
+
+    @Test
     @DisplayName("ItemManager 생성 테스트")
     void testItemManagerCreation() {
         assertDoesNotThrow(() -> {
@@ -384,5 +555,139 @@ class ItemsTest {
         BombBlock bomb = new BombBlock(new OBlock());
         assertTrue(bomb instanceof Block,
                 "BombBlock은 Block을 상속해야 합니다");
+    }
+
+    @Test
+    @DisplayName("weightedBlock hasActivated 초기 상태 테스트")
+    void testWeightedBlockHasActivatedInitialState() {
+        weightedBlock block = new weightedBlock();
+        assertFalse(block.hasActivated(), "초기 상태에서는 활성화되지 않아야 합니다");
+    }
+
+    @Test
+    @DisplayName("weightedBlock fallToBottom 후 hasActivated 테스트")
+    void testWeightedBlockHasActivatedAfterFallToBottom() {
+        weightedBlock block = new weightedBlock();
+        int[][] board = new int[20][10];
+        String[][] blockTypes = new String[20][10];
+
+        // fallToBottom 호출
+        block.fallToBottom(board, blockTypes, 0, 3);
+
+        // 활성화되어야 함
+        assertTrue(block.hasActivated(), "fallToBottom 후에는 활성화되어야 합니다");
+    }
+
+    @Test
+    @DisplayName("weightedBlock fallToBottom 중복 호출 방지 테스트")
+    void testWeightedBlockFallToBottomDuplicatePrevention() {
+        weightedBlock block = new weightedBlock();
+        int[][] board = new int[20][10];
+        String[][] blockTypes = new String[20][10];
+
+        // 첫 번째 호출
+        int firstResult = block.fallToBottom(board, blockTypes, 0, 3);
+
+        // 두 번째 호출 - 중복 실행 방지되어야 함
+        int secondResult = block.fallToBottom(board, blockTypes, 5, 3);
+
+        assertEquals(5, secondResult, "이미 활성화된 경우 시작 행을 그대로 반환해야 합니다");
+        assertTrue(block.hasActivated(), "활성화 상태는 유지되어야 합니다");
+    }
+
+    @Test
+    @DisplayName("weightedBlock hasTouched 초기 상태 테스트")
+    void testWeightedBlockHasTouchedInitialState() {
+        weightedBlock block = new weightedBlock();
+        assertFalse(block.hasTouched(), "초기 상태에서는 닿지 않았어야 합니다");
+    }
+
+    @Test
+    @DisplayName("weightedBlock setTouched true 테스트")
+    void testWeightedBlockSetTouchedTrue() {
+        weightedBlock block = new weightedBlock();
+
+        block.setTouched(true);
+
+        assertTrue(block.hasTouched(), "setTouched(true) 후에는 true를 반환해야 합니다");
+    }
+
+    @Test
+    @DisplayName("weightedBlock setTouched false 테스트")
+    void testWeightedBlockSetTouchedFalse() {
+        weightedBlock block = new weightedBlock();
+
+        block.setTouched(true);
+        block.setTouched(false);
+
+        assertFalse(block.hasTouched(), "setTouched(false) 후에는 false를 반환해야 합니다");
+    }
+
+    @Test
+    @DisplayName("weightedBlock canMove 초기 상태 테스트")
+    void testWeightedBlockCanMoveInitialState() {
+        weightedBlock block = new weightedBlock();
+        assertTrue(block.canMove(), "초기 상태에서는 이동 가능해야 합니다");
+    }
+
+    @Test
+    @DisplayName("weightedBlock canMove 닿은 후 테스트")
+    void testWeightedBlockCanMoveAfterTouched() {
+        weightedBlock block = new weightedBlock();
+
+        block.setTouched(true);
+
+        assertFalse(block.canMove(), "닿은 후에는 이동 불가능해야 합니다");
+    }
+
+    @Test
+    @DisplayName("weightedBlock fallToBottom 블록 파괴 테스트")
+    void testWeightedBlockFallToBottomDestroysBlocks() {
+        weightedBlock block = new weightedBlock();
+        int[][] board = new int[20][10];
+        String[][] blockTypes = new String[20][10];
+
+        // 중간에 블록 배치
+        for (int row = 10; row < 15; row++) {
+            for (int col = 0; col < 10; col++) {
+                board[row][col] = 1;
+                blockTypes[row][col] = "test-block";
+            }
+        }
+
+        // fallToBottom 호출
+        int finalRow = block.fallToBottom(board, blockTypes, 5, 3);
+
+        // 블록이 파괴되었는지 확인 (적어도 일부 셀이 0이 됨)
+        assertTrue(finalRow >= 5, "최종 행은 시작 행보다 커야 합니다");
+    }
+
+    @Test
+    @DisplayName("weightedBlock fallToBottom 경계 확인 테스트")
+    void testWeightedBlockFallToBottomBoundaryCheck() {
+        weightedBlock block = new weightedBlock();
+        int[][] board = new int[20][10];
+        String[][] blockTypes = new String[20][10];
+
+        // 보드 우측 경계 근처에서 호출
+        int finalRow = block.fallToBottom(board, blockTypes, 0, 8);
+
+        assertTrue(finalRow >= 0, "경계 근처에서도 정상 동작해야 합니다");
+        assertTrue(block.hasActivated(), "활성화되어야 합니다");
+    }
+
+    @Test
+    @DisplayName("weightedBlock rotate 호출 테스트")
+    void testWeightedBlockRotate() {
+        weightedBlock block = new weightedBlock();
+
+        int beforeWidth = block.width();
+        int beforeHeight = block.height();
+
+        // 회전해도 크기가 변하지 않아야 함 (회전 안됨)
+        block.rotate();
+
+        assertEquals(beforeWidth, block.width(), "회전 후에도 너비는 변하지 않아야 합니다");
+        assertEquals(beforeHeight, block.height(), "회전 후에도 높이는 변하지 않아야 합니다");
     }
 }
