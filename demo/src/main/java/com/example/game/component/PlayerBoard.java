@@ -148,6 +148,7 @@ public class PlayerBoard extends Board {
         List<Integer> fullLines = gameLogic.findFullLines();
         if (!fullLines.isEmpty()) {
             gameLogic.executeLineClear(fullLines);
+            updateSpeedDisplay(); // 속도 표시 업데이트
         }
     }
 
@@ -163,6 +164,20 @@ public class PlayerBoard extends Board {
 
         gameLogic.executeLineClear(pendingLinesToClear);
         pendingLinesToClear.clear();
+        updateSpeedDisplay(); // 속도 표시 업데이트
+    }
+
+    // 속도 표시 업데이트
+    private void updateSpeedDisplay() {
+        double speedMultiplier = gameLogic.getSpeedMultiplier();
+        int speedLevel = gameLogic.getSpeedLevel();
+        int blocksSpawned = gameLogic.getTotalBlocksSpawned();
+        int linesCleared = gameLogic.getTotalLinesCleared();
+        
+        Logger.info(">>> Player %d Speed Update: Level=%d, Multiplier=%.2f, Blocks=%d, Lines=%d", 
+            playerNumber, speedLevel, speedMultiplier, blocksSpawned, linesCleared);
+        
+        scorePanel.updateSpeed(speedMultiplier, speedLevel);
     }
 
     @Override
