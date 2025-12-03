@@ -43,6 +43,7 @@ public class Board implements GameInputCallback {
 
     protected boolean isPaused = false; // 게임 일시정지 상태
     protected boolean isGameOver = false; // 게임 오버 상태
+    protected boolean isHardDropping = false; // 하드 드롭 진행 중 플래그
     protected final long baseDropInterval = 1_000_000_000L; // 1초 (기본 속도)
     protected Animation lineAnimation; // 애니메이션 객체 추가
     protected List<Integer> pendingLinesToClear; // 삭제 대기 중인 줄들
@@ -79,8 +80,8 @@ public class Board implements GameInputCallback {
     // GameInputCallback 구현
     @Override
     public void onMoveLeft() {
-        if (lineAnimation.isActive()) {
-            return; // 애니메이션 중에는 입력 무시
+        if (lineAnimation.isActive() || isHardDropping) {
+            return; // 애니메이션 중이거나 하드 드롭 중에는 입력 무시
         }
         gameLogic.moveLeft();
         drawBoard();
@@ -88,8 +89,8 @@ public class Board implements GameInputCallback {
 
     @Override
     public void onMoveRight() {
-        if (lineAnimation.isActive()) {
-            return; // 애니메이션 중에는 입력 무시
+        if (lineAnimation.isActive() || isHardDropping) {
+            return; // 애니메이션 중이거나 하드 드롭 중에는 입력 무시
         }
         gameLogic.moveRight();
         drawBoard();
@@ -106,8 +107,8 @@ public class Board implements GameInputCallback {
 
     @Override
     public void onRotate() {
-        if (lineAnimation.isActive()) {
-            return; // 애니메이션 중에는 입력 무시
+        if (lineAnimation.isActive() || isHardDropping) {
+            return; // 애니메이션 중이거나 하드 드롭 중에는 입력 무시
         }
         gameLogic.rotateBlock();
         drawBoard();
@@ -115,8 +116,8 @@ public class Board implements GameInputCallback {
 
     @Override
     public void onHardDrop() {
-        if (lineAnimation.isActive()) {
-            return; // 애니메이션 중에는 입력 무시
+        if (lineAnimation.isActive() || isHardDropping) {
+            return; // 애니메이션 중이거나 이미 하드 드롭 중에는 입력 무시
         }
         hardDrop();
         drawBoard();
@@ -474,6 +475,10 @@ public class Board implements GameInputCallback {
                         isGameOver = true;
                         gameOver();
                     }
+                    
+                    // 애니메이션 완료 및 다음 블록 생성 후 하드 드롭 플래그 해제
+                    isHardDropping = false;
+                    
                     drawBoard();
                     return;
                 }
@@ -879,10 +884,11 @@ public class Board implements GameInputCallback {
 
     // 하드 드롭 (블록을 즉시 바닥까지 떨어뜨리기)
     protected void hardDrop() {
-        if (!isGameActive()) {
+        if (!isGameActive() || isHardDropping) {
             return;
         }
 
+        isHardDropping = true; // 하드 드롭 시작
         System.out.println(">>> Hard drop initiated");
 
         Block currentBlock = gameLogic.getCurrentBlock();
@@ -896,6 +902,7 @@ public class Board implements GameInputCallback {
         }
 
         if (!dropped) {
+            isHardDropping = false; // 하드 드롭 종료
             return;
         }
 
@@ -964,14 +971,19 @@ public class Board implements GameInputCallback {
                 isGameOver = true;
                 gameOver();
             }
+            isHardDropping = false; // 게임 오버 시 하드 드롭 종료
             return;
         }
 
-        // boolean spawned = gameLogic.spawnNextPiece();
-        // if (!spawned && !isGameOver) {
-        //     isGameOver = true;
-        //     gameOver();
-        // }
+        // 애니메이션이 없는 경우 여기서 다음 블록 생성
+        boolean spawned = gameLogic.spawnNextPiece();
+        if (!spawned && !isGameOver) {
+            isGameOver = true;
+            gameOver();
+        }
+        
+        // 다음 블록 생성 후 하드 드롭 플래그 해제
+        isHardDropping = false;
     }
 
     // 리소스 정리 (게임이 종료될 때 호출)
