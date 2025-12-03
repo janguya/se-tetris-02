@@ -28,7 +28,7 @@ public class AttackQueueDisplay {
     
     // 설정
     private static final int PREVIEW_WIDTH = 10; // 10칸
-    private static final int PREVIEW_MAX_LINES = 5; // 최대 5줄 표시
+    private static final int PREVIEW_MAX_LINES = 10; // 최대 10줄 표시
     private static final int CELL_SIZE = 15; // 각 셀 크기
     private static final Color ATTACK_BLOCK_COLOR = Color.rgb(120, 120, 120); // 회색
     private static final Color EMPTY_COLOR = Color.rgb(40, 40, 40); // 어두운 배경
