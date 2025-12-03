@@ -602,6 +602,10 @@ public class OnlineVersusBoard implements MessageListener {
         // 점수
         message.put("score", localBoard.getScore());
 
+        // 속도 정보 추가
+        message.put("speedLevel", localBoard.getGameLogic().getSpeedLevel());
+        message.put("speedMultiplier", localBoard.getGameLogic().getSpeedMultiplier());
+
         networkManager.sendMessage(message);
     }
 
@@ -656,6 +660,13 @@ public class OnlineVersusBoard implements MessageListener {
         Integer score = (Integer) message.get("score");
         if (score != null) {
             remoteScorePanel.setScore(score);
+        }
+
+        // 속도 정보 업데이트
+        Integer speedLevel = (Integer) message.get("speedLevel");
+        Double speedMultiplier = (Double) message.get("speedMultiplier");
+        if (speedLevel != null && speedMultiplier != null) {
+            remoteScorePanel.updateSpeed(speedMultiplier, speedLevel);
         }
 
         // 다음 블록 정보 복원
