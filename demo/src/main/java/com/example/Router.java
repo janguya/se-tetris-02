@@ -392,7 +392,7 @@ public void showGame() {
                 .addMenuItem("GAME", "게임 시작")
                 .addMenuItem("ITEM_MODE", itemModeLabel)
                 .addMenuItem("VERSUS_GAME", "대전 모드")
-                // .addMenuItem("AI_VERSUS_GAME", "AI 대전 모드") // AI 대전 모드는 일단 숨김
+                .addMenuItem("AI_VERSUS_GAME", "AI 대전 모드") // AI 대전 모드는 dev-ai 브랜치에서만 활성화
                 .addMenuItem("P2P_VERSUS_MODE", "P2P 대전 모드")
                 .addMenuItem("SETTINGS", "설정")
                 .addMenuItem("SCOREBOARD", "스코어보드")
