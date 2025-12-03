@@ -24,8 +24,6 @@ public class ScorePanel {
 
     private VBox panel; // 메인 패널
     private Text scoreText; // 점수 텍스트
-    private Text levelText; // 레벨 텍스트
-    private Text linesText; // 라인 수 텍스트
     private Canvas nextBlockCanvas = new Canvas(100, 100); // 다음 블록 미리보기 캔버스
     private GraphicsContext nextBlockGc; // 다음 블록 그래픽 컨텍스트
 
@@ -133,14 +131,6 @@ public class ScorePanel {
         scoreText = new Text("Score: 0");
         scoreText.getStyleClass().add("score-text");
 
-        // 레벨 부분
-        levelText = new Text("Level: 1");
-        levelText.getStyleClass().add("level-text");
-
-        // 라인 수 부분
-        linesText = new Text("Lines: 0");
-        linesText.getStyleClass().add("lines-text");
-
         // 속도 부분 (새로 추가)
         speedText = new Text("Speed: x1.0");
         speedText.getStyleClass().add("speed-text");
@@ -159,8 +149,6 @@ public class ScorePanel {
                 nextBlockTitle,
                 nextBlockCanvas,
                 scoreText,
-                levelText,
-                linesText,
                 speedText, // 속도 표시 추가
                 controlsTitle,
                 controls);
@@ -376,27 +364,17 @@ public class ScorePanel {
     public void addLines(int lines) {
         linesCleared += lines;
         updateLevel();
-        updateLinesDisplay();
     }
 
     private void updateLevel() {
         int newLevel = (linesCleared / 10) + 1;
         if (newLevel != level) {
             level = newLevel;
-            updateLevelDisplay();
         }
     }
 
     private void updateScoreDisplay() {
         scoreText.setText("Score: " + score);
-    }
-
-    private void updateLevelDisplay() {
-        levelText.setText("Level: " + level);
-    }
-
-    private void updateLinesDisplay() {
-        linesText.setText("Lines: " + linesCleared);
     }
     
     // 온라인 대전용: 상대방 점수 직접 설정
@@ -411,8 +389,6 @@ public class ScorePanel {
         level = 1;
         linesCleared = 0;
         updateScoreDisplay();
-        updateLevelDisplay();
-        updateLinesDisplay();
     }
 
     // Getters
